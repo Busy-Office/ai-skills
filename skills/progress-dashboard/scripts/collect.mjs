@@ -271,7 +271,7 @@ export function collect(repoPath, opts = {}) {
     return { id, title: stripMd(title.replace(/^[A-Z]{2,8}[- ]?\d{2,5}\s*[—:-]\s*/, "")), status, since, owner, supersedes, source: file };
   };
 
-  // Shape 5 — decision-session yaml (busy-office-erp): items with status pending are open questions
+  // Shape 5 — decision-session yaml (decision-session convention): items with status pending are open questions
   const parseDecisionsYaml = (file, text) => {
     const facilitator = text.match(/^\s+facilitator:\s*(.+)$/m)?.[1]?.trim() ?? null;
     const date = text.match(/^\s+date:\s*"?([\d-]+)"?/m)?.[1] ?? null;

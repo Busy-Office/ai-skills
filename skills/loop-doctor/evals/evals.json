@@ -1,0 +1,59 @@
+{
+  "skill_name": "loop-doctor",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. There's an autonomous loop here that's supposed to work through docs/BACKLOG.md on its own (a scripts/loop.ps1 driver, a /loop skill, an orchestrator skill with its own state file). I've lost track of how it actually runs now and I think some of the rules contradict each other. Explain how it works, review it, and tell me what's wrong and what to fix. Write the review to <scratchpad>/LOOP-REVIEW.md, not into the repo.",
+      "expected_output": "Diagram-first review: one-tick diagram with real file names, files-by-role, 8-dimension scorecard with health label; findings as rows with file:line: two competing drivers, content after a terminal STATUS sentinel tripping the driver's stop rule, the DoD stated in several files with different wording, a single-OS driver; ambiguous backlog items sharpened; prescriptions naming the finding they close; ≤5 do-next; footer receipt showing the repo was untouched.",
+      "files": [],
+      "assertions": [
+        "Opens with a mermaid tick diagram carrying real file names, ≤60 words before it",
+        "Scorecard with eight dimensions, each scored with a one-line cited reason, and a health label",
+        "Identifies competing drivers and says precedence is undefined",
+        "Finds content after a terminal sentinel and classifies it Invalid",
+        "Finds the same rule restated across files and names the loaded copy",
+        "Flags the single-OS driver",
+        "Findings are one-line rows with file:line and an exact fix",
+        "Lists ambiguous queue items and sharpens the top ones",
+        "Do-next has at most five items, the first being the top Invalid",
+        "Footer receipt: files read, no state file read whole, target repo untouched"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Working in <repo>. We run scheduled loops on a cadence (see LOOPS.md and the loop section of CLAUDE.md). Review the loop design: is anything redundant or out of date between LOOPS.md and CLAUDE.md, are the state files under control, does it have a kill switch, and what would you improve? Save the report to <scratchpad>/LOOP-REVIEW.md rather than in the repo.",
+      "expected_output": "Tick diagram of wake → dispatcher → one loop → record; scorecard; findings that CLAUDE.md and LOOPS.md disagree on loop count / cadence / a retired router; state-file sizes and growth from the inventory (not from reading them whole); absence of a kill switch as Risk; prescriptions such as thin pointer + playbook archive; receipt.",
+      "files": [],
+      "assertions": [
+        "Opens with a mermaid tick diagram, ≤60 words before it",
+        "Scorecard with eight dimensions and a health label",
+        "Finds a count or cadence that disagrees between CLAUDE.md and the loop playbook",
+        "Finds a retired design still described as current",
+        "Reports state-file line counts and growth without having read them whole",
+        "Notes a missing kill switch or unreachable stop as Risk",
+        "Findings are one-line rows with file:line and an exact fix",
+        "Prescriptions each name the finding they close and a cost",
+        "Do-next has at most five items",
+        "Footer receipt present"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "cd <repo> — we have a loop contract spec, an orchestrator design doc, a runner script, a /loop command and skill, schedule definitions, and an intent.md. I'm not sure how much of the scheduled loop is actually built vs just written down, whether the rules agree, or whether the loop knows what to do when it runs out of work. Explain what one run does today, score it, and flag anything invalid or inconsistent. Put the report at <scratchpad>/LOOP-REVIEW.md, not in the repo.",
+      "expected_output": "One sentence built-vs-declared in the score block (what runs vs what is only planned/simulated); tick diagram; scorecard; Invalid rows for contract/runner divergences and for any self-approval path; Purpose row noting whether intent.md is referenced by the loaded rules and whether an empty-queue ladder exists; receipt.",
+      "files": [],
+      "assertions": [
+        "States built vs declared in one sentence in the score block",
+        "Opens with a mermaid tick diagram, ≤60 words before it",
+        "Scorecard with eight dimensions including purpose, and a health label",
+        "Finds at least one place where runner behaviour diverges from the contract, with file:line",
+        "Checks whether the actor can approve or answer its own gate",
+        "Purpose: says whether intent.md is referenced by loaded rules and whether an empty-queue rung exists",
+        "Findings are one-line rows with file:line and an exact fix",
+        "Prescriptions each name the finding they close",
+        "Do-next has at most five items, first is the top Invalid",
+        "Footer receipt present"
+      ]
+    }
+  ]
+}

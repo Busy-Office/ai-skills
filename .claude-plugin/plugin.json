@@ -1,0 +1,26 @@
+{
+  "name": "busy-office",
+  "version": "0.1.0",
+  "description": "Busy Office skills for Claude Code: progress-dashboard (one-page stakeholder status for any git project) and loop-doctor (explain, diagnose and improve a scheduled autonomous loop). Shape-detecting, read-only collectors with fixtures; per-project overrides via .claude/<skill>.json.",
+  "author": {
+    "name": "Busy Office",
+    "url": "https://github.com/Busy-Office"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Busy-Office/ai-skills",
+  "repository": "https://github.com/Busy-Office/ai-skills",
+  "keywords": [
+    "progress",
+    "dashboard",
+    "status-report",
+    "stakeholder",
+    "adr",
+    "roadmap",
+    "governance",
+    "autonomous-loop",
+    "orchestrator",
+    "cron",
+    "routine",
+    "audit"
+  ]
+}

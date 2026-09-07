@@ -18,7 +18,7 @@ is optional. Paths are relative to the repo root and may be globs.
   "sessions": ["docs/decisions/session-*/**/*.md", "wiki/meta/*-session.md"],
   "manualActions": ["MANUAL-ACTIONS.md"],
   "capabilities": true,
-  "github": "Busy-Office/busy-office-erp",
+  "github": "your-org/your-repo",
   "notion": "https://www.notion.so/<workspace>/<page-id>",
   "staleness": { "quietDays": 7, "stalledDays": 14 },
   "vocabulary": { "parked": "deferred", "shipped": "accepted" }

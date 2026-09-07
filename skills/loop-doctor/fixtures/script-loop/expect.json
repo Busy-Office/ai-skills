@@ -1,0 +1,26 @@
+{
+  "drivers.length": 1,
+  "drivers.0.file": "scripts/loop.ps1",
+  "drivers.0.callsClaude": true,
+  "checks.singleOsDrivers.length": 1,
+  "checks.swallowedErrors.length": 1,
+  "docs.length": 5,
+  "skills.length": 1,
+  "stateFiles.0.file": "docs/LOOP-STATUS.md",
+  "checks.sentinels.length": 1,
+  "checks.sentinels.0.terminal.value": "MVP-COMPLETE",
+  "checks.sentinels.0.entriesAfter": 2,
+  "checks.repeatedSentences.0.where.length": 3,
+  "checks.danglingRefs.0.ref": "docs/MISSING-FILE.md",
+  "checks.numberDisagreements.length": 2,
+  "checks.loadedFiles": [
+    "CLAUDE.md",
+    ".claude/skills/loop/SKILL.md"
+  ],
+  "intent.file": "intent.md",
+  "intent.referencedBy.length": 1,
+  "intent.emptyQueueOrObjectiveRule": true,
+  "sharpness.openItems": 5,
+  "sharpness.withAcceptance": 2,
+  "sharpness.ambiguous": 3
+}

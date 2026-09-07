@@ -1,4 +1,4 @@
-# busy-office-ui — Roadmap
+# sample-ui — Roadmap
 
 ## Objective — the direction (set by the owner, 2026-08-16)
 

@@ -2,7 +2,7 @@
   "decisions.length": 2,
   "decisions.0.id": "DEC-012",
   "decisions.0.canonical": "accepted",
-  "decisions.0.owner": "thepfmind",
+  "decisions.0.owner": "owner-a",
   "decisions.1.canonical": "proposed",
   "phases.length": 3,
   "phases.0.status": "closed",
