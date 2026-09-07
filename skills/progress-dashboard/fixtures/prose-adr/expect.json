@@ -1,0 +1,21 @@
+{
+  "decisions.length": 3,
+  "decisions.0.id": "ADR-0001",
+  "decisions.0.canonical": "accepted",
+  "decisions.0.since": "2026-08-20",
+  "decisions.0.owner": "Owner",
+  "decisions.1.canonical": "proposed",
+  "decisions.2.canonical": "deferred",
+  "decisionCounts": {"accepted": 1, "proposed": 1, "deferred": 1},
+  "openQuestions.length": 1,
+  "openQuestions.0.id": "Q1",
+  "openQuestions.0.owner": "Owner",
+  "phases.length": 2,
+  "phases.0.id": "PHASE-0",
+  "phases.0.exit": "two sample apps interoperate; ADR-0002 accepted",
+  "phases.0.status": null,
+  "releases.0.version": "0.2.0",
+  "releases.0.date": "2026-08-27",
+  "releases.0.summary": "journal invariants",
+  "humanItems.0.kind": "question"
+}

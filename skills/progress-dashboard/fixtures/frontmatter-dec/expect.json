@@ -1,0 +1,19 @@
+{
+  "decisions.length": 2,
+  "decisions.0.id": "DEC-012",
+  "decisions.0.canonical": "accepted",
+  "decisions.0.owner": "thepfmind",
+  "decisions.1.canonical": "proposed",
+  "phases.length": 3,
+  "phases.0.status": "closed",
+  "phases.1.status": "current",
+  "phases.1.current": true,
+  "phases.2.status": "planned",
+  "roadmap.shape": "milestone table",
+  "gates.length": 2,
+  "gates.0.status": "closed",
+  "gates.1.status": "open",
+  "gates.1.raised": "2026-08-28",
+  "humanItems.0.id": "GATE-12-EXPORT",
+  "humanItems.0.owner": "Unassigned"
+}

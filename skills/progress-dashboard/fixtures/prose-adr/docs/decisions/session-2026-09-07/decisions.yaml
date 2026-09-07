@@ -1,0 +1,19 @@
+# status: accepted | amended | rejected | deferred | scheduled | confirmed | pending
+session:
+  date: "2026-09-07"
+  facilitator: Owner
+decisions:
+  - id: Q1
+    finding: P1
+    adr: null
+    status: pending
+    decider: null
+    notes: >-
+      The demand side and the partner gate.
+  - id: Q2
+    finding: P3
+    adr: 0002
+    status: accepted
+    decider: Owner
+    notes: >-
+      Already landed.

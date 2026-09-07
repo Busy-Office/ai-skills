@@ -1,0 +1,19 @@
+{
+  "decisions.length": 2,
+  "decisions.0.canonical": "accepted",
+  "decisions.1.canonical": "deliberate-absence",
+  "decisions.1.replacement": "event handlers",
+  "openQuestions.length": 3,
+  "openQuestions.0.canonical": "closed",
+  "openQuestions.1.canonical": "open",
+  "openQuestions.1.owner": "bob",
+  "openQuestions.2.canonical": "closed",
+  "phases.length": 3,
+  "phases.0.id": "P0",
+  "phases.1.current": true,
+  "phases.2.status": "planned",
+  "sessions.length": 2,
+  "sessions.0.id": "S0.2",
+  "humanItems.length": 1,
+  "humanItems.0.id": "OQ-02"
+}

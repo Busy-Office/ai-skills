@@ -1,0 +1,47 @@
+{
+  "decisions.length": 6,
+  "decisionCounts": {
+    "accepted": 3,
+    "deferred": 1,
+    "superseded": 1,
+    "deliberate-absence": 1
+  },
+  "openQuestions.length": 4,
+  "openQuestions.0.id": "OQ-07",
+  "openQuestions.0.owner": "Shareholder",
+  "openQuestions.0.blocks": "ADR-017",
+  "openQuestions.0.canonical": "open",
+  "openQuestions.1.canonical": "closed",
+  "gates.length": 2,
+  "gates.0.id": "GATE-QG-03",
+  "gates.0.status": "open",
+  "gates.0.owner": "Human (Shareholder)",
+  "gates.0.checklist": {
+    "done": 1,
+    "total": 2
+  },
+  "gates.1.status": "closed",
+  "backlog.counts": {
+    "todo": 1,
+    "doing": 0,
+    "done": 1,
+    "blocked": 1
+  },
+  "manualActions.length": 1,
+  "manualActions.0.group": "GROUP 1 — Git / GitHub",
+  "sessions.length": 2,
+  "humanItems.0.id": "GATE-QG-03",
+  "humanItems.1.id": "OQ-07",
+  "humanItems.length": 5,
+  "openQuestions.2.id": "OQ-009",
+  "openQuestions.2.owner": "Legal",
+  "openQuestions.2.blocks": "ADR-130",
+  "openQuestions.2.canonical": "open",
+  "openQuestions.3.status": "parked",
+  "otherNodes.count": 2,
+  "otherNodes.byType.TSK.total": 2,
+  "otherNodes.needsHuman.0.id": "TSK-401",
+  "humanItems.2.id": "OQ-009",
+  "humanItems.3.id": "TSK-401",
+  "humanItems.3.owner": "Human"
+}

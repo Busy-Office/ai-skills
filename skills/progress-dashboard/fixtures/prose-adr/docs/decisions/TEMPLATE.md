@@ -1,0 +1,2 @@
+# ADR-NNNN — Title
+## Status
