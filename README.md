@@ -19,6 +19,14 @@ collides with built-in or third-party skills of the same name.
 Claude Code picks a skill up by its description — you rarely need to name
 it. `/busy-office:progress-dashboard` works when you want to be explicit.
 
+**Updating:** the marketplace listing is cached, so refresh it before
+updating the plugin:
+
+```
+/plugin marketplace update busy-office-ai-skills
+/plugin update busy-office
+```
+
 **Developing a skill?** Clone and symlink instead, so edits are live:
 
 ```bash
