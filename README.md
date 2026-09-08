@@ -128,7 +128,7 @@ script, a tick counter).
 
 ![loop-doctor review of the sample-app fixture — one-tick diagram with real file names, files-by-role table, health score](docs/showcase/loop-doctor.png)
 
-*Review of the bundled `fixtures/script-loop` sample (gauntlet round 2):
+*Review of the bundled `fixtures/script-loop` sample (gauntlet round 4, PASS):
 the first screen is the tick, the files, and the score. The same skill
 ran on three private Busy Office loops during design (round 1, PASS);
 those reviews stay private.*
@@ -146,7 +146,16 @@ a tick diagram drawn from your real file names, an eight-dimension
 scorecard with a health label (`fit · watch · treat · stop`), findings as
 one-line rows (Invalid / Redundant / Risk, each with file:line and the
 exact fix), ambiguous queue items rewritten, prescriptions that close
-specific findings, and a ≤5-line do-next. Under 450 words of prose.
+specific findings, an **autonomy plan**, and a ≤5-line do-next. Under
+450 words of prose.
+
+The autonomy plan is the target setup: every point where the loop needs
+a person today and what removes it, the stages that differ from the
+[blueprint](skills/loop-doctor/references/autonomy-blueprint.md), and a
+paste-ready empty-queue rule worded for your files — finish the roadmap
+with the human reading a log, and when the roadmap is done, draft the
+next slice from intent as proposals and start on the reversible ones.
+The human leaves the critical path, not the decision.
 
 **Guard-rail: it costs the calling project nothing.** Read-only; writes
 nothing into the repo (the review goes to your scratchpad or a page,

@@ -41,6 +41,13 @@ not seen the build must be able to grade it.
     the items whose acceptance is unstated or judgement-worded ("improve",
     "look at", "consider") and proposes a sharpened wording for at least
     the top three.
+11. **Autonomy plan present and concrete.** A human-input-points table
+    (each row: what the human must do today · file:line · what replaces
+    it), the stage rows that differ from the blueprint, and an
+    empty-queue rule that is **paste-ready for this project** — it names
+    the project's real roadmap, intent and gate-log files, not
+    placeholders. A plan that would let the loop edit intent, or start
+    one-way-door work without a gate entry, is a FAIL.
 
 ## Class D — diagnostic report (this artifact)
 

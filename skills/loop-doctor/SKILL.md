@@ -114,12 +114,27 @@ point high on exactly the dimensions whose reasons cited two Invalids.
 `references/patterns.md`. Recommend only what closes a finding or a gap
 from step 2, with its cost. Three habits kept beat twelve written down.
 
+### 5b. Plan the autonomy delta
+
+`references/autonomy-blueprint.md` is the target: a loop that finishes
+the roadmap with the human reading a log rather than answering
+questions, and refills itself from intent when the roadmap is done.
+List every **human-input point** in the current loop (where a person
+must start it, answer a gate before it proceeds, clarify an item, refill
+the queue, notice it is stuck, decide it is done) with what removes each.
+Then the stage rows that differ from the blueprint, and the empty-queue
+ladder **worded for this project's files, paste-ready** for the rules
+file the driver actually loads. The principle to keep: the human leaves
+the critical path, not the decision — two-way doors are decided and
+logged, one-way doors are logged and worked around.
+
 ### 6. Write the review
 
 `references/report-template.md`, exactly: ≤ 60 words, the tick diagram
 with real file names, files-by-role, the score block, the finding tables,
-sharpened items, prescriptions, do-next (≤ 5), footer receipt. Prose
-outside tables/diagrams/code ≤ 450 words in total. Then a terminal
+sharpened items, prescriptions, the autonomy plan, do-next (≤ 5), footer
+receipt. Prose outside tables/diagrams/code ≤ 450 words in total (the
+paste-ready rule is a code block and doesn't count). Then a terminal
 summary of ≤ 8 lines: one sentence on the loop, the health label and
 mean, findings by class, the first fix.
 
@@ -166,5 +181,7 @@ files, say so once — that difficulty is itself a finding.
 - `references/checklist.md` — dimensions → checks, with the why.
 - `references/scorecard.md` — anchors, health label, sharpness.
 - `references/patterns.md` — prescriptions catalogue.
+- `references/autonomy-blueprint.md` — the target setup: finish the
+  roadmap with minimal human input; refill from intent when it's done.
 - `references/report-template.md` — the review, exactly.
 - `evals/gauntlet/` — the bar this skill's output is graded against.

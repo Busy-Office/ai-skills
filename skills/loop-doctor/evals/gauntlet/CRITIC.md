@@ -40,7 +40,7 @@ VERDICT: PASS | FAIL
 DIAGRAM TEST: <six answers, or which were unanswerable>
 CRITERIA:
   S1. <criterion> — <evidence> — PASS|FAIL|NOT MEASURED
-  ... (shared 1–10, then D1–D4)
+  ... (shared 1–11, then D1–D4)
 FIXES (FAIL only, ordered by impact):
   - <specific change: which section, what to add/remove, target number>
 ```

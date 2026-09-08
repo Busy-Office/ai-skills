@@ -88,6 +88,16 @@ absent dimension reads as an unexamined one.
 - **Roadmap items trace to intent.** New items the loop proposes carry
   the intent clause they serve; the objective review can therefore find
   items that serve nothing. → *Risk* if items are untraceable.
+- **Goal-level exit criteria exist.** The roadmap says when it, as a
+  whole, is done — not just each item. Without it the loop cannot tell
+  "queue empty because finished" from "queue empty because nobody wrote
+  more", and will either stop early or manufacture work. → *Risk* if
+  absent.
+- **Decisions are classified two-way / one-way at the point they arise.**
+  The loaded rules name the one-way classes (migration, external side
+  effect, money, permissions, intent) and say two-way doors are decided
+  and logged, not escalated. → *Risk* if every decision escalates (the
+  human is on the critical path) or none does (no decision is).
 - **Counter rules are consistent.** "Every 4th Continue", "every 12th
   tick", "later rows win": the same rule with the same numbers wherever
   stated, and the tie-break named. → *Invalid* on disagreement.

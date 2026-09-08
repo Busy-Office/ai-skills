@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Reusable Claude Code skills from Busy Office. Install the busy-office plugin to get every skill, namespaced as busy-office:<skill>.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "busy-office",
       "source": "./",
       "description": "progress-dashboard — one-page stakeholder progress dashboard for any git project, built from whatever records it keeps (ADRs, roadmaps, gates, backlogs, changelogs, PRs). loop-doctor — explains how a scheduled autonomous loop works, finds redundant/contradictory/invalid detail across the files that govern it, and prescribes improvements.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "Busy Office",
         "url": "https://github.com/Busy-Office"
