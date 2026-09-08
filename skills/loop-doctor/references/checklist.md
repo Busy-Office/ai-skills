@@ -66,11 +66,16 @@ absent dimension reads as an unexamined one.
 
 ## Purpose
 
-- **An intent document exists and the loop knows where it is.**
-  `intent.md`, an Objective section, a charter — something that says why
-  the project exists, not just what's next. The loaded rules name it in
-  the wake read-order or in the empty-queue / objective step. → *Risk*
-  if the loop has no purpose anchor; the roadmap becomes the purpose.
+- **A statement of intent exists and the loop knows where it is.**
+  Wherever the project keeps its *why* — `intent.md`, `CONTEXT.md`, a
+  charter, an `## Objective` section at the top of the roadmap. Not the
+  roadmap or backlog themselves: those are *what next*, they change every
+  tick, and the loop writes to them; intent is stable, human-owned, and
+  the thing the roadmap is supposed to be derived from. The loaded rules
+  name it in the wake read-order or in the empty-queue / objective step.
+  A project can pin the location in `.claude/loop-doctor.json`
+  (`"intent": "CONTEXT.md"`). → *Risk* if the loop has no purpose anchor;
+  the roadmap silently becomes the purpose.
 - **Periodic objective review.** A counter or cadence rule that
   re-reads intent against the roadmap even when the queue is not empty
   ("every 24th wake", "every 12th tick") and produces proposals or

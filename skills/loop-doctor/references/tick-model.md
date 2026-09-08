@@ -39,9 +39,10 @@ bottom rung is how busywork happens.
 
 1. **Declare steady state** if the current roadmap slice is genuinely
    complete — record "nothing to do" and re-arm. This is a valid outcome.
-2. **Re-plan from intent.** Read the project's purpose document
-   (`intent.md`, an Objective section, a charter) and the current
-   roadmap; draft the next slice as *proposals* — new roadmap items or
+2. **Re-plan from intent.** Read the project's statement of *why* —
+   wherever it lives (`intent.md`, `CONTEXT.md`, a charter, an Objective
+   section; the roadmap itself does not count, it is the *what*) and the
+   current roadmap; draft the next slice as *proposals* — new roadmap items or
    questions — and log a human gate for them. The loop reads intent; it
    never edits it, and it never promotes its own proposals to accepted
    scope. In a log-and-continue design it may start the safest proposal

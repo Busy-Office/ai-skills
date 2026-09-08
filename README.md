@@ -189,10 +189,17 @@ place: **who owns "done"**, **where does state live between ticks**,
 | Maintainability | Can a rule change in one place? | the same rule in three files, counts that disagree, retired designs still described |
 | Understandability | Can a newcomer run it from the files? | one tick explainable end-to-end, every file has a role, resume separate from history |
 | Observability | Can you tell it's stuck without transcripts? | closed outcome vocabulary, one record per tick written last, metrics actually recorded |
-| Purpose | Is the loop anchored to why the project exists, and what does it do when the queue runs dry? | an `intent.md` the loaded rules point at; the empty-queue ladder — steady state → re-plan from intent *as gated proposals* → bounded explore; a periodic objective review; the loop reads intent, never writes it |
+| Purpose | Is the loop anchored to why the project exists, and what does it do when the queue runs dry? | a statement of intent the loaded rules point at — wherever it lives (`intent.md`, `CONTEXT.md`, a charter, an `## Objective` section; not the roadmap, which is the *what*); the empty-queue ladder — steady state → re-plan from intent *as gated proposals* → bounded explore; a periodic objective review; the loop reads intent, never writes it |
 
 Out of scope on purpose: the application code's own quality, and whether
 the work the loop picks is worth doing.
+
+No configuration needed. If detection guesses wrong, pin locations in
+`.claude/loop-doctor.json` in the target repo:
+
+```json
+{ "intent": "CONTEXT.md", "queue": ["docs/BACKLOG.md"], "governing": ["docs/LOOPS.md"] }
+```
 
 ### Measured
 

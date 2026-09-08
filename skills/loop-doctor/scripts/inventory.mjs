@@ -94,9 +94,17 @@ export function inventory(repoPath, opts = {}) {
     else if (/\.claude\/agents\/[^/]+\.md$/.test(f)) { const t = read(f) ?? ""; out.agents.push({ file: f, name: basename(f, ".md"), tools: t.match(/^tools:\s*(.+)$/m)?.[1] ?? null, readOnly: /^tools:.*$/m.test(t) && !/Write|Edit|Bash/.test(t.match(/^tools:.*$/m)?.[0] ?? "") }); }
     else if (/docs\/specs\/LOOP_CONTRACT|loop-orchestrator\.md$|LOOP_CONTRACT/i.test(f)) out.docs.push(docEntry(f, read(f)));
   }
-  // purpose anchor: an intent/objective/charter document, and whether the governing files point at it
+  // optional per-project manifest: .claude/loop-doctor.json { intent, queue: [...], governing: [...] }
+  let manifest = {};
+  try { manifest = JSON.parse(read(".claude/loop-doctor.json") ?? "{}"); } catch { out.warnings.push(".claude/loop-doctor.json is not valid JSON — ignored."); }
+  out.manifest = Object.keys(manifest).length ? manifest : null;
+  for (const g of manifest.governing ?? []) if (files.includes(g) && !out.docs.some((d) => d.file === g)) out.docs.push({ ...docEntry(g, read(g)), pinned: true });
+
+  // purpose anchor: the project's stated *why* — wherever it lives. Manifest wins; then common file names; then a section.
   out.intent = null;
-  let intentFile = files.find((f) => /^(intent|INTENT|OBJECTIVE|CHARTER|VISION|PURPOSE)\.md$/.test(f)) ?? files.find((f) => /^docs\/(intent|INTENT|OBJECTIVE|CHARTER|VISION|PURPOSE)\.md$/.test(f)) ?? null;
+  let intentFile = manifest.intent && (files.includes(manifest.intent) || existsSync(abs(manifest.intent.split("#")[0]))) ? manifest.intent
+    : files.find((f) => /^(intent|INTENT|OBJECTIVE|CHARTER|VISION|PURPOSE|CONTEXT)\.md$/.test(f)) ?? files.find((f) => /^docs\/(intent|INTENT|OBJECTIVE|CHARTER|VISION|PURPOSE|CONTEXT)\.md$/.test(f)) ?? null;
+  if (manifest.intent && !intentFile) out.warnings.push(`manifest names intent "${manifest.intent}" but it does not exist.`);
   // Intent is sometimes a section, not a file: "## Objective — …" at the top of the roadmap or README.
   if (!intentFile) for (const f of ["ROADMAP.md", "docs/ROADMAP.md", "README.md", "CLAUDE.md"]) { const t = read(f); const m = t?.match(/^##\s+(Objective|Intent|Purpose|Mission|North star)\b.*$/mi); if (m) { intentFile = `${f}#${m[1]}`; break; } }
   if (intentFile || out.docs.length) {
@@ -189,7 +197,7 @@ export function inventory(repoPath, opts = {}) {
   // ------------------------------------------------------------ queue sharpness
   // Open items in backlog/roadmap/queue files: how many state an acceptance test, how many are judgement-worded.
   out.sharpness = null;
-  const queueFiles = files.filter((f) => /(^|\/)(BACKLOG|LOOP-QUEUE|ROADMAP|TODO|TASKS)[\w-]*\.md$/i.test(f) && !/archive/i.test(f)).slice(0, 4);
+  const queueFiles = (manifest.queue?.length ? manifest.queue.filter((q) => files.includes(q)) : files.filter((f) => /(^|\/)(BACKLOG|LOOP-QUEUE|ROADMAP|TODO|TASKS)[\w-]*\.md$/i.test(f) && !/archive/i.test(f))).slice(0, 4);
   if (queueFiles.length) {
     const open = [];
     for (const f of queueFiles) {
