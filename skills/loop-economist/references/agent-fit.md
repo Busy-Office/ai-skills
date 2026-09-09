@@ -47,6 +47,21 @@ evidence is in the rework and churn numbers.
   Judge from `toolCallsPerEdit`: fan-out is worth it when the reading
   dominates, not when the deciding does.
 
+## What the roster does not predict
+
+Across six real projects measured in one 30-day window, **the number of agents
+did not track rework at all**. One project with ten agents and one with a single
+agent both sat at 0.23; the project with *no* agent definitions shipped 2033
+commits at 0.04. What tracked instead was whether anything gated the work — the
+two worst had the least CI, the two best had the most.
+
+Read that as a caution about this whole page rather than a law: n is six,
+`reworkRate` keys on commit subjects and so is sensitive to naming convention,
+and one of the low-rework projects had too few commits to count. But it is
+enough to order the prescriptions. **Fix the seam before the roster.** Adding a
+persona to a loop that gates nothing moves cost around; adding a gate to a loop
+that has none is what moves rework.
+
 ## Price the roster before judging it
 
 `perAgent` gives each subagent type's average cost per summon, its model and
