@@ -24,7 +24,7 @@ const STAGE_PATTERNS = [
   ["act", /(implement|build|make the change|write the code|apply the fix)/i],
   ["verify", /(run the tests?|npm test|pytest|typecheck|lint|acceptance|definition of done|green)/i],
   ["gate", /(human gate|approval|sign-?off|GATE-|blocked on owner|manual action)/i],
-  ["record", /(append to|record the tick|log the run|LOOP-STATUS|status line|write the receipt)/i],
+  ["record", /(append to|record the tick|log the run|LOOP-STATUS|LOOP-LOG|LOOP-METRICS|RESUME|roundtable|status line|write the receipt)/i],
   ["stop", /(stop (when|if)|halt|kill switch|STATUS: COMPLETE|do not continue|exit 1)/i],
 ];
 
@@ -208,7 +208,7 @@ function readFlow(repoPath) {
   // backlog item about a "cron scheduler" feature is not the loop's trigger.
   // Stage evidence comes from the rules, the driver and the workflow only.
   const RULES = /(CLAUDE|AGENTS|LOOPS?|SKILL|DEFINITION|CONTRIBUTING|ORCHESTRATOR)/i;
-  const RECORDS = /(BACKLOG|ROADMAP|INBOX|STATUS|CHANGELOG|HISTORY|JOURNAL|SESSION)/i;
+  const RECORDS = /(BACKLOG|ROADMAP|INBOX|STATUS|CHANGELOG|HISTORY|JOURNAL|SESSION|LOOP-LOG|LOOP-METRICS|RESUME|roundtable)/i;
   const interesting = mds.filter((f) =>
     (RULES.test(basename(f)) && !RECORDS.test(basename(f))) ||
     /^(\.github\/workflows|scripts)\//.test(f) ||

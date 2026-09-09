@@ -492,7 +492,7 @@ export function collect(repoPath, opts = {}) {
   const ss = pick("sessions", ["SESSIONS.md", "docs/SESSIONS.md", "docs/SESSION-LOG.md", "**/session-*/**/*.md", "**/*-session.md", "**/*session*.md", "LOOPS.md", "docs/LOOP-STATUS.md", "LOOP-STATUS.md"]);
   for (const file of ss.files.slice(0, 200)) {
     const text = read(file); if (!text) continue;
-    if (/LOOP-STATUS|LOOPS\.md$/.test(file)) {
+    if (/LOOP-STATUS|LOOP-LOG|LOOP-METRICS|RESUME|roundtable|LOOPS\.md$/.test(file)) {
       const rows = [...text.matchAll(/^(\d{4}-\d{2}-\d{2}T[\d:Z.+-]+)\s*\|\s*([\w.-]+)\s*\|\s*(done|blocked|failed)\s*\|\s*(\w+)\s*\|\s*gate:\s*(\w+)/gm)];
       for (const r of rows.slice(-20)) out.sessions.push({ id: r[2], date: r[1], title: `${r[2]} ${r[3]} (gate ${r[5]})`, body: "", source: file });
       if (rows.length) source("momentum", file, ss.how, "loop status lines");

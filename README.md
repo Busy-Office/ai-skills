@@ -553,6 +553,17 @@ absence just turns into re-derivation.
   `references/`.
 - Every parser has a fixture under `fixtures/` and a `--self-test` flag that
   runs them all. Add a fixture before adding a detector.
+- Collectors are self-contained on purpose — you can symlink one skill without
+  the rest — so shared knowledge lives as copies, and copies drift.
+  `node evals/consistency.mjs` asserts the copies still agree on what must not
+  differ (worktree and node_modules exclusion, the loop's own record files) and
+  names any collector that would answer differently from its siblings. It was
+  written after a record-file pattern was widened in one collector and left
+  stale in three others within the hour — the same defect `loop-doctor` exists
+  to find in other people's projects. A rule may be satisfied by more than one
+  implementation: `loop-doctor` discovers state files from what the governing
+  docs name rather than keeping a list, which cannot drift and so is not
+  checked against one.
 - A skill that cannot reliably produce a correct artifact does not ship, even
   when its design is sound. `green-gate` was removed after five gauntlet rounds
   in which the design was never faulted and the report failed every time; its
