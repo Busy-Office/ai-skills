@@ -43,6 +43,7 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 | [loop-economist](#loop-economist) | Measures what the loop's actual runs cost and produced | "what is the loop costing", "is it efficient", "why does it keep redoing work", "are we using the right agents" |
 | [requeue](#requeue) | Reprioritises and sharpens the queue the loop is fed | "what should we work on next", "reprioritise the backlog", "the roadmap is stale" |
 | [sharpen-intent](#sharpen-intent) | Makes the intent / objective / key-focus document steer | "what is this project really for", "sharpen the objectives", "what should we focus on now", "the goals are vague" |
+| [loop-atlas](#loop-atlas) | The loop as one animated picture; the agents as a deck of cards | "show me how the whole loop works", "diagram our agent workflow", "which agent should I use", "roster of our agents" |
 
 ---
 
@@ -353,6 +354,65 @@ node skills/sharpen-intent/scripts/intent.mjs --self-test
   invents a purpose, and never writes to the repo unasked.
 - **Asks at most five questions**, with options, only what the files cannot
   answer.
+
+---
+
+## loop-atlas
+
+**What it answers:** what actually happens on one run, and who is on the
+team. Two views on one published page — the flow, and the crew.
+
+### Usage
+
+> show me how the whole loop works
+> diagram our agent workflow
+> which agent should I use for this?
+
+```bash
+node skills/loop-atlas/scripts/atlas.mjs <repo> --since 30d
+node skills/loop-atlas/scripts/atlas.mjs --self-test
+```
+
+### The flow
+
+One tick, left to right — trigger · wake · select · act · verify · gate ·
+record · re-arm/stop — laid out in **actor lanes**, with the real
+`file:line` under every stage and every exit a tick can take. One item's
+journey animates through it once (inline SVG + CSS, no library, theme-aware,
+`prefers-reduced-motion` safe, replay by button — never an autoplay loop).
+
+Stages nothing in the files supports are drawn as **labelled gaps**. A lane
+that both builds and verifies its own work needs no caption: laid out
+honestly, the finding draws itself.
+
+### The crew
+
+Every agent, subagent and skill gets a collectible-style card — the layout
+is the gimmick, every value on it is evidence:
+
+| field | derived from |
+|---|---|
+| class · model | frontmatter, and what the description *does* (scout · planner · builder · verifier · scribe) |
+| good at | one plain line, no adjective that could describe any agent |
+| abilities | the agent's own instructions — each with a **cost** |
+| reach · precision · cost · autonomy | tool grant, own-context or not, observed sidechain tokens and brief length. Underivable prints `—`, never a guess |
+| summon when · **weakness** · hands off to | the trigger, what it must never be handed, the next card |
+| seen | summons in the window, avg brief, top tools — `never summoned` is a real and interesting value |
+
+Three cards people forget, and this skill insists on: the **main actor**
+(usually the most expensive on the page), **undefined but summoned** (a
+subagent type the runs used that no file defines), and the **vacancy** —
+`VERIFIER — vacant`, the most common and most expensive hole in a loop.
+The deck is ordered by observed summons, not by what the files list first.
+
+### A video of it
+
+The page needs nothing installed. For a README hero or a talk, it offers a
+handoff to [`animated-svg`](https://github.com/omkamal/animated-diagrams-skill)
+(Apache-2.0 — semantic SVG + GSAP, rendered deterministically to MP4/GIF/
+interactive HTML), passing the atlas's own semantic SVG plus the beat list
+so the video and the page never drift. Offered in one line, never installed
+as a side effect.
 
 ---
 

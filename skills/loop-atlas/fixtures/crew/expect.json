@@ -1,0 +1,15 @@
+{
+  "roster.0.name": "scout",
+  "roster.0.role": "search",
+  "roster.0.summons": 2,
+  "roster.0.tools": ["Read", "Grep", "Glob"],
+  "roster.1.name": "verifier",
+  "roster.1.role": "verify",
+  "roster.1.summons": 1,
+  "observed.sessions": 1,
+  "observed.summons": { "scout": 2, "verifier": 1 },
+  "observed.skillCalls": { "tdd": 1 },
+  "observed.sidechainTurns": 1,
+  "emptyStages": ["gate"],
+  "undefinedButUsed": []
+}
