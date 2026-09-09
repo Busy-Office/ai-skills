@@ -1,0 +1,38 @@
+{
+  "skill_name": "wake-weight",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. Our loop costs a fortune per run and I think most of it is context we load before it even starts. What does every tick pay before it does any work, and what can we cut? Write it to <scratchpad>/WEIGHT.md.",
+      "expected_output": "A report with per-tick, per-window and projected figures labelled as estimates; a table of every loaded file with lines, tokens, share, class, why it is loaded and its growth; cuts ordered by saving with cost and risk each; a what-not-to-cut section; do-next; receipt.",
+      "files": [],
+      "assertions": [
+        "States per-tick, per-window and projected figures together",
+        "Labels token figures as estimates from character counts",
+        "Every loaded file row says why it is loaded, with a file and line",
+        "Growth reported as net lines and the commits that made them",
+        "Every cut states a saving per tick and across the window",
+        "Every cut states a cost and a risk",
+        "Savings never exceed the weight of the file they cut",
+        "Names the dominant class and prescribes the cut that matches it",
+        "Includes a what-not-to-cut section naming something load-bearing",
+        "Does not propose cutting the definition of done or the intent",
+        "States which rows could not be proven to load every tick",
+        "Nothing written to the target repo"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Working in <repo>. There's no scheduled loop here, it's just me in interactive sessions \u2014 but CLAUDE.md and the docs it pulls in have got long. What am I paying at the start of every session?",
+      "expected_output": "A per-session weight report that does not invent a tick count, reports per-session cost only, and still names the files, their provenance and the cuts.",
+      "files": [],
+      "assertions": [
+        "Reports per-session weight without inventing a tick count",
+        "Says plainly that the window total is unknown",
+        "Still names every loaded file with its provenance",
+        "Still proposes cuts with savings per session",
+        "Does not describe the project as having a loop it does not have"
+      ]
+    }
+  ]
+}

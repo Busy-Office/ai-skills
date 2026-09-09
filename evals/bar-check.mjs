@@ -49,6 +49,13 @@ export const SPECS = {
     locatedSection: /does the work trace back/,
     requireVerdict: /\b(steering|usable|decorative|absent)\b/i,
   },
+  "wake-weight": {
+    proseMax: 300, leadMax: 40, doNextMax: 3,
+    opensWith: "table",
+    sections: [/^#+\s*what is loaded/im, /^#+\s*the cuts/im, /^#+\s*what not to cut/im],
+    citedTables: [],
+    locatedSection: /what is loaded/,
+  },
   "loop-atlas": {
     proseMax: 400, leadMax: 60, doNextMax: 5,
     opensWith: "diagram",

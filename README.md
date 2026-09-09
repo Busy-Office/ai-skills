@@ -44,10 +44,11 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 | [requeue](#requeue) | Reprioritises and sharpens the queue the loop is fed | "what should we work on next", "reprioritise the backlog", "the roadmap is stale" |
 | [sharpen-intent](#sharpen-intent) | Makes the intent / objective / key-focus document steer | "what is this project really for", "sharpen the objectives", "what should we focus on now", "the goals are vague" |
 | [loop-atlas](#loop-atlas) | The loop as one animated picture; the agents as a deck of cards | "show me how the whole loop works", "diagram our agent workflow", "which agent should I use", "roster of our agents" |
+| [wake-weight](#wake-weight) | What every run pays before it does any work, and what to cut | "why is each run so expensive", "trim the context", "CLAUDE.md has got too big", "what loads at startup" |
 
 ### The loop family
 
-Five of these skills share a subject — an autonomous, multi-agent engineering
+Six of these skills share a subject — an autonomous, multi-agent engineering
 loop — and answer different questions about it. Claude picks by description, but
 when you want to be explicit:
 
@@ -56,6 +57,7 @@ when you want to be explicit:
 | *How does this thing work? Is the design sound, safe, does it stop?* | **loop-doctor** | the loop's **documents** |
 | *What is it costing, and is the right agent doing the work?* | **loop-economist** | the **runs** — transcripts and commits |
 | *Show me the whole thing, and who is on the crew* | **loop-atlas** | definitions + observed summons |
+| *What is every run paying before it starts?* | **wake-weight** | the files loaded at wake |
 | *What should it work on next?* | **requeue** | the queue |
 | *What is any of this for?* | **sharpen-intent** | the purpose document |
 
@@ -480,6 +482,50 @@ handoff to [`animated-svg`](https://github.com/omkamal/animated-diagrams-skill)
 interactive HTML), passing the atlas's own semantic SVG plus the beat list
 so the video and the page never drift. Offered in one line, never installed
 as a side effect.
+
+---
+
+## wake-weight
+
+**What it answers:** what a run pays *before it does any work* — and what to
+cut. `loop-economist` tells you the bill; this itemises the preamble that is
+charged again on every single tick.
+
+> **Measured:** the bar is written ([`BAR.md`](skills/wake-weight/evals/gauntlet/BAR.md))
+> and the mechanical pre-check is self-tested, but **no gauntlet round has been
+> run yet**.
+
+![wake-weight report — per-tick and per-window cost, a table of every loaded file with why it is loaded and how fast it grew, cuts with savings and risks](docs/showcase/wake-weight.png)
+
+*Sample on illustrative data. Every row says **why** the file is loaded — the
+file and line that pulls it in — because that is where the cut gets made.*
+
+### Usage
+
+> why is every run so expensive?
+> what are we loading before the loop even starts?
+> CLAUDE.md and the backlog have got huge — what can we cut?
+
+```bash
+node skills/wake-weight/scripts/weight.mjs <repo> --ticks 54 --since 30d
+node skills/wake-weight/scripts/weight.mjs --self-test
+```
+
+### What it finds
+
+It resolves what an actor is actually handed at wake: the rules given without
+asking, the files those pull in via `@import`, whatever the rules name on a
+line with a read verb (*"Read `DESIGN-GRAPH.md` + `BACKLOG.md`"* counts both),
+and the loop's own skill and driver. Each with its size, share, class and
+**growth in the window** — because a file that gains 166 lines a month is a
+decision the project keeps re-making, more expensively each time.
+
+Then cuts, in order of safety: **dead** (archive what is finished), **
+elsewhere** (read the tail, split state from history, turn a duplicate into a
+pointer), **on-demand** (the map, the playbook). Each with a saving per tick
+*and* across the window, a cost, and a risk — plus the section people skip,
+**what not to cut**: the definition of done, the intent, and anything whose
+absence just turns into re-derivation.
 
 ---
 

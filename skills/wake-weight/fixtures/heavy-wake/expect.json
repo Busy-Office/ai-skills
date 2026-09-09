@@ -1,0 +1,12 @@
+{
+  "summary.filesLoaded": 6,
+  "summary.totalLines": 337,
+  "summary.totalTokensEst": 3955,
+  "summary.byClass": { "queue": 1369, "playbook": 1331, "record": 1103, "rules": 152 },
+  "summary.heaviest.0.file": "docs/BACKLOG.md",
+  "summary.windowCostEst": 39550,
+  "files.0.why": "named in CLAUDE.md",
+  "files.1.why": "@import",
+  "archivable.0.doneLines": 60,
+  "archivable.0.tokensEst": 1095
+}

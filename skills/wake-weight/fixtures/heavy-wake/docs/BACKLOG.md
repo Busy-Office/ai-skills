@@ -1,0 +1,74 @@
+# Backlog
+
+- [x] DONE-0 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-1 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-2 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-3 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-4 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-5 shipped 2026-08-06 — a finished item with a sentence of detail
+- [x] DONE-6 shipped 2026-08-07 — a finished item with a sentence of detail
+- [x] DONE-7 shipped 2026-08-08 — a finished item with a sentence of detail
+- [x] DONE-8 shipped 2026-08-09 — a finished item with a sentence of detail
+- [x] DONE-9 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-10 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-11 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-12 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-13 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-14 shipped 2026-08-06 — a finished item with a sentence of detail
+- [x] DONE-15 shipped 2026-08-07 — a finished item with a sentence of detail
+- [x] DONE-16 shipped 2026-08-08 — a finished item with a sentence of detail
+- [x] DONE-17 shipped 2026-08-09 — a finished item with a sentence of detail
+- [x] DONE-18 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-19 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-20 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-21 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-22 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-23 shipped 2026-08-06 — a finished item with a sentence of detail
+- [x] DONE-24 shipped 2026-08-07 — a finished item with a sentence of detail
+- [x] DONE-25 shipped 2026-08-08 — a finished item with a sentence of detail
+- [x] DONE-26 shipped 2026-08-09 — a finished item with a sentence of detail
+- [x] DONE-27 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-28 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-29 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-30 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-31 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-32 shipped 2026-08-06 — a finished item with a sentence of detail
+- [x] DONE-33 shipped 2026-08-07 — a finished item with a sentence of detail
+- [x] DONE-34 shipped 2026-08-08 — a finished item with a sentence of detail
+- [x] DONE-35 shipped 2026-08-09 — a finished item with a sentence of detail
+- [x] DONE-36 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-37 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-38 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-39 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-40 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-41 shipped 2026-08-06 — a finished item with a sentence of detail
+- [x] DONE-42 shipped 2026-08-07 — a finished item with a sentence of detail
+- [x] DONE-43 shipped 2026-08-08 — a finished item with a sentence of detail
+- [x] DONE-44 shipped 2026-08-09 — a finished item with a sentence of detail
+- [x] DONE-45 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-46 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-47 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-48 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-49 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-50 shipped 2026-08-06 — a finished item with a sentence of detail
+- [x] DONE-51 shipped 2026-08-07 — a finished item with a sentence of detail
+- [x] DONE-52 shipped 2026-08-08 — a finished item with a sentence of detail
+- [x] DONE-53 shipped 2026-08-09 — a finished item with a sentence of detail
+- [x] DONE-54 shipped 2026-08-01 — a finished item with a sentence of detail
+- [x] DONE-55 shipped 2026-08-02 — a finished item with a sentence of detail
+- [x] DONE-56 shipped 2026-08-03 — a finished item with a sentence of detail
+- [x] DONE-57 shipped 2026-08-04 — a finished item with a sentence of detail
+- [x] DONE-58 shipped 2026-08-05 — a finished item with a sentence of detail
+- [x] DONE-59 shipped 2026-08-06 — a finished item with a sentence of detail
+- [ ] OPEN-0 an open item that still needs doing, with a little detail
+- [ ] OPEN-1 an open item that still needs doing, with a little detail
+- [ ] OPEN-2 an open item that still needs doing, with a little detail
+- [ ] OPEN-3 an open item that still needs doing, with a little detail
+- [ ] OPEN-4 an open item that still needs doing, with a little detail
+- [ ] OPEN-5 an open item that still needs doing, with a little detail
+- [ ] OPEN-6 an open item that still needs doing, with a little detail
+- [ ] OPEN-7 an open item that still needs doing, with a little detail
+- [ ] OPEN-8 an open item that still needs doing, with a little detail
+- [ ] OPEN-9 an open item that still needs doing, with a little detail
+- [ ] OPEN-10 an open item that still needs doing, with a little detail
+- [ ] OPEN-11 an open item that still needs doing, with a little detail
