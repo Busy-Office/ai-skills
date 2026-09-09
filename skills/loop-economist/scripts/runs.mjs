@@ -19,6 +19,13 @@ const VAGUE = /\b(improve|look at|consider|explore|clean ?up|review|polish|tidy)
 const REWORK_SUBJECT = /^(fix|revert|hotfix|redo|retry|correct|repair|undo|amend)\b/i;
 // User-role rows the harness writes on the person's behalf. Counting these as
 // human turns inflates the autonomy-load metric, which caps the verdict.
+// A loop driven from inside a session re-arms by calling the same thing every
+// tick. That is its cadence, not a retry — counting it as thrash makes every
+// /loop-driven project look stuck.
+const REARM_TOOL = /^(ScheduleWakeup|CronCreate|Monitor|TaskOutput)$/;
+// The files a loop rewrites every tick by design. Repeatedly editing one is
+// the loop keeping its records, not failing to converge on a change.
+const RECORD_FILE = /(LOOP-STATUS|ORCHESTRATOR-STATE|BACKLOG|ROADMAP|INBOX|GATES?|STATUS|CHANGELOG|SESSION|HISTORY|JOURNAL|MANUAL-ACTIONS|HUMAN-GATES)[^/]*\.(md|json|txt|ya?ml)$/i;
 const HARNESS_NOISE = /^\s*(\[Request interrupted|<command-name>|<command-message>|<local-command-|<task-notification>|<system-reminder>|Caveat: The messages below)/;
 
 function projectSlug(repoPath) { return repoPath.replace(/[/.]/g, "-"); }
@@ -48,10 +55,14 @@ function readSession(file) {
     start: null, end: null, minutes: 0, branch: null, cwd: null,
     models: {}, humanTurns: 0, assistantTurns: 0, sidechainTurns: 0,
     tokens: { in: 0, out: 0, cacheRead: 0, cacheCreate: 0, thinking: 0, sidechain: 0 },
-    tools: {}, subagents: {}, toolErrors: 0, interrupts: 0, commitCalls: 0,
+    tools: {}, subagents: {}, toolErrors: 0, interrupts: 0, commitCalls: 0, tickCalls: {},
     editedFiles: {}, repeatedToolCalls: [],
   };
   const callSig = new Map();
+  // Repeats are counted within a tick, not within a session: a session that
+  // re-arms 54 times holds 54 runs, and 19 edits spread across them is work,
+  // while 7 in one run is a retry that changed nothing.
+  let segment = 0;
   for (const r of rows) {
     if (r.timestamp) {
       const t = Date.parse(r.timestamp);
@@ -83,7 +94,13 @@ function readSession(file) {
         const path = b.input?.file_path ?? b.input?.notebook_path;
         if (path && /^(Edit|Write|NotebookEdit|MultiEdit)$/.test(b.name)) s.editedFiles[path] = (s.editedFiles[path] ?? 0) + 1;
         const sig = b.name + "|" + JSON.stringify(b.input?.command ?? b.input?.pattern ?? path ?? b.input?.prompt ?? "").slice(0, 160);
-        callSig.set(sig, (callSig.get(sig) ?? 0) + 1);
+        if (REARM_TOOL.test(b.name)) segment++;                 // a new tick begins
+        if (REARM_TOOL.test(b.name) || (b.name === "Skill" && b.input?.skill) || (path && RECORD_FILE.test(path))) {
+          s.tickCalls[sig] = (s.tickCalls[sig] ?? 0) + 1;        // ticking or recording
+        } else {
+          const key = segment + "\u0000" + sig;
+          callSig.set(key, (callSig.get(key) ?? 0) + 1);
+        }
       }
     } else if (r.type === "user" && r.message) {
       const c = r.message.content;
@@ -100,8 +117,12 @@ function readSession(file) {
     }
   }
   s.minutes = s.start && s.end ? Math.round((s.end - s.start) / 6e4) : 0;
+  s.ticks = Math.max(0, ...Object.entries(s.tickCalls)
+    .filter(([sig]) => REARM_TOOL.test(sig.split("|")[0]))
+    .map(([, n]) => n));                                  // in-session cadence, if any
   s.repeatedToolCalls = [...callSig.entries()].filter(([, n]) => n >= 3)
-    .sort((a, b) => b[1] - a[1]).slice(0, 5).map(([sig, n]) => ({ call: sig, times: n }));
+    .sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([key, n]) => { const [seg, sig] = key.split("\u0000"); return { call: sig, times: n, tick: Number(seg) }; });
   s.billable = s.tokens.in + s.tokens.out + s.tokens.cacheCreate;
   return s;
 }
@@ -182,8 +203,12 @@ function collectGit(repoPath, sinceMs) {
     }
     for (const f of c.fileList) seen.add(f);
   }
-  g.rework.churnFiles = [...fileCommits.entries()].filter(([, n]) => n >= 3)
-    .sort((a, b) => b[1] - a[1]).slice(0, 10).map(([file, commits]) => ({ file, commits }));
+  // A status log rewritten every tick is the loop working, not failing to
+  // converge. Only code churn is convergence evidence.
+  const isRecord = (f) => /(LOOP-STATUS|ORCHESTRATOR-STATE|BACKLOG|ROADMAP|INBOX|GATES?|STATUS|CHANGELOG|SESSION|HISTORY|JOURNAL)[^/]*\.(md|json|txt|ya?ml)$/i.test(f);
+  const churn = [...fileCommits.entries()].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]);
+  g.rework.churnFiles = churn.filter(([f]) => !isRecord(f)).slice(0, 10).map(([file, commits]) => ({ file, commits }));
+  g.rework.stateChurn = churn.filter(([f]) => isRecord(f)).slice(0, 10).map(([file, commits]) => ({ file, commits }));
   for (const c of g.commits) delete c.fileList;
   return g;
 }
@@ -267,6 +292,9 @@ function derive(sessions, git) {
     reworkCommits: git.rework.reworkCommits.length,
     reworkRate: commits ? round(git.rework.reworkCommits.length / commits) : null,
     thrashSessions: sessions.filter((s) => s.repeatedToolCalls.length > 0).map((s) => s.id),
+    // Where the loop ticks inside a session, the tick — not the session — is
+    // the unit. Per-session rates mean little when one session holds 54 ticks.
+    inSessionTicks: sessions.reduce((a, s) => a + (s.ticks || 0), 0),
     zeroCommitSessions: sessions.filter((s) => s.billable > 20000 && Object.keys(s.editedFiles).length === 0).map((s) => s.id),
     topTools: Object.entries(tools).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, n]) => ({ name, n })),
     modelMix: models, subagentMix: agents, perAgent,
