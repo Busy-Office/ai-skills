@@ -453,13 +453,21 @@ as a side effect.
   what it answers, how to trigger it, and what it reads.
 - Showcase images are generated, not hand-captured, and always from
   illustrative data — never a real project. The page source lives in
-  `docs/showcase/pages/*.html`; `node scripts/showcase.mjs` shoots every page
-  full-length at 2× from `file://`, with `prefers-reduced-motion` on so an
-  animated page is captured on its finished frame. `node scripts/showcase.mjs
-  --gif loop-atlas` records the `.flow` element by stepping the page's own CSS
-  animations through the Web Animations API — reproducible, and timed exactly
-  like the page (needs ImageMagick). Playwright is resolved from a local
-  install or the npx cache; it is not a dependency of this repo.
+  `docs/showcase/pages/*.html`, and the shooter is a single
+  [PEP 723](https://peps.python.org/pep-0723/) script that declares its own
+  dependency — no repo-level install, no lockfile, nothing to keep in sync:
+
+  ```bash
+  uv run scripts/showcase.py                  # every page, full length, 2×
+  uv run scripts/showcase.py loop-atlas       # one page
+  uv run scripts/showcase.py --gif loop-atlas # animated GIF of the .flow element
+  ```
+
+  Stills are captured with `prefers-reduced-motion` on, so an animated page is
+  shot on its finished frame. `--gif` pauses the page's own CSS animations and
+  steps them through the Web Animations API, so the GIF is reproducible and
+  timed exactly like the page rather than by however fast the screenshot loop
+  ran (encoding needs ImageMagick).
 
 ## License
 
