@@ -98,6 +98,13 @@ decision the project keeps re-making, more expensively each time.
 and the actor may re-read the codebase instead, at more cost than the map. Say
 what you expect to happen to tool-calls-per-edit, and check it next window.
 
+**A query tool the rules name but nobody built is worse than silence.** The
+collector reports `queryTool` — whether the loaded rules point at one and
+whether an index actually exists. Mentioned-but-not-built means the actor greps
+anyway while the map stays in the wake: the project pays for both and believes
+it has solved the problem. Build the index first, then cut the map; never the
+other way round.
+
 **Share beats absolute.** 172k a tick is only alarming next to what the run
 costs in total. Get the denominator from `loop-economist` when you can.
 

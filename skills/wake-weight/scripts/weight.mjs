@@ -87,6 +87,28 @@ function growth(repoPath, rel, sinceMs, git) {
   } catch { return null; }
 }
 
+// A map loaded at every wake is often defended as "otherwise it re-derives the
+// codebase". A query tool answers that objection — but only if it was actually
+// built. A rule that says "query before you grep" pointing at an index nobody
+// generated is worse than no rule: the actor falls back to grepping and the map
+// stays in the wake, so the project pays for both.
+const QUERY_TOOL = /\b(graphify|graph\s+query|codebase index|semantic search|repomix|ctags|sourcegraph)\b/i;
+const INDEX_DIRS = ["graphify-out", ".graphify", "graph.db", ".index", "repomix-output"];
+
+function queryTool(repoPath, loadedRows, files) {
+  const mentions = [];
+  for (const r of loadedRows) {
+    let t; try { t = readFileSync(join(repoPath, r.file), "utf8"); } catch { continue; }
+    t.split("\n").forEach((line, i) => {
+      if (mentions.length < 5 && QUERY_TOOL.test(line) && line.trim().length > 12) {
+        mentions.push({ file: r.file, line: i + 1, text: line.trim().replace(/\s+/g, " ").slice(0, 120) });
+      }
+    });
+  }
+  const built = INDEX_DIRS.filter((d) => existsSync(join(repoPath, d)));
+  return { mentioned: mentions.length > 0, mentions, built, usable: mentions.length > 0 && built.length > 0 };
+}
+
 export function weight(repoPathIn, opts = {}) {
   const repoPath = resolve(repoPathIn);
   const m = String(opts.since ?? "30d").match(/^(\d+)([dhw])$/);
@@ -203,8 +225,12 @@ export function weight(repoPathIn, opts = {}) {
     }
   }
 
+  const qt = queryTool(repoPath, rows, files);
   const ticks = Number(opts.ticks ?? 0) || null;
   const warnings = [];
+  if (qt.mentioned && !qt.built) {
+    warnings.push(`the loaded rules tell the actor to use a query tool (${qt.mentions[0].file}:${qt.mentions[0].line}) but no index exists (looked for ${INDEX_DIRS.join(", ")}) — the rule is dead, the actor greps anyway, and any map in the wake cannot safely be cut until the index is built`);
+  }
   if (!rows.length) warnings.push("nothing is loaded at wake that this collector can see — no CLAUDE.md, AGENTS.md or loop skill found");
   for (const r of scopedRows) if (r.conflict) warnings.push(`rules disagree on how much of ${r.file} is read: ${r.conflict} — the heavier reading is the one that decides the cost`);
   if (unprovenRows.length) warnings.push(`${unprovenRows.length} file(s) (~${Math.round((total - provenTotal) / 1000)}k) are named only by a skill the driver does not invoke — reported separately, not as proven wake cost`);
@@ -235,6 +261,7 @@ export function weight(repoPathIn, opts = {}) {
       projectedIn90d: projected,
     },
     unproven: unprovenRows.map((r) => ({ file: r.file, tokensEst: r.tokensEst, why: r.why, via: r.via })),
+    queryTool: qt,
     scopedReads: scopedRows.map((r) => ({ file: r.file, scoped: r.scoped, tokensEstFull: r.tokensEstFull, why: r.why, conflict: r.conflict })),
     grew, archivable, warnings,
   };

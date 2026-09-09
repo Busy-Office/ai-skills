@@ -65,6 +65,37 @@ the actor from re-deriving the codebase; cutting it can raise cost elsewhere.
 Prescribe this only with the tool-calls-per-edit number beside it, and say what
 you expect to happen to it.
 
+### The condition that makes this cut safe
+
+Cut a map from the wake only when **something answers the questions it was
+answering** — a built index the actor can query on demand (graphify, a codebase
+index, a semantic search). Then the map's whole weight leaves every tick and
+nothing falls back to grepping.
+
+Three checks before prescribing it, in this order:
+
+1. **Is the index built?** The collector reports `queryTool.built`. A rule that
+   says *"query before you grep"* pointing at an index nobody generated is
+   worse than no rule at all: the actor greps anyway *and* the map stays in the
+   wake, so the project pays twice and believes it is saving. On one real
+   project the rules said exactly that at `CLAUDE.md:69` with no index anywhere
+   in the tree.
+2. **Is it refreshed on a trigger?** A derived index is a state file with the
+   same failure mode as any other: it goes stale silently. Name what rebuilds
+   it — a post-merge hook, a step in the tick — and where staleness would show.
+3. **Does the rule name the query, not the tool?** *"Run `graphify query
+   "<question>"` before reading more than three files"* is actionable;
+   *"we use a knowledge graph"* is not.
+
+**Order of operations:** build the index, prove a query answers a real question,
+*then* cut the map — and re-measure tool-calls-per-edit in the next window. Doing
+it the other way round removes the map on the promise of a tool nobody has run.
+
+The prize is worth the care: on the project measured this month the map was
+**69k of a 124k wake, 56% of everything a tick pays before it starts work**. It
+is the largest single cut available anywhere in that project, and it is
+unavailable until the index exists.
+
 ## 6. Summarise what is only skimmed
 
 **What:** a long reference where the actor needs the shape, not the text.
