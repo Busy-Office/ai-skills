@@ -116,7 +116,11 @@ export function intent(repoPathIn, opts = {}) {
   const repoPath = repoPathIn;
   const files = walk(repoPath);
   const candidates = files.filter((f) => INTENT_FILE.test(basename(f)) || /^README\.mdx?$/i.test(f))
-    .filter((f) => !QUEUE_FILE.test(basename(f)) && !/^skills?\//.test(f) && !/CHANGELOG/i.test(f));
+    .filter((f) => !QUEUE_FILE.test(basename(f)) && !/^skills?\//.test(f) && !/CHANGELOG/i.test(f))
+    // Generated and vendored files sometimes carry an intent-shaped name — a
+    // Playwright `error-context.md` is not a statement of purpose.
+    .filter((f) => !/(^|\/)(test-results|playwright-report|coverage|snapshots?|__(tests?|snapshots?)__|out|tmp|\.next|storybook-static)\//i.test(f))
+    .filter((f) => f.split("/").length <= 3);
 
   const sources = candidates.map((f) => analyseFile(repoPath, f, opts)).filter(Boolean);
 

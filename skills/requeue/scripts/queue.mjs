@@ -18,10 +18,16 @@ const IGNORE = new Set(["node_modules", ".git", "dist", "build", "__archived", "
 const QUEUE_FILE = /(backlog|roadmap|todo|tasks?|milestones?|plan|next|queue|gates?|scenarios)/i;
 const INTENT_FILE = /(intent|vision|purpose|charter|why|goals?|objectives?|prd|north-?star|readme)/i;
 const VAGUE = /\b(improve|improved|look at|consider|explore|clean ?up|tidy|polish|review|refactor|better|nice to have|maybe|somehow|etc\.?)\b/i;
-const ACCEPTANCE = /(acceptance|done when|so that|until|exit test|verif|passes?\b|returns?\b|≤|>=|<=|\d+\s*(ms|s|%|px|rows?|tokens?))/i;
+const ACCEPTANCE = /(acceptance|\bAC:|done when|so that|until|exit test|expected\b|verif|passes?\b|returns?\b|must\b|should\b|repro\b|≤|>=|<=|→|\d+\s*(ms|s|%|px|rows?|tokens?))/i;
 const BLOCKED = /\b(blocked|blocker|waiting on|waiting for|needs decision|needs approval|depends on|pending|on hold|TBD)\b/i;
-const HUMAN = /\b(human|manual|by hand|ask (the )?(user|owner)|sign-?off|credential|billing|account|dns|domain|api key)\b/i;
+// Deliberately narrow: an item merely *tagged* [domain] or touching accounts is
+// not human-only work, and a false positive here strands loop work in the gate list.
+const HUMAN = /\b(needs?-?human|human input|by hand|manually|ask (the )?(user|owner)|sign-?off|countersign|credential|api key|dns record|billing (portal|console)|in the .{0,20}console)\b/i;
 const ITEM = /^(\s*)(?:[-*+]\s+\[( |x|X|~|-)\]\s+|[-*+]\s+|\d+[.)]\s+)(.+)$/;
+// Items are routinely several lines long, with the acceptance criterion in the
+// continuation. Reading only the first line both loses that and mistakes a
+// wrapped line beginning "+ something" for a new item.
+const CLOSED = /\b(closed|superseded|cancelled|canceled|dropped|wont-?fix|won't fix|obsolete|no action needed)\b/i;
 
 function walk(root, maxDepth = 5) {
   const out = [];
@@ -52,23 +58,34 @@ function parseFile(repoPath, rel) {
     const h = line.match(/^(#{1,4})\s+(.+)$/);
     if (h) { section = h[2].trim(); headings.push({ heading: section, level: h[1].length, line: i + 1 }); return; }
     const m = line.match(ITEM);
-    if (!m) return;
+    if (!m) { if (items.length && /^\s+\S/.test(line) && !/^\s*$/.test(line)) items[items.length - 1]._cont.push(line.trim()); return; }
     const raw = m[3].trim();
     if (raw.length < 4) return;
     const box = m[2];
-    const status = box === undefined ? (/\bdone\b|✅|~~/i.test(raw) ? "done" : "open")
-      : box === " " ? "open" : /[xX]/.test(box) ? "done" : "wip";
+    // A bullet indented under an open item, with no checkbox, is a wrapped line
+    // or a sub-point — not a queue item of its own.
+    if (box === undefined && m[1].length > 0 && items.length) { items[items.length - 1]._cont.push(raw); return; }
     items.push({
       file: rel, line: i + 1, section, text: raw.replace(/\s+/g, " ").slice(0, 240),
-      status, indent: m[1].length,
-      hasAcceptance: ACCEPTANCE.test(raw),
-      vague: VAGUE.test(raw) && !ACCEPTANCE.test(raw),
-      blocked: BLOCKED.test(raw) ? (raw.match(BLOCKED)?.[0] ?? true) : null,
-      needsHuman: HUMAN.test(raw),
-      words: raw.split(/\s+/).length,
-      norm: norm(raw),
+      _box: box, _raw: raw, _cont: [], indent: m[1].length,
     });
   });
+  // Resolve each item against its full text — first line plus continuations.
+  for (const it of items) {
+    const full = [it._raw, ...it._cont].join(" ").replace(/\s+/g, " ");
+    const box = it._box;
+    it.status = box === undefined
+      ? (/\bdone\b|✅|~~/i.test(it._raw) || CLOSED.test(it._raw) ? "done" : "open")
+      : box === " " ? (CLOSED.test(full) ? "done" : "open") : /[xX]/.test(box) ? "done" : "wip";
+    it.hasAcceptance = ACCEPTANCE.test(full);
+    it.vague = VAGUE.test(full) && !it.hasAcceptance;
+    it.blocked = BLOCKED.test(full) ? (full.match(BLOCKED)?.[0] ?? true) : null;
+    it.needsHuman = HUMAN.test(full);
+    it.words = full.split(/\s+/).length;
+    it.lines = 1 + it._cont.length;
+    it.norm = norm(it._raw);
+    delete it._raw; delete it._cont; delete it._box;
+  }
   return { file: rel, lines: lines.length, headings, items };
 }
 
@@ -89,7 +106,11 @@ function ageProbe(repoPath, items, max) {
 export function queue(repoPath, opts = {}) {
   const files = walk(repoPath);
   const queueFiles = files.filter((f) => QUEUE_FILE.test(f) && !/^\.claude\/skills\//.test(f));
-  const intentFiles = files.filter((f) => INTENT_FILE.test(f) && !QUEUE_FILE.test(f)).slice(0, 6);
+  const intentFiles = files
+    .filter((f) => INTENT_FILE.test(f) && !QUEUE_FILE.test(f))
+    .filter((f) => !/^\.claude\//.test(f) && !/(^|\/)(node_modules|ds-bundle|dist|vendor)\//.test(f))
+    .filter((f) => f.split("/").length <= 2)          // the project's, not a sub-package's
+    .slice(0, 6);
 
   const parsed = queueFiles.map((f) => parseFile(repoPath, f)).filter(Boolean).filter((p) => p.items.length);
   const items = parsed.flatMap((p) => p.items);

@@ -204,9 +204,15 @@ function observe(transcriptDir, sinceMs) {
 function readFlow(repoPath) {
   const mds = walk(repoPath, 4, (n) => /\.mdx?$/i.test(n) || /\.(ya?ml|ps1|sh|mjs|js|ts)$/i.test(n));
   const stages = Object.fromEntries(STAGE_PATTERNS.map(([s]) => [s, []]));
+  // The queue and the records describe the *product* and the *history*; a
+  // backlog item about a "cron scheduler" feature is not the loop's trigger.
+  // Stage evidence comes from the rules, the driver and the workflow only.
+  const RULES = /(CLAUDE|AGENTS|LOOPS?|SKILL|DEFINITION|CONTRIBUTING|ORCHESTRATOR)/i;
+  const RECORDS = /(BACKLOG|ROADMAP|INBOX|STATUS|CHANGELOG|HISTORY|JOURNAL|SESSION)/i;
   const interesting = mds.filter((f) =>
-    /(CLAUDE|AGENTS|LOOPS?|SKILL|BACKLOG|ROADMAP|STATUS|GATE|HUMAN|DEFINITION|MANUAL|README)/i.test(basename(f)) ||
-    /^(\.github\/workflows|scripts|\.claude)\//.test(f));
+    (RULES.test(basename(f)) && !RECORDS.test(basename(f))) ||
+    /^(\.github\/workflows|scripts)\//.test(f) ||
+    (/^\.claude\//.test(f) && !RECORDS.test(basename(f))));
   for (const f of interesting.slice(0, 120)) {
     let t; try { t = readFileSync(join(repoPath, f), "utf8"); } catch { continue; }
     const lines = t.split("\n");

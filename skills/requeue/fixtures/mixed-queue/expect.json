@@ -5,9 +5,11 @@
   "summary.acceptanceShare": 0.43,
   "summary.vague": 2,
   "summary.blocked": 1,
-  "summary.needsHuman": 2,
+  "summary.needsHuman": 1,
   "summary.duplicates": 2,
   "summary.contradictions": 1,
-  "intentFiles": ["README.md"],
+  "intentFiles": [
+    "README.md"
+  ],
   "contradictions.0.text": "improve the dashboard"
 }
