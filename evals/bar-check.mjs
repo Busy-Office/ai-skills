@@ -62,7 +62,8 @@ export const SPECS = {
 // only the artifact and the target: a file:line, the session it happened in,
 // or — for an absence — the place the missing rule should have lived.
 const FILE_LINE = /[\w./-]+\.(md|mjs|js|ts|tsx|py|sh|ps1|ya?ml|json|toml|plist|html|css)(:\d+)?/i;
-const SESSION = /\b(s-[0-9a-f]{3,}|session [\w-]{4,}|\d+ sessions?|\d+ runs?|\d+ commits?)\b/i;
+// Ids are usually written as code, so allow the backticks/quotes around them.
+const SESSION = /\b(s-[0-9a-f]{3,}|sessions?\s+[`'"]?[\w-]{4,}|\d+\s+(sessions?|runs?|commits?|summons?))\b/i;
 const ABSENCE = /\b(none|no evidence|vacant|not measured|absent|nowhere|never|no \w+ (step|ran|exists|found|in)|— *—)\b/i;
 const HEDGE = /\b(consider(ing)?|maybe|perhaps|might want|could be improved|as appropriate|where possible|etc\.)\b/i;
 
