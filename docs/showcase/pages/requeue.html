@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Queue review — acme-export</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .rank { font: 700 15px/1 var(--mono); color: var(--ink); }
+  .item { font-weight: 560; }
+  .where { font: 11.5px var(--mono); color: var(--ink-3); white-space: nowrap; }
+  .why { color: var(--ink-2); }
+  .why b { color: var(--ink); font-weight: 620; }
+  .lane { font: 600 10.5px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+  .lane.loop { color: var(--good); }
+  .lane.sub { color: var(--warn); }
+  .lane.gaunt { color: var(--accent); }
+  .lane.human { color: var(--ink-3); }
+  .strike { text-decoration: line-through; color: var(--ink-3); }
+  .rw { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+  .rw .was { color: var(--ink-3); }
+  .rw .now { color: var(--ink); }
+  .arrow { color: var(--accent); font-weight: 700; }
+</style></head>
+<body><div class="page">
+
+<header>
+  <h1>Queue review — acme-export <span class="sub">· 17 open items across 3 files</span></h1>
+  <p class="lede">The queue is ordered by when things were written down. Two items block five others
+    and sit at ranks 9 and 12; three items only a person can do are mixed into the loop's lane, where
+    they stall it; and the same export item appears in two files with opposite statuses.</p>
+  <div class="meta">collected 2026-09-09 · anchored to intent.md · proposal only — nothing written</div>
+</header>
+
+<h2>Health of the queue</h2>
+<div class="kpis">
+  <div class="kpi"><div class="k">Open / done</div><div class="v">17 / 24</div></div>
+  <div class="kpi"><div class="k">Acceptance stated</div><div class="v">0.65 <small>· 11 of 17</small></div></div>
+  <div class="kpi flag"><div class="k">Human-only in loop lane</div><div class="v">3</div></div>
+  <div class="kpi"><div class="k">Dupes / contradictions</div><div class="v">2 / 1</div></div>
+</div>
+
+<h2>Proposed order — loop lane</h2>
+<table>
+  <tr><th style="width:34px">#</th><th style="width:290px">Item</th><th style="width:168px">Where</th><th style="width:280px">Why this rank</th><th style="width:96px">Ready</th><th>Lane</th></tr>
+  <tr>
+    <td class="rank">1</td>
+    <td class="item">Extract the row-shaping helper out of <code>csv.ts</code></td>
+    <td class="where">docs/BACKLOG.md:31</td>
+    <td class="why"><b>Unblocks</b> 5 items — every export format waits on it. Was rank 12.</td>
+    <td><span class="tag good">yes</span></td>
+    <td><span class="lane loop">loop</span></td>
+  </tr>
+  <tr>
+    <td class="rank">2</td>
+    <td class="item">Ship the CSV export endpoint</td>
+    <td class="where">docs/BACKLOG.md:4</td>
+    <td class="why"><b>Intent</b> — the one outcome the intent names. Unblocks nothing, so it yields to #1.</td>
+    <td><span class="tag good">yes</span></td>
+    <td><span class="lane loop">loop</span></td>
+  </tr>
+  <tr>
+    <td class="rank">3</td>
+    <td class="item">Cut p95 on <code>GET /search</code> to under 200 ms</td>
+    <td class="where">docs/ROADMAP.md:14</td>
+    <td class="why"><b>Decay</b> — two more features land on this route next sprint and it gets harder.</td>
+    <td><span class="tag good">yes</span></td>
+    <td><span class="lane sub">loop · subloop</span></td>
+  </tr>
+  <tr>
+    <td class="rank">4</td>
+    <td class="item">Choose the export job store: table, queue, or object store</td>
+    <td class="where">docs/BACKLOG.md:18</td>
+    <td class="why"><b>Readiness</b> caps it — three plausible approaches and a costly wrong one. Bar first, then attempts.</td>
+    <td><span class="tag warn">bar first</span></td>
+    <td><span class="lane gaunt">loop · gauntlet k=3</span></td>
+  </tr>
+  <tr>
+    <td class="rank">5</td>
+    <td class="item">Cut dashboard first paint under 1.5 s (cold, throttled 4G)</td>
+    <td class="where">docs/BACKLOG.md:5</td>
+    <td class="why"><b>Sharpened</b> from “improve the dashboard”; ranks once it has a test.</td>
+    <td><span class="tag good">yes</span></td>
+    <td><span class="lane loop">loop</span></td>
+  </tr>
+  <tr>
+    <td class="rank">6</td>
+    <td class="item">Spike: is streaming export feasible without a job store?</td>
+    <td class="where">docs/BACKLOG.md:22</td>
+    <td class="why">No test could be written — becomes a bounded spike, output is a note, no production code.</td>
+    <td><span class="tag warn">spike</span></td>
+    <td><span class="lane sub">loop · 1 run</span></td>
+  </tr>
+</table>
+
+<h2>Leaves the loop's queue</h2>
+<table>
+  <tr><th style="width:290px">Item</th><th style="width:168px">Where</th><th style="width:110px">Lane</th><th>The exact ask</th></tr>
+  <tr><td class="item">Wire Stripe billing</td><td class="where">docs/BACKLOG.md:6</td><td><span class="lane human">human</span></td><td>Decide the plan tiers (3 named prices) — the loop cannot invent pricing.</td></tr>
+  <tr><td class="item">Rotate the production API key</td><td class="where">docs/BACKLOG.md:7</td><td><span class="lane human">human</span></td><td>Rotate in the provider console and put the new value in the secret store.</td></tr>
+  <tr><td class="item">Sign the data-processing addendum</td><td class="where">docs/GATES.md:9</td><td><span class="lane human">human</span></td><td>Countersign and file; blocks the EU launch item, nothing else.</td></tr>
+  <tr><td class="item">Add SSO login with Okta</td><td class="where">docs/BACKLOG.md:11</td><td><span class="lane human">blocked</span></td><td><b>The blocker is unnamed.</b> Naming it is the item: who asked, and by when?</td></tr>
+</table>
+
+<h2>Sharpened — top items rewritten</h2>
+<table>
+  <tr><th style="width:168px">Where</th><th>Was <span class="arrow">→</span> now</th></tr>
+  <tr><td class="where">BACKLOG.md:5</td><td class="rw">
+    <div class="was">improve the dashboard</div>
+    <div class="now">Cut first paint on <code>/dashboard</code> to under 1.5 s on a cold load (Lighthouse, throttled 4G). No change to the data API.</div></td></tr>
+  <tr><td class="where">BACKLOG.md:12</td><td class="rw">
+    <div class="was">consider refactoring the parser</div>
+    <div class="now">Remove the three unused <code>legacy*</code> branches in <code>parser.ts</code>; all existing parser tests stay green.</div></td></tr>
+  <tr><td class="where">BACKLOG.md:22</td><td class="rw">
+    <div class="was">explore streaming exports</div>
+    <div class="now">Spike: determine in ≤ 1 run whether streaming export works without a job store. Output: a note naming the approach and its cost. No production code.</div></td></tr>
+</table>
+
+<h2>Hygiene</h2>
+<table>
+  <tr><th style="width:38px">#</th><th style="width:124px">Class</th><th style="width:300px">What</th><th style="width:210px">Where</th><th>Proposal</th></tr>
+  <tr><td class="mono" style="color:var(--ink-3)">H1</td><td><span class="tag bad">contradiction</span></td><td>“improve the dashboard” is done in one file, open in another</td><td class="where">BACKLOG.md:5 · ROADMAP.md:4</td><td>The code says it never shipped — keep the open one, mark the roadmap line wrong</td></tr>
+  <tr><td class="mono" style="color:var(--ink-3)">H2</td><td><span class="tag warn">duplicate</span></td><td>The CSV export item appears twice, in Now and Later</td><td class="where">BACKLOG.md:4 · :11</td><td>Keep :4 (the file the loop reads); make :11 a pointer</td></tr>
+  <tr><td class="mono" style="color:var(--ink-3)">H3</td><td><span class="tag">ghost</span></td><td><span class="strike">Add a Slack bot for query results</span> — traces to no sentence of intent</td><td class="where">ROADMAP.md:22</td><td>Propose deletion. Nothing waits on it; open 197 days</td></tr>
+  <tr><td class="mono" style="color:var(--ink-3)">H4</td><td><span class="tag">stale</span></td><td>“Evaluate a second storage backend” — untouched since first written</td><td class="where">ROADMAP.md:19 · added 2026-02-14</td><td>Old, and still right — keep, but say the age so it can be re-decided</td></tr>
+</table>
+
+<h2>Do next</h2>
+<ol class="bullets">
+  <li><b>Move the helper extraction to the top.</b> Five items stop waiting the moment it lands.</li>
+  <li><b>Take the three human items out of the loop's lane</b> and put the exact asks in the gate log — the loop has been picking them up and stalling.</li>
+  <li><b>Write the bar for the job-store decision</b> before any attempt runs; three approaches, one judge that wrote none of them.</li>
+  <li><b>Resolve H1 from the code</b>, not from whichever file was edited last.</li>
+</ol>
+
+<footer>Read 3 queue files and 41 items · ranking is a proposal · target repo untouched.</footer>
+</div></body></html>

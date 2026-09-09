@@ -1,15 +1,35 @@
 {
-  "roster.0.name": "scout",
-  "roster.0.role": "search",
-  "roster.0.summons": 2,
-  "roster.0.tools": ["Read", "Grep", "Glob"],
-  "roster.1.name": "verifier",
-  "roster.1.role": "verify",
-  "roster.1.summons": 1,
+  "roster.0.name": "builder",
+  "roster.0.role": "build",
+  "roster.0.summons": 3,
+  "roster.0.tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Bash",
+    "Grep",
+    "Glob"
+  ],
+  "roster.1.name": "scout",
+  "roster.1.summons": 3,
   "observed.sessions": 1,
-  "observed.summons": { "scout": 2, "verifier": 1 },
-  "observed.skillCalls": { "tdd": 1 },
-  "observed.sidechainTurns": 1,
-  "emptyStages": ["gate"],
-  "undefinedButUsed": []
+  "observed.summons": {
+    "scout": 3,
+    "planner": 1,
+    "builder": 3,
+    "verifier": 1
+  },
+  "observed.skillCalls": {
+    "tdd": 1,
+    "requeue": 1
+  },
+  "observed.sidechainTurns": 5,
+  "emptyStages": [
+    "gate"
+  ],
+  "undefinedButUsed": [],
+  "roster.4.name": "scribe",
+  "roster.4.summons": 0,
+  "roster.4.role": "record",
+  "roster.1.role": "search"
 }

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Run review — acme-export</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .crew { border: 1px solid var(--rule); padding: 18px 20px 8px; margin-bottom: 4px; background: #fcfcfd; }
+  .crew svg { width: 100%; height: auto; display: block; }
+  .buckets td.bar-cell { width: 200px; }
+  .fill { height: 9px; background: var(--ink); border-radius: 1px; display: block; }
+  .fill.dim { background: #b9bec6; }
+  .fid { font: 600 11px var(--mono); color: var(--ink-3); }
+</style></head>
+<body><div class="page">
+
+<header>
+  <h1>Run review — acme-export <span class="sub">· last 14 days</span></h1>
+  <p class="lede">28 runs shipped 19 commits. A commit costs 214k billable tokens — three quarters
+    of it spent re-reading the codebase before each change. Nothing checks the work before it lands:
+    5 of 19 commits are fixes to a file an earlier run in this window already touched.</p>
+  <div class="meta">collected 2026-09-09 · window 14d · 28 sessions · 19 commits</div>
+</header>
+
+<h2>The economics</h2>
+<div class="kpis">
+  <div class="kpi"><div class="k">Tokens per commit</div><div class="v">214k</div></div>
+  <div class="kpi"><div class="k">Cache hit rate</div><div class="v">0.41 <small>· low</small></div></div>
+  <div class="kpi"><div class="k">Rework rate</div><div class="v">0.26 <small>· 5 of 19</small></div></div>
+  <div class="kpi flag"><div class="k">Tool calls per edit</div><div class="v">34.2</div></div>
+</div>
+<table style="margin-top:16px">
+  <tr><td style="width:210px">billable / cache read</td><td class="num mono">4.07M / 9.2M <span style="color:var(--ink-3)">(cache reads are not billed here)</span></td></tr>
+  <tr><td>tokens per run</td><td class="num mono">145k · range 12k – 512k</td></tr>
+  <tr><td>subagent share</td><td class="num mono">0.08 <span style="color:var(--ink-3)">— fan-out is barely used</span></td></tr>
+  <tr><td>human turns per run</td><td class="num mono">1.4 · 3 interrupts</td></tr>
+  <tr><td>wall clock</td><td class="num mono">611 min</td></tr>
+</table>
+
+<h2>The crew, as the runs show it</h2>
+<div class="crew">
+<svg viewBox="0 0 1060 200" role="img" aria-label="Item flows to plan, build and commit; verify is vacant; rework and thrash edges return to build.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7b828c"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#b23c3c"/></marker>
+  </defs>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="12">
+    <g>
+      <rect x="8" y="42" width="150" height="56" rx="3" fill="#fff" stroke="#c9cfd6"/>
+      <text x="83" y="66" text-anchor="middle" font-size="13" fill="#16181d">item</text>
+      <text x="83" y="84" text-anchor="middle" fill="#767d87">docs/BACKLOG.md</text>
+    </g>
+    <g>
+      <rect x="228" y="42" width="150" height="56" rx="3" fill="#fff" stroke="#c9cfd6"/>
+      <text x="303" y="66" text-anchor="middle" font-size="13" fill="#16181d">plan</text>
+      <text x="303" y="84" text-anchor="middle" fill="#767d87">main · 18k</text>
+    </g>
+    <g>
+      <rect x="448" y="42" width="150" height="56" rx="3" fill="#fff" stroke="#c9cfd6"/>
+      <text x="523" y="66" text-anchor="middle" font-size="13" fill="#16181d">build</text>
+      <text x="523" y="84" text-anchor="middle" fill="#767d87">opus · 34 calls/edit</text>
+    </g>
+    <g>
+      <rect x="668" y="42" width="150" height="56" rx="3" fill="#fdf5f5" stroke="#d9a9a9" stroke-dasharray="5 4"/>
+      <text x="743" y="66" text-anchor="middle" font-size="13" fill="#b23c3c">verify</text>
+      <text x="743" y="84" text-anchor="middle" fill="#b23c3c">— none —</text>
+    </g>
+    <g>
+      <rect x="888" y="42" width="150" height="56" rx="3" fill="#fff" stroke="#c9cfd6"/>
+      <text x="963" y="66" text-anchor="middle" font-size="13" fill="#16181d">commit</text>
+      <text x="963" y="84" text-anchor="middle" fill="#767d87">19 · rework 5</text>
+    </g>
+    <g stroke="#7b828c" stroke-width="1.5" fill="none" marker-end="url(#a)">
+      <path d="M158 70 H222"/><path d="M378 70 H442"/><path d="M598 70 H662"/><path d="M818 70 H882"/>
+    </g>
+    <g stroke="#b23c3c" stroke-width="1.5" fill="none" marker-end="url(#ab)" stroke-dasharray="6 4">
+      <path d="M963 98 V150 H523 V104"/>
+      <path d="M566 40 C566 8, 480 8, 480 38"/>
+    </g>
+    <text x="740" y="167" text-anchor="middle" fill="#b23c3c">rework · 5 commits re-touch a file this window already changed</text>
+    <text x="523" y="14" text-anchor="middle" fill="#b23c3c">thrash · s-4f21, s-8c03: same command 6× in one run</text>
+  </g>
+</svg>
+</div>
+
+<h2>Score</h2>
+<div class="verdict">
+  <span class="label">Expensive</span>
+  <span class="mean">mean 2.5 / 5</span>
+  <span class="note">It ships, but a quarter of what it ships it ships twice.</span>
+</div>
+<table>
+  <tr><th style="width:150px">Dimension</th><th style="width:96px">Score</th><th>Why</th></tr>
+  <tr><td>effectiveness</td><td><span class="bar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4</td><td>19 commits, backlog done-count moved 12 → 19; two runs edited nothing</td></tr>
+  <tr><td>efficiency</td><td><span class="bar warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>2</td><td>34.2 tool calls per edit — it re-derives the file map every run</td></tr>
+  <tr><td>budget</td><td><span class="bar warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>2</td><td>cache hit 0.41; <code>docs/LOOP-STATUS.md</code> (2 480 lines) is read at every wake</td></tr>
+  <tr><td>plan quality</td><td><span class="bar"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>3</td><td>11 of 17 open items state an acceptance test; both thrashing runs were on items that don't</td></tr>
+  <tr><td>agent fit</td><td><span class="bar bad"><i class="on"></i><i></i><i></i><i></i><i></i></span>1</td><td>no verifier ever ran; Grep/Read are 61% of the heaviest model's tool calls</td></tr>
+  <tr><td>convergence</td><td><span class="bar warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>2</td><td>rework 0.26; <code>src/export/csv.ts</code> touched in 6 commits</td></tr>
+</table>
+
+<h2>Where the budget went</h2>
+<table class="buckets">
+  <tr><th style="width:190px">Bucket</th><th style="width:110px">Tokens</th><th class="bar-cell">Share</th><th>What it bought</th></tr>
+  <tr><td>searching &amp; re-reading</td><td class="num mono">3.05M</td><td class="bar-cell"><span class="fill" style="width:75%"></span></td><td>the same file map, 28 times</td></tr>
+  <tr><td>building</td><td class="num mono">0.61M</td><td class="bar-cell"><span class="fill" style="width:15%"></span></td><td>19 commits</td></tr>
+  <tr><td>state re-read at wake</td><td class="num mono">0.29M</td><td class="bar-cell"><span class="fill dim" style="width:7%"></span></td><td>a growing status log, read whole</td></tr>
+  <tr><td>subagents</td><td class="num mono">0.12M</td><td class="bar-cell"><span class="fill dim" style="width:3%"></span></td><td>3 searches</td></tr>
+  <tr><td>verifying</td><td class="num mono">0</td><td class="bar-cell"><span class="fill dim" style="width:1%"></span></td><td><span class="tag bad">nothing</span></td></tr>
+</table>
+
+<h2>Findings</h2>
+<table>
+  <tr><th style="width:38px">#</th><th style="width:112px">Class</th><th style="width:300px">What</th><th style="width:210px">Evidence</th><th>Fix</th></tr>
+  <tr><td class="fid">F1</td><td><span class="tag bad">Misroute</span></td><td>No actor ever checks the work before it commits</td><td class="mono">rework 5/19 · no verify step in any run</td><td>Verifier seam: separate context runs the acceptance test</td></tr>
+  <tr><td class="fid">F2</td><td><span class="tag">Leak</span></td><td>The heaviest model does its own sweeping</td><td class="mono">34.2 calls/edit · Grep+Read 61%</td><td>Route the reading to a search subagent with a stated output shape</td></tr>
+  <tr><td class="fid">F3</td><td><span class="tag">Leak</span></td><td><code>LOOP-STATUS.md</code> read whole at every wake, +840 lines this window</td><td class="mono">2 480 lines · cache 0.41</td><td>Archive at 500 lines; load rules before state</td></tr>
+  <tr><td class="fid">F4</td><td><span class="tag warn">No-converge</span></td><td>Two runs repeated one identical command 6×</td><td class="mono">s-4f21, s-8c03 · <code>npm test -w csv</code></td><td>Subloop, N=3, each round must change the approach</td></tr>
+  <tr><td class="fid">F5</td><td><span class="tag warn">Ill-formed</span></td><td>Both thrashing runs were on items with no acceptance test</td><td class="mono">BACKLOG.md:14, :22</td><td>Hand to <code>requeue</code> before the next tick</td></tr>
+</table>
+
+<h2>What the numbers say to do</h2>
+<ol class="bullets">
+  <li><b>Add the verifier seam.</b> One extra short context per item, and it closes F1 — the cheapest line on this page.</li>
+  <li><b>Route the searching out.</b> Closes F2; expect tokens per commit to fall by roughly half on the next window.</li>
+  <li><b>Archive the status log</b> at 500 lines and load rules before state — closes F3.</li>
+  <li><b>The binding constraint is the actor</b>, not the input: 11 of 17 items are well-formed, and the well-formed ones converge.</li>
+</ol>
+
+<footer>Read 28 transcripts (14d) and 19 commits · sessions cited by id, never quoted · target repo untouched.</footer>
+</div></body></html>

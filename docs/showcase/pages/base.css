@@ -1,0 +1,91 @@
+/* Showcase pages — shared house style. Light only: these are captured for
+   the README, not published for readers to theme. */
+:root {
+  --ink: #16181d;
+  --ink-2: #4a5058;
+  --ink-3: #767d87;
+  --rule: #e3e6ea;
+  --rule-2: #eef0f3;
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --accent: #b8552c;
+  --good: #2e7d5b;
+  --warn: #b07d1a;
+  --bad: #b23c3c;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { max-width: 1180px; margin: 0 auto; padding: 44px 48px 56px; }
+
+header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 26px; }
+h1 { font-size: 27px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.015em; }
+h1 .sub { color: var(--ink-3); font-weight: 400; }
+.lede { margin: 0; max-width: 76ch; color: var(--ink-2); font-size: 15.5px; }
+.meta { margin-top: 12px; font: 12px/1.4 var(--mono); color: var(--ink-3); }
+
+h2 {
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); margin: 34px 0 12px; font-weight: 650;
+}
+h2:first-of-type { margin-top: 26px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th {
+  text-align: left; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 650; padding: 0 12px 7px 0; border-bottom: 1px solid var(--rule);
+}
+td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule-2); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; color: var(--ink-2); }
+.num { font-variant-numeric: tabular-nums; }
+
+.verdict {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 14px 18px; background: var(--panel); border-left: 3px solid var(--accent);
+  margin-bottom: 6px;
+}
+.verdict .label { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.verdict .mean { font: 13px var(--mono); color: var(--ink-2); }
+.verdict .note { color: var(--ink-2); font-size: 13.5px; }
+
+.bar { display: inline-flex; gap: 2.5px; vertical-align: -1px; margin-right: 8px; }
+.bar i { width: 7px; height: 12px; background: var(--rule); border-radius: 1px; }
+.bar i.on { background: var(--ink); }
+.bar.warn i.on { background: var(--warn); }
+.bar.bad i.on { background: var(--bad); }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.kpi { background: var(--bg); padding: 13px 15px; }
+.kpi .k { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 650; }
+.kpi .v { font: 600 21px/1.25 var(--mono); margin-top: 3px; letter-spacing: -0.02em; }
+.kpi .v small { font-size: 12px; font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+.kpi.flag .v { color: var(--bad); }
+
+.tag {
+  display: inline-block; font: 600 10.5px/1.5 var(--mono); text-transform: uppercase;
+  letter-spacing: 0.04em; padding: 1px 6px; border: 1px solid var(--rule); border-radius: 3px;
+  color: var(--ink-2); white-space: nowrap;
+}
+.tag.bad { color: var(--bad); border-color: #e6c9c9; background: #fdf5f5; }
+.tag.warn { color: var(--warn); border-color: #ecdcb8; background: #fdfaf2; }
+.tag.good { color: var(--good); border-color: #c5ddd1; background: #f4faf7; }
+
+.bullets { margin: 0; padding-left: 18px; color: var(--ink-2); max-width: 82ch; }
+.bullets li { margin-bottom: 5px; }
+.bullets b { color: var(--ink); font-weight: 620; }
+
+footer {
+  margin-top: 34px; padding-top: 13px; border-top: 1px solid var(--rule);
+  font: 11.5px var(--mono); color: var(--ink-3);
+}
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; }

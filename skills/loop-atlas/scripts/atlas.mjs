@@ -63,7 +63,19 @@ function frontmatter(text) {
   return out;
 }
 
-function roleOf(text) {
+// Refusal clauses describe what an agent must NOT do — scoring them would
+// class "refuses to edit code" as a builder.
+function stripRefusals(text) {
+  return String(text).split(/(?<=[.;!?])\s+|\n/)
+    .filter((s) => !/\b(refuses?|never|must not|do not|don't|without) \b/i.test(s))
+    .join(" ");
+}
+
+// The name is the strongest signal — people name an agent by its job.
+// Fall back to counting hints in what it says it does.
+function roleOf(text, name = "") {
+  for (const [role, re] of ROLE_HINTS) if (re.test(name)) return role;
+  text = stripRefusals(text);
   const scores = ROLE_HINTS.map(([role, re]) => [role, (text.match(new RegExp(re.source, "gi")) ?? []).length]);
   scores.sort((a, b) => b[1] - a[1]);
   return scores[0][1] > 0 ? scores[0][0] : "general";
@@ -82,7 +94,7 @@ function readAgents(dir, origin) {
       description: desc.slice(0, 400),
       model: fm.model ?? null,
       tools: fm.tools ? fm.tools.split(/\s*,\s*/).filter(Boolean) : null,
-      role: roleOf(desc + " " + t.slice(0, 2000)),
+      role: roleOf(`${desc} ${t.slice(0, 1500)}`, fm.name ?? basename(f, ".md")),
       bodyLines: t.split("\n").length,
     });
   }
@@ -98,7 +110,7 @@ function readSkills(dir, origin) {
     let t; try { t = readFileSync(p, "utf8"); } catch { continue; }
     const fm = frontmatter(t);
     const desc = (fm.description ?? "").replace(/\s+/g, " ");
-    out.push({ name: fm.name ?? d, origin, file: p, description: desc.slice(0, 400), role: roleOf(desc) });
+    out.push({ name: fm.name ?? d, origin, file: p, description: desc.slice(0, 400), role: roleOf(desc, fm.name ?? d) });
   }
   return out;
 }

@@ -244,6 +244,11 @@ whether the right agent produced it. Where `loop-doctor` reads the loop's
 documents, loop-economist reads its **runs** — every Claude Code session
 transcript and every commit in a window.
 
+![loop-economist run review — tokens per commit, a crew diagram with a vacant verify stage, six scored dimensions, where the budget went, findings](docs/showcase/loop-economist.png)
+
+*Sample on illustrative data. First screen: the unit cost, then the crew as the
+runs show it — including the rework edge that returns to build.*
+
 ### Usage
 
 > how efficient is our loop?
@@ -287,6 +292,11 @@ Transcripts are never quoted — sessions are cited by id and by number.
 **What it answers:** what the loop should be fed next, and which items are
 not tasks yet. Most loops that look broken are being handed wishes.
 
+![requeue proposal — ranked loop lane with reasons and lanes, items that leave the queue with their exact ask, sharpened rewrites, hygiene rows](docs/showcase/requeue.png)
+
+*Sample on illustrative data. The rank reason names the deciding factor; human-only
+items leave the loop's lane entirely.*
+
 ### Usage
 
 > what should we work on next?
@@ -322,6 +332,11 @@ reorders and deletes in the same commit.
 settle an argument — and which of today's work does not trace back to it.
 `requeue` ranks against this document; `loop-doctor` checks the loop is
 anchored to it. Both are only as good as the sentence underneath.
+
+![sharpen-intent review — where purpose is stated, six scored dimensions, untraced backlog items, and a draft intent with for/change/bet/measure/falsifier/non-goals](docs/showcase/sharpen-intent.png)
+
+*Sample on illustrative data. The draft is the deliverable; unanswered gaps stay
+visible as `TO DECIDE` rather than being filled in.*
 
 ### Usage
 
@@ -361,6 +376,16 @@ node skills/sharpen-intent/scripts/intent.mjs --self-test
 
 **What it answers:** what actually happens on one run, and who is on the
 team. Two views on one published page — the flow, and the crew.
+
+![Animated loop flow — one item travels trigger → select → plan → build → a vacant verify stage → commit, with the re-arm and rework edges appearing last](docs/showcase/loop-atlas.gif)
+
+*One item's journey through one tick. The static frame is complete: with motion
+disabled the page renders the finished picture, gaps and all.*
+
+![loop-atlas page — the flow with its evidence table, then the crew as six cards including a vacant verifier and an undefined-but-summoned agent](docs/showcase/loop-atlas.png)
+
+*Sample on illustrative data. Deck ordered by observed summons; the vacancy and
+the undefined agent get cards of their own.*
 
 ### Usage
 
@@ -426,6 +451,15 @@ as a side effect.
   runs them all. Add a fixture before adding a detector.
 - Every skill gets a showcase entry above: a screenshot in `docs/showcase/`,
   what it answers, how to trigger it, and what it reads.
+- Showcase images are generated, not hand-captured, and always from
+  illustrative data — never a real project. The page source lives in
+  `docs/showcase/pages/*.html`; `node scripts/showcase.mjs` shoots every page
+  full-length at 2× from `file://`, with `prefers-reduced-motion` on so an
+  animated page is captured on its finished frame. `node scripts/showcase.mjs
+  --gif loop-atlas` records the `.flow` element by stepping the page's own CSS
+  animations through the Web Animations API — reproducible, and timed exactly
+  like the page (needs ImageMagick). Playwright is resolved from a local
+  install or the npx cache; it is not a dependency of this repo.
 
 ## License
 
