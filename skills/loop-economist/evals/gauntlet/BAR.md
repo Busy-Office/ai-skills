@@ -69,7 +69,12 @@ Pass requires, in addition to the shared list:
    none, with the numbers.
 5. **Do-next item 1 closes the lowest-scoring dimension**, or the review says
    why not.
-6. **Convergence prescriptions are bounded.** Any subloop names its round cap
+6. **A prescribed verifier is wired or withheld.** Where the review prescribes
+   the verifier seam, it names the project's actual check command and where the
+   acceptance test lives, or it states that no runnable check could be
+   established and withholds the agent. Prescribing a verifier without a command
+   is a FAIL: it reads as a fix while installing a rubber stamp.
+7. **Convergence prescriptions are bounded.** Any subloop names its round cap
    and the rule that each round must change the approach; any gauntlet names
    k, where the bar is written, and that the judge wrote none of the attempts.
 

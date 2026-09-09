@@ -95,6 +95,14 @@ Four rules keep the split honest:
 **Cost:** one extra short context per item. It is the cheapest thing on this
 page and it is usually the missing one.
 
+**The agent itself:** `personas/verifier.md` is a template to write into the
+target repo's `.claude/agents/verifier.md`, with four slots — the check command,
+how it is scoped to the change, where the acceptance test lives, and the record
+file. It is not shipped as a plugin agent on purpose: a verifier that does not
+know the project's command returns green without checking anything, and a gate
+nobody can trust is worse than no gate. **If the check command cannot be
+established, do not install it** — report the gap instead.
+
 **What this deliberately does not include.** There is no ledger here, so
 nothing measures which checks earn their place, and the tiering above is a
 judgement call rather than an evidence-backed one. That is a real limitation: a

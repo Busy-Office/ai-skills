@@ -142,6 +142,14 @@ do-next (≤ 5), footer receipt. Then a terminal summary of ≤ 8 lines.
 Prescriptions change how the loop behaves. Propose; apply on request, one
 commit per prescription, diff shown first.
 
+For the verifier seam specifically, applying means writing
+`references/personas/verifier.md` into the target repo's
+`.claude/agents/verifier.md` with its four slots filled from that project, and
+adding the one rule that calls it before the commit step. Fill the slots from
+the project's own task file; **if the check command cannot be established, do
+not install the agent** and say why — an unwired verifier returns green without
+running anything, and the loop will believe it.
+
 ## Judgement calls
 
 **Tokens per commit is a ratio, and both halves lie alone.** Cheap runs
@@ -178,6 +186,8 @@ and prefer "in this window" to "always".
   rules.
 - `references/patterns.md` — subloop, gauntlet, verifier seam, routing,
   cache, budget, escalate-to-input.
+- `references/personas/verifier.md` — the verifier as a template for the
+  target repo, with the refusal to install it unwired.
 - `references/report-template.md` — the review, exactly.
 - `evals/` — the prompts, and `gauntlet/BAR.md`, the bar this skill's
   reviews are graded against by a blind critic.

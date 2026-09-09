@@ -292,6 +292,17 @@ node skills/loop-economist/scripts/runs.mjs --self-test
 > Round 2 **passed** 16/16 with every figure independently recomputed. Rounds in
 > [`ROUNDS.md`](skills/loop-economist/evals/gauntlet/ROUNDS.md).
 
+**It ships one persona, as a template.** The Verifier seam is the cheapest
+prescription here and the most often missing, so
+[`references/personas/verifier.md`](skills/loop-economist/references/personas/verifier.md)
+is an agent definition to write into *your* repo with its check command filled
+in — not a plugin agent. A generic verifier that does not know the project's
+command returns green without checking anything. On the first project this was
+measured against, seven personas existed and rework still ran at 0.23, because
+the reviewer was granted `Read, Grep, Glob` and could not execute the test it
+reviewed against. If the command cannot be established, the skill refuses to
+install it and reports the gap instead.
+
 ### What it measures
 
 | group | numbers |
