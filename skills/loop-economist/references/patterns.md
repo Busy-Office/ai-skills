@@ -127,6 +127,37 @@ file the loop reads each tick instead of re-deriving it.
 
 **Cost:** near zero; it usually reduces the bill in the first tick.
 
+### Using an index without spending the saving
+
+Where the project has a queryable index (graphify or similar), the discipline is
+narrow and the numbers are worth knowing. Measured on a real 2 MB graph:
+
+| operation | cost |
+|---|---|
+| one query | **~1.5k tokens, 0.2 s** — returns node names with `src=` and `loc=` |
+| the same query with `--budget 1500` | ~1.2k |
+| reading **one** file the query points at | **~15k** |
+| loading the graph file itself | **~499k** — 325 queries' worth |
+| building the graph | 60–90k per run |
+
+Four rules follow from that shape:
+
+1. **Query to locate, then read narrowly.** The answer is a map, not prose: it
+   names the nodes and where they live. Read those lines, not those files. A
+   query followed by reading everything anyway has spent 1.5k for nothing.
+2. **Budget every query.** A wide traversal is the only way this gets expensive,
+   and the cap costs nothing.
+3. **Match the traversal to the question.** Breadth for *what touches X*, a path
+   query for *how does A reach B*, an explain for *what is X*. Breadth-first on
+   a question with two known endpoints pays for nodes you did not need.
+4. **Never load the index.** It is two orders of magnitude larger than any
+   answer drawn from it. That is the same mistake as keeping a design map in the
+   wake, one size up.
+
+**Break-even:** a build pays for itself after roughly five avoided file reads,
+and it is paid on a trigger rather than per tick. Against a project loading a
+69k design map at every wake, one build costs about one tick.
+
 ---
 
 ## Cache discipline
