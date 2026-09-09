@@ -1,5 +1,0 @@
-package internal
-
-import "testing"
-
-func TestHandler(t *testing.T) {}

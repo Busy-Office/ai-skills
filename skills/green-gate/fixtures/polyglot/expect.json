@@ -1,8 +1,0 @@
-{
-  "checks.0.from": "make",
-  "workspaces.withChecks": 3,
-  "suite.byKind": { "unit": 2, "e2e": 0 },
-  "oneWayDoors.migrations.files": 2,
-  "cadence.stated": false,
-  "ci": []
-}

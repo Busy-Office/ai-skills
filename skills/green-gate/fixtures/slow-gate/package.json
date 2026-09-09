@@ -1,2 +1,0 @@
-{ "name": "slow-gate", "scripts": {
-  "test": "vitest run", "test:e2e": "playwright test", "typecheck": "tsc -b", "lint": "eslint .", "build": "pnpm -r build" } }

@@ -53,14 +53,57 @@ downstream commits.
 
 ## Verifier seam
 
-**When:** `reworkRate` > 0.25 and no separate verify step exists.
+**When:** `reworkRate` > 0.25 and no separate verify step exists — the single
+commonest and most expensive gap in a loop.
 
 **Shape:** the acceptance test is written into the item before the build
-starts; a persona that did not write the code runs it and reports pass /
-fail with the actual output; only a pass reaches the commit step.
+starts; a context that did not write the code runs it and reports pass or fail
+with the actual output; only a pass reaches the commit step.
 
-**Cost:** one extra short context per item. It is the cheapest thing on
-this page and it is usually the missing one.
+**The rule that stops it becoming the new bottleneck:**
+
+> **The gate blocks the commit. It never blocks the loop.**
+
+A red gate means *this item returns to the queue with the failure text
+attached*, and the next tick takes different work. A loop that sits waiting on
+a check has been converted into a queue of one — and a gate people wait on is a
+gate someone eventually switches off.
+
+**Two tiers, because one is always wrong.** A suite big enough to be worth
+having is too slow to run every time:
+
+| tier | scope | budget | blocks |
+|---|---|---|---|
+| **commit gate** | the tests that name the changed modules, plus the touched workspace's own suite and lint — or the root suite where that workspace has none | a few minutes | the commit, never the loop |
+| **deep tier** | end-to-end, cross-workspace, build — everything slow | none, because nothing waits on it; but it must land before the next release, or deferred work becomes notional | a release, not a tick |
+
+Four rules keep the split honest:
+
+1. **Select, don't schedule.** Run what the change touches and report it as a
+   fraction — "14 of 518" is what makes a gate proportionate. A change that maps
+   to no test is a coverage finding, not a reason to run everything.
+2. **Budgets degrade, they do not hang.** On breach, run the cheaper tier,
+   record what was skipped, and push it to the deep tier's next batch.
+3. **Pin the one-way doors.** Checks guarding money, deletion, migrations or
+   auth run regardless of how rarely they catch anything: the cost of that miss
+   is not measured in minutes.
+4. **Mirror the CI that exists.** A project with CI has already drawn the
+   fast/slow line under real pressure, often with the slow half sharded. Adopt
+   that split rather than inventing a rival definition of green — when two
+   definitions disagree, people believe neither.
+
+**Cost:** one extra short context per item. It is the cheapest thing on this
+page and it is usually the missing one.
+
+**What this deliberately does not include.** There is no ledger here, so
+nothing measures which checks earn their place, and the tiering above is a
+judgement call rather than an evidence-backed one. That is a real limitation: a
+gate that cannot demote only ever grows. If the gate becomes the bottleneck —
+people skipping it, or blocked minutes rising per tick — the answer is to start
+recording one row per gate run (duration, blocked time, tests selected of total,
+result, and whether the failure led to a fix on the same item) and rank checks
+by catches per minute. Prescribe that when there is evidence it is needed, not
+before.
 
 ---
 

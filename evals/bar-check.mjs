@@ -58,14 +58,6 @@ export const SPECS = {
     requireCaps: /\bcap(s|ped|ping)?\b/i,
     figures: { "open items": "traceability.openItems", "traced": "traceability.traced" },
   },
-  "green-gate": {
-    proseMax: 350, leadMax: 50, doNextMax: 4,
-    opensWith: "table",
-    sections: [/^#+\s*the gate/im, /^#+\s*what the ledger says/im, /^#+\s*why this will not become the bottleneck/im],
-    citedTables: [],
-    locatedSection: /the gate/,
-    figures: { "test files": "suite.total", "e2e specs": "suite.byKind.e2e", "unit tests selected": "selection.byKind.unit", "migrations": "oneWayDoors.migrations.files", "workspaces": "workspaces.withChecks", "package manifests": "workspaces.manifests" },
-  },
   "wake-weight": {
     proseMax: 300, leadMax: 40, doNextMax: 3,
     opensWith: "table",
