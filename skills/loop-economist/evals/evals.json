@@ -1,0 +1,40 @@
+{
+  "skill_name": "loop-economist",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. We've had an autonomous loop running here for two weeks and I can't tell if it's worth what it costs. How efficient is it, is it using the right agents, and why does it keep redoing the same work? Write the review to <scratchpad>/RUN-REVIEW.md, not into the repo.",
+      "expected_output": "Run review: economics table led by tokens per commit with both halves; crew diagram drawn from the runs including rework and thrash edges; six dimensions scored with cited reasons and a verdict from the fixed set; findings classified Leak/Misroute/No-converge/Ill-formed with a session id or file:line each; budget buckets summing to the billable total; prescriptions each closing a named finding with its cost; the binding constraint named and routed; footer receipt.",
+      "files": [],
+      "assertions": [
+        "Reports tokens per commit with the billable total and the commit count",
+        "Reports cache reads separately and never inside the billable figure",
+        "Every rate carries its window and its n",
+        "Six dimensions scored 0-5 with one-line reasons citing a metric or session id",
+        "Verdict from compounding/productive/expensive/spinning with the caps applied",
+        "Findings classified and each located by session id or file:line",
+        "Names the largest budget line that bought nothing",
+        "Any subloop names its round cap and the change-the-approach rule",
+        "Any gauntlet names k, where the bar is written, and an independent judge",
+        "Names the binding constraint and routes it to the actor, requeue, or loop-doctor",
+        "Quotes no transcript content \u2014 ids and numbers only",
+        "Footer receipt: transcripts read, window, target repo untouched"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Working in <repo> on a machine that has never run this project's loop \u2014 there are no session transcripts here, only the git history and the loop's own status files. Can you still tell me whether the loop is effective and well planned? Save it to <scratchpad>/RUN-REVIEW.md.",
+      "expected_output": "A review that scores effectiveness, plan quality and convergence from git and the records, marks the budget dimensions NOT MEASURED with the reason, says plainly which numbers were unavailable, and never infers tokens from diff sizes.",
+      "files": [],
+      "assertions": [
+        "States that transcripts were unavailable, in the first screen",
+        "Budget-dependent dimensions read NOT MEASURED with a reason",
+        "Does not infer token counts from commit or diff sizes",
+        "Still scores effectiveness, plan quality and convergence from git and the records",
+        "Rework and churn findings cite commit shas or file paths",
+        "Mean is taken over the scored dimensions only",
+        "Footer receipt names what could not be read"
+      ]
+    }
+  ]
+}

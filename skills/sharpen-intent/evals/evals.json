@@ -1,0 +1,38 @@
+{
+  "skill_name": "sharpen-intent",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. Honestly I'm not sure we've ever written down what this project is for, and the objectives we do have are vague. Can you sharpen the intent and tell me what we should focus on now? Write it to <scratchpad>/INTENT.md.",
+      "expected_output": "Review naming where purpose is stated and whether any rules file loads it; six dimensions scored with a verdict from the fixed set; traceability as a fraction with each untraced item read; a draft with for/change/bet/measure+horizon/falsifier/non-goals, at most three objectives and exactly one key focus; unanswered gaps left as TO DECIDE; at most five optioned questions; do-next including pointing a rules file at the draft.",
+      "files": [],
+      "assertions": [
+        "Names the canonical document and whether a rules file references it",
+        "Canonicity scores 0 when nothing loads it, capping the verdict at decorative",
+        "Six dimensions scored with cited reasons and a verdict from the fixed set",
+        "Traceability reported as a fraction with both halves",
+        "Each untraced item read as off-purpose, out-of-date intent, or wording-only",
+        "The draft states the change as an outcome for a named person, not a thing to build",
+        "The draft has a measure with a unit and a horizon, and a falsifier",
+        "At least one non-goal excludes something tempting",
+        "At most three objectives and exactly one key focus with what it waits until",
+        "Unanswered gaps appear as TO DECIDE questions rather than invented sentences",
+        "At most five questions, each optioned and each naming what it blocks",
+        "Do-next includes pointing a rules file at the draft"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We have an intent.md in <repo> that I'm fairly happy with. Is it doing its job? <scratchpad>/INTENT.md please.",
+      "expected_output": "A review that is willing to return 'this steers' with two or three specific fixes, rather than rewriting a document that works.",
+      "files": [],
+      "assertions": [
+        "Willing to return a steering or usable verdict without a full rewrite",
+        "Names specifically what is weak rather than restating the document",
+        "Still checks whether a rules file loads it",
+        "Still reports which open items do not trace back",
+        "Does not invent a new purpose for a project that already states one"
+      ]
+    }
+  ]
+}

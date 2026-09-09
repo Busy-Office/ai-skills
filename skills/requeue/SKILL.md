@@ -129,6 +129,8 @@ items need sharpening" is a good outcome and a cheap one.
 - `references/sharpening.md` — object · test · bound, and the three
   honest outcomes when no test can be written.
 - `references/report-template.md` — the proposal, exactly.
+- `evals/` — the prompts, and `gauntlet/BAR.md`, the bar this skill's
+  proposals are graded against by a blind critic.
 
 ## Related
 

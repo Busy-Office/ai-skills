@@ -1,0 +1,38 @@
+{
+  "skill_name": "loop-atlas",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. Show me how the whole loop actually works end to end, and give me an overview of the agents we have \u2014 what each is good at and when I should use it.",
+      "expected_output": "A published page: one tick in actor lanes with file:line under every stage and every exit drawn, gaps rendered as labelled gaps; a card per agent with class, model, good-at, abilities with costs, four derived stats, summon-when, weakness and hands-off-to, plus the observed Seen line; cards for the main actor, undefined-but-summoned types and vacancies; deck ordered by observed summons; bullets naming only what is visible.",
+      "files": [],
+      "assertions": [
+        "Every stage in the table carries a file:line or a located absence",
+        "Stages with no evidence are drawn as labelled gaps, not omitted",
+        "Every card states class, what it is good at, abilities with costs, and a weakness",
+        "Stats that cannot be derived print an em dash rather than a number",
+        "A card exists for the main actor",
+        "A card exists for any subagent type the runs summoned that no file defines",
+        "A vacancy card exists for any class with no agent",
+        "The deck is ordered by observed summons",
+        "Counts on the cards reconcile with the window totals",
+        "The static frame carries every label and value; animation adds only sequence",
+        "Quotes no transcript content",
+        "Bullets each name something visible in the diagram or the deck"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Draw me the loop in <repo>. We have no agent files at all \u2014 it's just one session doing everything on a cron.",
+      "expected_output": "A flow with the single actor named on every stage, one card for the main actor, vacancy cards for the classes nobody fills, and no invented crew.",
+      "files": [],
+      "assertions": [
+        "Draws the flow with the single actor named on each stage",
+        "Produces a main-actor card rather than an empty deck",
+        "Shows vacancies for the unfilled classes",
+        "Invents no agents that do not exist",
+        "Says once that no transcripts or definitions were available, rather than on every card"
+      ]
+    }
+  ]
+}

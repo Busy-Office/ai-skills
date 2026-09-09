@@ -140,6 +140,8 @@ everything; motion only says what happens in what order.
   derived.
 - `references/page-spec.md` — the published page, exactly.
 - `references/animated-handoff.md` — optional MP4/GIF via `animated-svg`.
+- `evals/` — the prompts, and `gauntlet/BAR.md`, the bar this skill's
+  pages are graded against by a blind critic.
 
 ## Related
 

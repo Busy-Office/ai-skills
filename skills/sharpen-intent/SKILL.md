@@ -151,6 +151,8 @@ one of them is right" is a complete and cheap answer.
 - `references/scorecard.md` — six dimensions, anchors, verdict, caps.
 - `references/interview.md` — the five questions and the rules for asking.
 - `references/report-template.md` — the review and the draft, exactly.
+- `evals/` — the prompts, and `gauntlet/BAR.md`, the bar this skill's
+  drafts are graded against by a blind critic.
 
 ## Related
 

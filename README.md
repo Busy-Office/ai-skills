@@ -283,6 +283,11 @@ node skills/loop-economist/scripts/runs.mjs <repo> --since 14d   # transcripts +
 node skills/loop-economist/scripts/runs.mjs --self-test
 ```
 
+> **Measured:** the bar this skill's output is graded against is written
+> ([`BAR.md`](skills/loop-economist/evals/gauntlet/BAR.md)) and the mechanical pre-check is
+> self-tested, but **no gauntlet round has been run yet** — the rounds table is
+> empty. Treat it as unproven where `loop-doctor` is proven.
+
 ### What it measures
 
 | group | numbers |
@@ -330,6 +335,11 @@ node skills/requeue/scripts/queue.mjs <repo>
 node skills/requeue/scripts/queue.mjs --self-test
 ```
 
+> **Measured:** the bar this skill's output is graded against is written
+> ([`BAR.md`](skills/requeue/evals/gauntlet/BAR.md)) and the mechanical pre-check is
+> self-tested, but **no gauntlet round has been run yet** — the rounds table is
+> empty. Treat it as unproven where `loop-doctor` is proven.
+
 ### What it does
 
 - **Hygiene first** — duplicates, contradictions (done in one file, open
@@ -370,6 +380,11 @@ visible as `TO DECIDE` rather than being filled in.*
 node skills/sharpen-intent/scripts/intent.mjs <repo>
 node skills/sharpen-intent/scripts/intent.mjs --self-test
 ```
+
+> **Measured:** the bar this skill's output is graded against is written
+> ([`BAR.md`](skills/sharpen-intent/evals/gauntlet/BAR.md)) and the mechanical pre-check is
+> self-tested, but **no gauntlet round has been run yet** — the rounds table is
+> empty. Treat it as unproven where `loop-doctor` is proven.
 
 ### What it does
 
@@ -419,6 +434,11 @@ the undefined agent get cards of their own.*
 node skills/loop-atlas/scripts/atlas.mjs <repo> --since 30d
 node skills/loop-atlas/scripts/atlas.mjs --self-test
 ```
+
+> **Measured:** the bar this skill's output is graded against is written
+> ([`BAR.md`](skills/loop-atlas/evals/gauntlet/BAR.md)) and the mechanical pre-check is
+> self-tested, but **no gauntlet round has been run yet** — the rounds table is
+> empty. Treat it as unproven where `loop-doctor` is proven.
 
 ### The flow
 
@@ -471,6 +491,16 @@ as a side effect.
   `references/`.
 - Every parser has a fixture under `fixtures/` and a `--self-test` flag that
   runs them all. Add a fixture before adding a detector.
+- Every skill that writes a report is graded by a **gauntlet**: a bar of
+  measurable criteria (`skills/<skill>/evals/gauntlet/BAR.md`), a mechanical
+  pre-check (`node evals/bar-check.mjs <skill> <artifact.md>`, self-tested
+  against pass/fail fixtures), and one shared blind critic
+  ([`evals/CRITIC.md`](evals/CRITIC.md)) run in a fresh context that has not
+  seen how the artifact was made. Rounds are appended to each skill's
+  `ROUNDS.md`, failures included. Three rounds is the budget; if it is not a
+  pass by round 3, the gap gets recorded rather than the bar lowered. Fixes go
+  into the skill, never into the artifact by hand — an artifact patched to
+  pass teaches the skill nothing.
 - Every skill gets a showcase entry above: a screenshot in `docs/showcase/`,
   what it answers, how to trigger it, and what it reads.
 - Showcase images are generated, not hand-captured, and always from

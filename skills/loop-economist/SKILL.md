@@ -166,6 +166,8 @@ and prefer "in this window" to "always".
 - `references/patterns.md` — subloop, gauntlet, verifier seam, routing,
   cache, budget, escalate-to-input.
 - `references/report-template.md` — the review, exactly.
+- `evals/` — the prompts, and `gauntlet/BAR.md`, the bar this skill's
+  reviews are graded against by a blind critic.
 
 ## Related
 

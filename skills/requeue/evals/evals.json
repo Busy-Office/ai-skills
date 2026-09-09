@@ -1,0 +1,36 @@
+{
+  "skill_name": "requeue",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. The loop keeps picking up things it can't finish and the backlog order feels arbitrary. What should it actually work on next? Put the proposal in <scratchpad>/QUEUE.md \u2014 don't touch our files.",
+      "expected_output": "A proposal: queue health with acceptance share and hygiene counts; ranked loop lane with a reason per item naming the deciding factor and a lane; human-only items removed from the loop's lane with exact asks; top ambiguous items rewritten as object/test/bound; hygiene rows with file:line; do-next; receipt saying nothing was written.",
+      "files": [],
+      "assertions": [
+        "Names the intent document the ranking is anchored to, or says none exists",
+        "Every ranked item has a reason naming one of unblocks/intent/readiness/decay/cost",
+        "No item lacking an acceptance test sits at rank 1",
+        "Human-only items are moved out of the loop's lane with an actionable ask",
+        "Items needing several attempts are laned subloop or gauntlet",
+        "Duplicates and contradictions are rows with file:line and a proposal",
+        "A contradiction is resolved from the repo, and the artifact says which evidence decided it",
+        "At least three ambiguous items rewritten with an object, a test and a bound",
+        "An item with no writable test becomes a question, a bounded spike, or a deletion candidate",
+        "Nothing is written to the target repo, and the footer says so"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Have a look at the roadmap in <repo> and tell me if the priorities are right. I think they mostly are. Write it to <scratchpad>/QUEUE.md.",
+      "expected_output": "A proposal that confirms the existing order where it holds, says so plainly rather than manufacturing churn, and still reports hygiene and the items that need sharpening.",
+      "files": [],
+      "assertions": [
+        "States plainly where the current order is already right",
+        "Does not reorder items without a reason naming a deciding factor",
+        "Still reports duplicates, contradictions, ghosts and stale items",
+        "Still sharpens the ambiguous items at the top",
+        "Does not pad the do-next list to look useful"
+      ]
+    }
+  ]
+}
