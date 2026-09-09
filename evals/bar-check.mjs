@@ -64,7 +64,7 @@ export const SPECS = {
     sections: [/^#+\s*the gate/im, /^#+\s*what the ledger says/im, /^#+\s*why this will not become the bottleneck/im],
     citedTables: [],
     locatedSection: /the gate/,
-    figures: { "test files": "suite.total", "e2e specs": "suite.byKind.e2e", "unit tests selected": "selection.byKind.unit" },
+    figures: { "test files": "suite.total", "e2e specs": "suite.byKind.e2e", "unit tests selected": "selection.byKind.unit", "migrations": "oneWayDoors.migrations.files" },
   },
   "wake-weight": {
     proseMax: 300, leadMax: 40, doNextMax: 3,

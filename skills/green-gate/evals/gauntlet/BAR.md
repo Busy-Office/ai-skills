@@ -17,7 +17,9 @@ is not a pass.
    check left unplaced is a FAIL. "A check" means a distinct command the
    collector found: a *narrowing* of an already-placed check (T0 running a
    subset of T1's tests) is not a second placement, and a check **subsumed** by
-   a broader one must say so by name rather than being left out. The per-tier
+   a broader one must say so by name rather than being left out — **including
+   when the subsumer sits in the same tier**, since two commands in one tier
+   where one contains the other is duplicated work every run. The per-tier
    counts must sum to the number of distinct commands.
 3. **Every tier has a wall-clock budget and a stated degradation** — what runs
    instead when the budget is hit. "It will be fast" is not a budget, and
@@ -46,8 +48,12 @@ and blocks, and can see what evidence would make it cheaper next month.**
 
 Pass requires, in addition to the shared list:
 
-1. **Arithmetic check.** Suite counts and selection fractions in the artifact
-   match the collector's JSON.
+1. **Arithmetic check.** *Every countable figure the artifact asserts about the
+   repo* — suite counts, selection fractions, migration counts, workspace
+   counts — is reproducible from the tree with **git worktree and node_modules
+   copies excluded**, and matches the collector's JSON. A repo carrying
+   worktrees will inflate any hand-counted figure several-fold; if the artifact
+   excludes copies for one count it must exclude them for all of them.
 2. **Ledger honesty.** Where a ledger exists, every proposal cites runs,
    catches and median duration; where none exists, the design says the first
    version is a guess, gives the row format, and names when to re-run.

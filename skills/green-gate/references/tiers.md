@@ -53,8 +53,10 @@ name, in exactly one tier. Two rules stop this quietly failing:
 - **A narrowing is not a placement.** T0 running a *subset* of T1's unit tests
   is T1's check, scoped — not a second check. Counting it twice makes the tier
   table look complete while a real command sits unplaced.
-- **Subsumption must be stated.** If a workspace `build` is covered by the
-  root `pnpm -r build` in T2, write that sentence. An unnamed check is one
+- **Subsumption must be stated**, and it is worth more than a footnote when
+  both sit in the *same* tier: `ui-lint` inside `lint`, a workspace `build`
+  inside `pnpm -r build`, both in T1, means that tier does the work twice on
+  every run. Name it, and say which one actually runs. An unnamed check is one
   nobody decided about, and the commonest way a gate has a hole in it is a
   workspace whose suite no tier actually runs.
 

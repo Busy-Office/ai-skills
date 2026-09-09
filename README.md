@@ -543,9 +543,11 @@ keep that verification from becoming the slowest part of the day.
 
 > **Measured:** graded by a blind critic against
 > [`BAR.md`](skills/green-gate/evals/gauntlet/BAR.md).
-> Rounds 1 and 2 both **failed** — round 2 found that "the touched workspace's
-> tests" ran no unit suite at all for the two workspaces holding 88 of the 134
-> unit files. Round 3 is running. Rounds in
+> Rounds 1–3 all **failed**: round 2 found that "the touched workspace's tests"
+> ran no unit suite at all for the two workspaces holding 88 of the 134 unit
+> files; round 3 caught a migration count inflated 3.7× by git-worktree copies —
+> the same duplication the artifact excluded elsewhere. Round 4 grades against a
+> stricter bar. Rounds in
 > [`ROUNDS.md`](skills/green-gate/evals/gauntlet/ROUNDS.md).
 
 ![green-gate design — three tiers with budgets and what each blocks, a selection fraction, ledger proposals to promote/demote/quarantine, and the mechanisms that keep it off the critical path](docs/showcase/green-gate.png)

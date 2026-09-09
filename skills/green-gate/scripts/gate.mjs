@@ -78,6 +78,21 @@ function suite(repoPath, files) {
   return { total: tests.length, byKind, byWorkspace, files: tests };
 }
 
+// ------------------------------------------------------- one-way doors
+// The checks that guard these are exempt from demotion, so the counts that
+// justify the exemption must come from here rather than be hand-counted — a
+// figure counted by hand over a repo with git worktrees in it will silently
+// include every copy. `walk` already excludes them.
+function oneWayDoors(repoPath, files) {
+  const migrations = files.filter((f) => /(^|\/)(migrations|migrate)\/.*\.(sql|ts|js)$/i.test(f) && !/node_modules/.test(f));
+  const dirs = [...new Set(migrations.map((f) => f.replace(/\/[^/]+$/, "").replace(/\/[^/]+$/, "")))];
+  return {
+    migrations: { files: migrations.length, roots: dirs.slice(0, 4), note: "worktree and node_modules copies excluded" },
+    hasAuth: files.some((f) => /(auth|session|token|login)/i.test(f) && /\.(ts|js|tsx)$/.test(f) && !/test|spec/i.test(f)),
+    hasPayments: files.some((f) => /(stripe|payment|billing|invoice)/i.test(f) && /\.(ts|js|tsx)$/.test(f) && !/test|spec/i.test(f)),
+  };
+}
+
 // ------------------------------------------------- change → tests mapping
 // No import graph: a test that names the changed module is the cheap, honest
 // approximation, and the report says it is an approximation.
@@ -212,6 +227,7 @@ export function gate(repoPathIn, opts = {}) {
     repoPath, collectedAt: new Date().toISOString(),
     window: { since: new Date(sinceMs).toISOString(), spec: opts.since ?? "30d" },
     checks, ci, verifyRules,
+    oneWayDoors: oneWayDoors(repoPath, files),
     suite: { total: s.total, byKind: s.byKind, byWorkspace: s.byWorkspace },
     selection,
     ledger: led,
