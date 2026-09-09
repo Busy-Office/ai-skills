@@ -42,6 +42,22 @@ Escalate beyond the selection when a change touches:
 - **more than ~15 files** → the workspace suite; at that size selection stops
   saving much and starts risking a miss.
 
+## Subsumption shapes to look for
+
+Two commands in one tier where one contains the other means that tier does the
+work twice, every run. They are easy to miss because both look like ordinary
+entries in a list. The recurring shapes:
+
+| shape | example |
+|---|---|
+| a runner scoped to a subdirectory, beside the same runner unscoped | `vitest run --dir packages/contracts` inside `vitest run` |
+| a project-reference build or typecheck, beside the root one | `tsc -b --noEmit` in a workspace, under a root `tsc -b` |
+| a lint script, beside a lint that already calls it | `node scripts/ui-lint.mjs` inside `eslint . && node scripts/ui-lint.mjs` |
+| a workspace build, beside a recursive build | `tsc -b && vite build` inside `pnpm -r build` |
+
+Name the pair, say which one actually runs, and drop the other from the tier —
+or keep both deliberately and say why.
+
 ## Reporting it
 
 Always as a fraction: **"T1 ran 14 of 518 unit tests (0.03) and 0 of 284 e2e."**

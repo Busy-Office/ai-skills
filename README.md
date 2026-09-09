@@ -543,11 +543,12 @@ keep that verification from becoming the slowest part of the day.
 
 > **Measured:** graded by a blind critic against
 > [`BAR.md`](skills/green-gate/evals/gauntlet/BAR.md).
-> Rounds 1–3 all **failed**: round 2 found that "the touched workspace's tests"
-> ran no unit suite at all for the two workspaces holding 88 of the 134 unit
-> files; round 3 caught a migration count inflated 3.7× by git-worktree copies —
-> the same duplication the artifact excluded elsewhere. Round 4 grades against a
-> stricter bar. Rounds in
+> Rounds 1–4 all **failed**, each on something real: a selection fraction that
+> described a tier the design forbids; a T1 scope that ran no unit suite for the
+> two workspaces holding 88 of the 134 unit files; a migration count inflated
+> 3.7× by git-worktree copies; and — the one worth the whole exercise — a
+> **fabricated "30-minute tick"** that nothing in the repo declares, used as the
+> denominator of the opening cost argument. Rounds in
 > [`ROUNDS.md`](skills/green-gate/evals/gauntlet/ROUNDS.md).
 
 ![green-gate design — three tiers with budgets and what each blocks, a selection fraction, ledger proposals to promote/demote/quarantine, and the mechanisms that keep it off the critical path](docs/showcase/green-gate.png)
@@ -565,6 +566,14 @@ and only one of them ever blocks anything.*
 node skills/green-gate/scripts/gate.mjs <repo> --changed "src/a.ts,src/b.ts"
 node skills/green-gate/scripts/gate.mjs --self-test
 ```
+
+**Ecosystem-agnostic.** Checks are read from whichever task file a project
+keeps — `package.json` scripts, a `Makefile` or `justfile`, `pyproject.toml`
+(pytest / ruff / mypy), `tox.ini`, `go.mod`, `Cargo.toml`, Gradle or Maven, a
+`Gemfile`, `composer.json` — and test files are recognised across the same
+ecosystems by naming convention (`*.test.ts`, `test_*.py`, `*_test.go`,
+`*Test.java`, `*_spec.rb`). The fixtures cover a pnpm monorepo and a
+Make + Python + Go repo with no `package.json` at all.
 
 ### The one rule
 

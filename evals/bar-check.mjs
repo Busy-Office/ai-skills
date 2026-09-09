@@ -64,7 +64,7 @@ export const SPECS = {
     sections: [/^#+\s*the gate/im, /^#+\s*what the ledger says/im, /^#+\s*why this will not become the bottleneck/im],
     citedTables: [],
     locatedSection: /the gate/,
-    figures: { "test files": "suite.total", "e2e specs": "suite.byKind.e2e", "unit tests selected": "selection.byKind.unit", "migrations": "oneWayDoors.migrations.files" },
+    figures: { "test files": "suite.total", "e2e specs": "suite.byKind.e2e", "unit tests selected": "selection.byKind.unit", "migrations": "oneWayDoors.migrations.files", "workspaces": "workspaces.withChecks", "package manifests": "workspaces.manifests" },
   },
   "wake-weight": {
     proseMax: 300, leadMax: 40, doNextMax: 3,
@@ -206,6 +206,17 @@ export function barCheck(skill, md, collector = null) {
   if (spec.requireLanes) {
     const laneRows = dataRows(b.tableRows).filter((l) => spec.requireLanes.test(l)).length;
     add("M8", "items carry a lane", `${laneRows} rows name a lane`, laneRows > 0);
+  }
+
+  // M12 — an interval claim is almost always the denominator of a cost
+  // argument. If the artifact states one, it must cite where it comes from or
+  // say it is unknown. An invented cadence makes every derived figure wrong.
+  const cadenceClaim = md.match(/\b(\d+)[- ]?(?:minute|min|hour|hourly|daily)[- ]?(?:tick|cadence|cycle|interval|loop)|every\s+\d+\s*(?:minutes?|hours?)/i);
+  if (cadenceClaim) {
+    const near = md.slice(Math.max(0, cadenceClaim.index - 260), cadenceClaim.index + 260);
+    const sourced = FILE_LINE.test(near) || /\b(unknown|not stated|no cadence|per attempt|unstated)\b/i.test(near);
+    add("M12", "any stated cadence is sourced or marked unknown",
+      sourced ? `“${cadenceClaim[0]}” carries a source or an unknown marker` : `“${cadenceClaim[0]}” is stated with no file:line and no "unknown" nearby`, sourced);
   }
 
   // M9 — hedges in the actionable columns (advisory: the critic decides)

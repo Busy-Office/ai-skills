@@ -54,6 +54,11 @@ Pass requires, in addition to the shared list:
    copies excluded**, and matches the collector's JSON. A repo carrying
    worktrees will inflate any hand-counted figure several-fold; if the artifact
    excludes copies for one count it must exclude them for all of them.
+   **Every integer in the artifact traces to a collector field or a file:line**
+   — including the cadence the cost is priced against. A tick interval nobody
+   wrote down is a fabrication, and it is usually a denominator, so it makes
+   every derived figure wrong with it. Where the repo states no cadence, the
+   report prices per attempt and says the interval is unknown.
 2. **Ledger honesty.** Where a ledger exists, every proposal cites runs,
    catches and median duration; where none exists, the design says the first
    version is a guess, gives the row format, and names when to re-run.

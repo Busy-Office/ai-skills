@@ -51,10 +51,28 @@ node <skill-dir>/scripts/gate.mjs <repo-path> --changed "<files>" --since 30d > 
 
 Check commands per workspace, the suite's shape by kind and workspace, CI
 workflows, what the loop's own rules say about verifying, the change → test
-selection for a representative change, and the ledger if one exists.
+selection for a representative change, one-way doors (migrations, auth,
+payments) counted with worktree copies excluded, the declared cadence — or the
+fact that none is declared — and the ledger if one exists.
+
+Checks are read from whichever task file the project keeps: `package.json`
+scripts, a `Makefile` or `justfile`, `pyproject.toml` (pytest/ruff/mypy),
+`tox.ini`, `go.mod`, `Cargo.toml`, Gradle or Maven, a `Gemfile`,
+`composer.json`. Test files are recognised across the same ecosystems by naming
+convention. A repo with no `package.json` is not a repo with no checks.
 
 No checks at all → say so in three lines. The answer is a first test, not a
 gate, and that is `tdd`'s job rather than this one.
+
+### 1b. Take the cadence from the repo, or say there is none
+
+The cost of "run everything" is priced against how often it would be paid, so
+the interval is a denominator — and a denominator nobody wrote down is a
+fabrication that makes every figure downstream wrong. The collector reports
+declared intervals (cron, `StartInterval`, `/loop 30m`, a workflow `schedule:`)
+separately from mere mentions of time in prose. If nothing declares one — a
+loop that self-paces through `ScheduleWakeup` declares nothing — **price per
+attempt and say the cadence is unknown**.
 
 ### 2. Size the honest cost
 
@@ -161,6 +179,11 @@ again".
 
 **Quarantine expires or it is a graveyard.** Owner and date, or it does not go
 in.
+
+**Every number comes from the collector or carries a file:line.** Counting by
+hand at a shell prompt is how a repo with git worktrees in it reports its
+migrations 3.7× over. If a figure matters enough to print, it matters enough to
+have a source.
 
 **Don't build the ratchet.** Every incident wants to add a check. The
 rebalance exists so things can also leave; a gate that only grows becomes the

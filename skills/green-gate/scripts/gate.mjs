@@ -17,7 +17,9 @@ import { execSync } from "node:child_process";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const IGNORE = new Set(["node_modules", ".git", "dist", "build", "__archived", ".next", "coverage", "vendor", "worktrees", "test-results", "playwright-report"]);
 
-const TEST_FILE = /\.(test|spec)\.[jt]sx?$/i;
+// Test files across the ecosystems this has met. Naming is the only portable
+// signal — a Python project marks tests with test_*.py, Go with _test.go.
+const TEST_FILE = /(\.(test|spec)\.[jt]sx?|(^|\/)test_[\w-]+\.py|[\w-]+_test\.(py|go|rb|rs|exs?)|(^|\/)\w+Test\.(java|kt|cs|php)|(^|\/)\w+Spec\.(scala|groovy)|_spec\.rb)$/i;
 const E2E_HINT = /(^|\/)(e2e|integration|acceptance|browser)(\/|\.)/i;
 const CHECK_SCRIPT = /^(test|tests|typecheck|type-check|tsc|lint|check|verify|e2e|test:e2e|test:unit|test:contract|build|format:check|ui-lint|nav-lint)/i;
 // Where a project keeps the record of its own gate runs, if it keeps one.
@@ -40,9 +42,52 @@ function walk(root, maxDepth = 7) {
 function readJson(p) { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } }
 
 // ------------------------------------------------------------- the checks
+// Every ecosystem states its checks somewhere; only the file differs. The task
+// list below is what makes this skill portable — a repo with no package.json
+// is not a repo with no checks.
+const TASK_SOURCES = [
+  { file: /(^|\/)package\.json$/, kind: "node", extract: (t) => Object.entries(JSON.parse(t).scripts ?? {}) },
+  { file: /(^|\/)Makefile$/, kind: "make", extract: (t) => [...t.matchAll(/^([a-z][\w-]*):(?![=])/gim)].map((m) => [m[1], `make ${m[1]}`]) },
+  { file: /(^|\/)justfile$/i, kind: "just", extract: (t) => [...t.matchAll(/^([a-z][\w-]*):(?!=)/gim)].map((m) => [m[1], `just ${m[1]}`]) },
+  { file: /(^|\/)pyproject\.toml$/, kind: "python", extract: (t) => {
+      const out = [];
+      if (/\[tool\.pytest/.test(t)) out.push(["test", "pytest"]);
+      if (/\[tool\.ruff/.test(t)) out.push(["lint", "ruff check ."]);
+      if (/\[tool\.mypy/.test(t)) out.push(["typecheck", "mypy ."]);
+      if (/\[tool\.poetry\.scripts\]/.test(t)) out.push(["build", "poetry build"]);
+      return out; } },
+  { file: /(^|\/)tox\.ini$/, kind: "python", extract: () => [["test", "tox"]] },
+  { file: /(^|\/)go\.mod$/, kind: "go", extract: () => [["test", "go test ./..."], ["build", "go build ./..."], ["lint", "go vet ./..."]] },
+  { file: /(^|\/)Cargo\.toml$/, kind: "rust", extract: () => [["test", "cargo test"], ["build", "cargo build"], ["lint", "cargo clippy"]] },
+  { file: /(^|\/)(build\.gradle(\.kts)?|pom\.xml)$/, kind: "jvm", extract: (t, f) => /pom\.xml$/.test(f) ? [["test", "mvn test"], ["build", "mvn package"]] : [["test", "gradle test"], ["build", "gradle build"]] },
+  { file: /(^|\/)Gemfile$/, kind: "ruby", extract: () => [["test", "bundle exec rspec"]] },
+  { file: /(^|\/)composer\.json$/, kind: "php", extract: (t) => Object.entries(JSON.parse(t).scripts ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.join(" && ") : String(v)]) },
+];
+
 function discover(repoPath, files) {
   const checks = [];
   const seen = new Set();
+  for (const src of TASK_SOURCES) {
+    if (src.kind === "node") continue;   // handled below, with its own parsing
+    for (const f of files.filter((x) => src.file.test(x) && !x.includes("node_modules"))) {
+      let t; try { t = readFileSync(join(repoPath, f), "utf8"); } catch { continue; }
+      let entries = []; try { entries = src.extract(t, f) ?? []; } catch { continue; }
+      const workspace = dirname(f) === "." ? "(root)" : dirname(f);
+      for (const [name, cmd] of entries) {
+        if (!CHECK_SCRIPT.test(name)) continue;
+        const key = `${workspace}:${name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        checks.push({
+          workspace, name, command: String(cmd).slice(0, 200), from: src.kind,
+          kind: /e2e|playwright|cypress|selenium|behave/i.test(name + cmd) ? "e2e"
+            : /typecheck|tsc|mypy/i.test(name + cmd) ? "typecheck"
+              : /lint|format|clippy|ruff|rubocop|vet/i.test(name + cmd) ? "lint"
+                : /build|package/i.test(name) ? "build" : "unit",
+        });
+      }
+    }
+  }
   for (const f of files.filter((x) => basename(x) === "package.json" && !x.includes("node_modules"))) {
     const pkg = readJson(join(repoPath, f));
     if (!pkg?.scripts) continue;
@@ -53,7 +98,7 @@ function discover(repoPath, files) {
       if (seen.has(key)) continue;
       seen.add(key);
       checks.push({
-        workspace, name, command: String(cmd).slice(0, 200),
+        workspace, name, command: String(cmd).slice(0, 200), from: "node",
         kind: /e2e|playwright|cypress/i.test(name + cmd) ? "e2e"
           : /typecheck|tsc/i.test(name + cmd) ? "typecheck"
             : /lint|format/i.test(name + cmd) ? "lint"
@@ -84,7 +129,7 @@ function suite(repoPath, files) {
 // figure counted by hand over a repo with git worktrees in it will silently
 // include every copy. `walk` already excludes them.
 function oneWayDoors(repoPath, files) {
-  const migrations = files.filter((f) => /(^|\/)(migrations|migrate)\/.*\.(sql|ts|js)$/i.test(f) && !/node_modules/.test(f));
+  const migrations = files.filter((f) => /(^|\/)(migrations?|migrate|alembic\/versions|db\/migrate)\/.*\.(sql|ts|js|py|rb|go)$/i.test(f) && !/node_modules/.test(f));
   const dirs = [...new Set(migrations.map((f) => f.replace(/\/[^/]+$/, "").replace(/\/[^/]+$/, "")))];
   return {
     migrations: { files: migrations.length, roots: dirs.slice(0, 4), note: "worktree and node_modules copies excluded" },
@@ -174,6 +219,37 @@ function rebalance(led, opts = {}) {
   return out;
 }
 
+// The cadence a gate is priced against must come from the repo. If nothing
+// states one, the collector says so, and the report prices per attempt rather
+// than inventing an interval — the fastest way to a confident wrong number is
+// to assume a tick length nobody wrote down.
+function cadence(repoPath, files) {
+  const hits = [];
+  const candidates = files.filter((f) =>
+    /^(\.github\/workflows\/.*\.ya?ml|CLAUDE\.md|AGENTS\.md|\.claude\/.*\.(md|json)|docs\/.*\.md|scripts\/.*)$/i.test(f));
+  for (const f of candidates.slice(0, 200)) {
+    let t; try { t = readFileSync(join(repoPath, f), "utf8"); } catch { continue; }
+    t.split("\n").forEach((line, i) => {
+      if (hits.length >= 6) return;
+      // A declaration sets the interval. A mention merely talks about time —
+      // "grilling the vision every 20 minutes" is prose, not a cadence, and a
+      // gate priced against it would be priced against a sentence.
+      const decl = line.match(/(cron:\s*['"][^'"]+['"]|StartInterval|\/loop\s+\d+[mhd]\b|^\s*schedule:\s*$|interval:\s*\d+)/i);
+      const mention = line.match(/(every\s+\d+\s*(?:minutes?|hours?|mins?)|ScheduleWakeup|cadence)/i);
+      if (decl) hits.push({ kind: "declaration", file: f, line: i + 1, text: line.trim().slice(0, 120), match: decl[1] });
+      else if (mention) hits.push({ kind: "mention", file: f, line: i + 1, text: line.trim().slice(0, 120), match: mention[1] });
+    });
+  }
+  const declarations = hits.filter((h) => h.kind === "declaration");
+  return {
+    stated: declarations.length > 0,
+    selfPaced: hits.some((h) => /ScheduleWakeup/i.test(h.match)),
+    declarations,
+    mentions: hits.filter((h) => h.kind === "mention"),
+    note: declarations.length ? null : "no declared interval — price per attempt and say the cadence is unknown or self-paced",
+  };
+}
+
 export function gate(repoPathIn, opts = {}) {
   const repoPath = resolve(repoPathIn);
   const m = String(opts.since ?? "30d").match(/^(\d+)([dhw])$/);
@@ -216,9 +292,11 @@ export function gate(repoPathIn, opts = {}) {
   const selection = changed.length ? selectFor(repoPath, changed, s.files) : null;
 
   const warnings = [];
-  if (!checks.length) warnings.push("no check commands found in any package.json — there is nothing to gate with yet");
+  if (!checks.length) warnings.push("no check commands found in any package.json, Makefile, pyproject.toml, go.mod, Cargo.toml, Gemfile, composer.json or build file — there is nothing to gate with yet");
   if (!ci.length && s.total > 0) warnings.push(`${s.total} test files and no CI workflow — nothing runs them unless a person or the loop does`);
   if (ci.length && verifyRules.length === 0) warnings.push("CI verifies but the loop's own rules say nothing about verifying — the branch is gated and the tick is not");
+  const cad = cadence(repoPath, files);
+  if (!cad.stated) warnings.push(`no interval is declared anywhere in the repo${cad.selfPaced ? " — the loop self-paces (ScheduleWakeup)" : ""}; price the gate per attempt and say the cadence is unknown rather than assuming one`);
   if (ci.some((c) => c.sharded)) warnings.push("CI already shards its slow suite — this project has met the wall-clock problem before; mirror its tiering rather than proposing a different one");
   if (!led.present) warnings.push(led.note);
   if (s.byKind.e2e > 50) warnings.push(`${s.byKind.e2e} end-to-end specs — running these on every change will make the gate the slowest part of a tick`);
@@ -228,6 +306,12 @@ export function gate(repoPathIn, opts = {}) {
     window: { since: new Date(sinceMs).toISOString(), spec: opts.since ?? "30d" },
     checks, ci, verifyRules,
     oneWayDoors: oneWayDoors(repoPath, files),
+    cadence: cad,
+    workspaces: {
+      withChecks: [...new Set(checks.map((c) => c.workspace))].length,
+      manifests: files.filter((f) => basename(f) === "package.json" && !f.includes("node_modules")).length,
+      names: [...new Set(checks.map((c) => c.workspace))],
+    },
     suite: { total: s.total, byKind: s.byKind, byWorkspace: s.byWorkspace },
     selection,
     ledger: led,
