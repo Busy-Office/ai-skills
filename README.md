@@ -545,6 +545,19 @@ absence just turns into re-derivation.
 
 ---
 
+## Optional: a second brain
+
+Nothing here requires one. But these skills produce a **time series** — a run
+review, a weight report, a queue proposal — and `loop-economist` ends every
+review asking you to compare against the last window, which only works if the
+last one still exists. [`docs/second-brain.md`](docs/second-brain.md) is a
+guideline for keeping them in a NotebookLM notebook per project, with citations,
+alongside the ADRs and research they refer to.
+
+It also draws the line against `graphify`, which is worth having straight:
+**query the graph for *where*, ask the notebook for *why*.** A design decision
+is not in the code, and a call site is not in a review.
+
 ## Conventions for this repo
 
 - A skill never depends on a project's filenames when it can detect the

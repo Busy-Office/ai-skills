@@ -130,6 +130,17 @@ One sentence, and it decides the handoff:
   gate) → hand off to **`loop-doctor`**; that is its question, not this
   one.
 
+### 6b. Compare against the last one, if there is one
+
+Every number here is a point on a curve, and the curve is the argument. Before
+writing, look for the previous review — a project keeping these in a notebook or
+a `docs/reviews/` directory can be asked directly. Where one exists, lead with
+the movement: *"296k per shipping commit, up from 245k; rework 0.23 unchanged."*
+Where none does, say so, and say the review is a baseline rather than a verdict —
+a first measurement cannot tell anyone whether things are getting better.
+
+`docs/second-brain.md` in this repo is one optional way to keep them.
+
 ### 7. Write the review
 
 `references/report-template.md`, exactly: ≤ 60 words, the economics table,
