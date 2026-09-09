@@ -24,7 +24,7 @@ const ALWAYS_LOADED = ["CLAUDE.md", "AGENTS.md", ".claude/CLAUDE.md", ".cursorru
 // A rule that tells the actor to open something, every tick. Rules name files
 // in lists — "Read `A.md` + `B.md`", "read A, B and C" — so a line carrying a
 // read verb contributes every path on it, not just the first.
-const READ_VERB = /\b(read|open|load|consult|check|reads?|append to|update|driven by|against)\b/i;
+const READ_VERB = /\b(read|open|load|consult|check|reads?|append to|update|driven by|against|follow|obey|honou?r|per|see|according to|as (defined|described) in)\b/i;
 const PATH_ON_LINE = /(?:^|[\s`"'(])((?:[\w.-]+\/)*[\w.-]+\.(?:md|json|ya?ml|txt))/g;
 const IMPORT = /^@([\w./-]+)\s*$/gm;
 // A rule can name a file and read only part of it — "tail of X (last 5
@@ -95,7 +95,10 @@ export function weight(repoPathIn, opts = {}) {
   const has = (f) => files.includes(f) || existsSync(join(repoPath, f));
 
   const loaded = new Map();          // file -> {why, viaFile}
-  const add = (f, why, via) => { if (!loaded.has(f) && has(f)) loaded.set(f, { why, via, scoped: null }); };
+  // provenLoad: at least one loader that is itself on a real tick's path names
+  // this file. Doubt does not spread from an uninvoked skill to a file that a
+  // loaded rule also names — proof is a disjunction, not a conjunction.
+  const add = (f, why, via, proven = true) => { if (!loaded.has(f) && has(f)) loaded.set(f, { why, via, scoped: null, provenLoad: proven }); };
 
   // 1. handed over without asking
   for (const f of ALWAYS_LOADED) add(f, "always loaded", null);
@@ -107,10 +110,23 @@ export function weight(repoPathIn, opts = {}) {
     for (const im of t.text.matchAll(IMPORT)) add(im[1].replace(/^\.?\//, ""), "@import", f);
   }
 
-  // 3. the loop's own skill / driver, when there is one
+  // 3. the driver, and — decisively — the skill the driver actually invokes.
+  // A project can hold several loop-shaped skills; only the one the driver
+  // calls is on a real tick's path. Everything else is named by a skill nobody
+  // runs, and is reported as unproven rather than counted as certain.
+  const drivers = files.filter((f) => /^(scripts|bin)\/.*(loop|orchestr|tick|cycle)[^/]*\.(sh|ps1|py|mjs|js|ts)$/i.test(f));
+  const invoked = new Set();
+  for (const d of drivers) {
+    add(d, "driver", null);
+    let t; try { t = readFileSync(join(repoPath, d), "utf8"); } catch { continue; }
+    for (const m of t.matchAll(/["'\s]\/([a-z][\w-]*)\b/gi)) invoked.add(m[1].toLowerCase());
+  }
   for (const f of files) {
-    if (/^\.claude\/skills\/[^/]*(loop|orchestr|tick|cycle)[^/]*\/SKILL\.md$/i.test(f)) add(f, "loop skill", null);
-    if (/^(scripts|bin)\/.*(loop|orchestr|tick|cycle)[^/]*\.(sh|ps1|py|mjs|js|ts)$/i.test(f)) add(f, "driver", null);
+    const m = f.match(/^\.claude\/skills\/([^/]*(?:loop|orchestr|tick|cycle)[^/]*)\/SKILL\.md$/i);
+    if (!m) continue;
+    const name = m[1].toLowerCase();
+    const isInvoked = invoked.has(name) || !drivers.length;
+    add(f, isInvoked ? "the skill the driver invokes" : "a loop skill the driver does not invoke", null, isInvoked);
   }
 
   // 4. what the loaded files tell the actor to read, every tick
@@ -123,7 +139,13 @@ export function weight(repoPathIn, opts = {}) {
         const target = p[1].replace(/^\.?\//, "");
         const hit = files.find((x) => x === target || x.endsWith("/" + target));
         if (!hit) continue;
-        add(hit, `named in ${basename(f)}`, f);
+        // An agent's own definition is loaded when that agent is summoned, not
+        // at wake — charging it to every tick is a category error.
+        if (/^\.claude\/agents\//.test(hit)) continue;
+        const loaderProven = loaded.get(f)?.provenLoad !== false;
+        add(hit, `named in ${basename(f)}`, f, loaderProven);
+        // A file is proven if ANY loader on the tick's path names it.
+        if (loaderProven && loaded.has(hit)) loaded.get(hit).provenLoad = true;
         // Scope belongs to the file, not the line: "read A, tail of B, and the
         // top section of C" scopes B and C only. Read the clause around this
         // path — bounded by the commas either side, not by a character count,
@@ -150,6 +172,7 @@ export function weight(repoPathIn, opts = {}) {
     // size for reference, but never let it into the headline total.
     rows.push({
       ...mm, why: meta.why, via: meta.via, scoped: meta.scoped, conflict: meta.conflict ?? null,
+      unproven: meta.provenLoad === false,
       tokensEstFull: mm.tokensEst,
       tokensEst: meta.scoped ? null : mm.tokensEst,
       growth: growth(repoPath, file, sinceMs, opts.git),
@@ -158,6 +181,8 @@ export function weight(repoPathIn, opts = {}) {
   rows.sort((a, b) => (b.tokensEst ?? 0) - (a.tokensEst ?? 0) || b.tokensEstFull - a.tokensEstFull);
 
   const total = rows.reduce((a, r) => a + (r.tokensEst ?? 0), 0);
+  const provenTotal = rows.filter((r) => !r.unproven).reduce((a, r) => a + (r.tokensEst ?? 0), 0);
+  const unprovenRows = rows.filter((r) => r.unproven);
   const scopedRows = rows.filter((r) => r.scoped);
   const byClass = {};
   for (const r of rows) if (r.tokensEst) byClass[r.class] = (byClass[r.class] ?? 0) + r.tokensEst;
@@ -182,6 +207,7 @@ export function weight(repoPathIn, opts = {}) {
   const warnings = [];
   if (!rows.length) warnings.push("nothing is loaded at wake that this collector can see — no CLAUDE.md, AGENTS.md or loop skill found");
   for (const r of scopedRows) if (r.conflict) warnings.push(`rules disagree on how much of ${r.file} is read: ${r.conflict} — the heavier reading is the one that decides the cost`);
+  if (unprovenRows.length) warnings.push(`${unprovenRows.length} file(s) (~${Math.round((total - provenTotal) / 1000)}k) are named only by a skill the driver does not invoke — reported separately, not as proven wake cost`);
   if (scopedRows.length) warnings.push(`${scopedRows.length} file(s) are read partially by rule (${scopedRows.map((r) => `${basename(r.file)}: ${r.scoped}`).join(", ")}) — counted as unknown, not as their full size`);
   if (total > 40000) warnings.push(`the preamble is ~${Math.round(total / 1000)}k tokens before any work starts`);
   const projected = grew.length && rows.length
@@ -198,12 +224,17 @@ export function weight(repoPathIn, opts = {}) {
       totalLines: rows.filter((r) => !r.scoped).reduce((a, r) => a + r.lines, 0),
       scopedFiles: scopedRows.length,
       totalTokensEst: total,
+      provenTokensEst: provenTotal,
+      unprovenTokensEst: total - provenTotal,
       byClass,
       heaviest: rows.filter((r) => r.tokensEst).slice(0, 3).map((r) => ({ file: r.file, tokensEst: r.tokensEst, share: Number((r.tokensEst / total).toFixed(2)) })),
       ticks,
-      windowCostEst: ticks ? total * ticks : null,
+      // The window is charged on what is proven to load, not on what a skill
+      // nobody invokes happens to name.
+      windowCostEst: ticks ? provenTotal * ticks : null,
       projectedIn90d: projected,
     },
+    unproven: unprovenRows.map((r) => ({ file: r.file, tokensEst: r.tokensEst, why: r.why, via: r.via })),
     scopedReads: scopedRows.map((r) => ({ file: r.file, scoped: r.scoped, tokensEstFull: r.tokensEstFull, why: r.why, conflict: r.conflict })),
     grew, archivable, warnings,
   };

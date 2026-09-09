@@ -58,9 +58,12 @@ gate, and that is `tdd`'s job rather than this one.
 
 ### 2. Size the honest cost
 
-Before designing anything, state what "run everything" would cost and how
-often it would be paid. A 284-spec end-to-end suite on a 30-minute cadence is
-the finding; everything else follows from it.
+Before designing anything, state what "run everything" would cost **and the
+cadence it would be paid at** — a wall-clock estimate per tick and per day, not
+a file count. "205 test files" is an inventory; "the full CI set on a
+30-minute cadence is N minutes a tick, M hours a day" is the finding that makes
+the rest of the design necessary. Where no timing exists, say so and give the
+shape (71 e2e specs, sharded 3 ways in CI, is already evidence about minutes).
 
 ### 2b. Read the CI first, and mirror it
 
@@ -74,8 +77,23 @@ not keep.
 ### 3. Tier
 
 `references/tiers.md`. T0 inner (90 s, selected tests + touched typecheck), T1
-commit (5 min, touched workspace), T2 deep (asynchronous, unbudgeted, holds the
-expensive suites). Put each existing check in exactly one tier and say why.
+commit (5 min, touched workspace), T2 deep (asynchronous, with a deadline
+rather than a wait). **Every check the collector found goes in exactly one
+tier, by name, with a reason** — including the ones that are easy to forget
+(`test:contract`, a link checker, a per-workspace `build`). A check left
+unplaced is a check nobody has decided about, and "mirrors CI's validate" is a
+gesture, not a placement.
+
+Every tier states a budget **and** what it degrades to — with a number. That
+includes T0 and T2: "a per-shard ceiling" with no value cannot be enforced or
+degraded against, and a tier whose degradation is unstated will simply hang the
+first time it matters. An untimed budget is a target, and the report says so.
+
+Two placement traps, both of which make a tier table look complete while a
+check sits unrun: a **narrowing** of an already-placed check is not a second
+placement, and a check **subsumed** by a broader one (a workspace `build` under
+a root `pnpm -r build`) must say so by name. Sum your own per-tier counts
+against the collector's list before writing them down.
 
 Budgets **degrade rather than hang**: on breach, run the cheaper tier, record
 `gate-degraded` with what was skipped, and push the skipped check into T2's
@@ -83,9 +101,13 @@ next batch.
 
 ### 4. Select, don't schedule
 
-`references/selection.md`. Report the selection as a fraction — "T1 runs 14 of
-518 unit tests for a typical change" — because that fraction is what makes the
-gate proportionate, and it is what the rebalance improves over time.
+`references/selection.md`. Watch the workspace edge: "the touched workspace's
+suite" silently covers nothing when that workspace has no suite of its own, or
+when the change crosses several. Say which suite runs in that case.
+
+Report the selection as a fraction **per tier and per kind** — the collector splits it, because a single number invites a design
+to claim "8 of 205" for a tier whose own rules forbid the four e2e specs in
+that 8. State T1's unit selection and where the mapped e2e specs go.
 
 Unmapped changes are a coverage finding, not a reason to run everything.
 

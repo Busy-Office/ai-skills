@@ -15,6 +15,7 @@ loads one. Five of seven statements are outputs, not changes for anyone.
 ## Score
 
 **Verdict: decorative** · mean 2.2 / 5
+**Caps:** nothing loads `intent.md`, so canonicity is 1 and the verdict is capped at decorative regardless of the mean.
 
 | dimension | score | why |
 |---|---|---|

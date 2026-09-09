@@ -18,6 +18,7 @@ an earlier run already touched.
 ## Score
 
 **Verdict: expensive** · mean 2.3 / 5
+**Caps:** effectiveness 4 ≠ 0, human turns 1.2 ≤ 3, rework 0.29 ≤ 0.4 — no cap binds; the mean decides.
 
 | dimension | score | why |
 |---|---|---|

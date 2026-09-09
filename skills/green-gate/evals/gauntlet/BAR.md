@@ -14,9 +14,15 @@ is not a pass.
    be paid at. A design that proposes tiers without saying what it is avoiding
    has not made its own case.
 2. **Every existing check is placed in exactly one tier**, with a reason. A
-   check left unplaced is a FAIL.
+   check left unplaced is a FAIL. "A check" means a distinct command the
+   collector found: a *narrowing* of an already-placed check (T0 running a
+   subset of T1's tests) is not a second placement, and a check **subsumed** by
+   a broader one must say so by name rather than being left out. The per-tier
+   counts must sum to the number of distinct commands.
 3. **Every tier has a wall-clock budget and a stated degradation** — what runs
-   instead when the budget is hit. "It will be fast" is not a budget.
+   instead when the budget is hit. "It will be fast" is not a budget, and
+   neither is an unnumbered ceiling: a budget carries a number even when that
+   number is an untimed target, and the report says which it is.
 4. **The blocking rule is explicit**: a red gate blocks the commit and returns
    the item to the queue; it does not block the loop. A design where a check
    can stall the tick is a FAIL, whatever else it gets right.

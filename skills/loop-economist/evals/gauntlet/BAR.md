@@ -73,6 +73,10 @@ Pass requires, in addition to the shared list:
    and the rule that each round must change the approach; any gauntlet names
    k, where the bar is written, and that the judge wrote none of the attempts.
 
+One prescription may state its parts across two tables (the finding row and the
+non-converging-runs row) provided each part is present and they agree; the bar
+is on the parts, not on their location.
+
 ## Properties with no instrument yet
 
 - Whether the prescriptions actually reduce cost when applied (needs a second
@@ -80,3 +84,6 @@ Pass requires, in addition to the shared list:
 - Whether the model mix was *right* rather than merely reported — the routing
   table in `references/agent-fit.md` is a judgement, not a measurement.
 - The review's own token cost. The harness reports it; record it in ROUNDS.md.
+- Whether a churn file was *reworked* specifically: the collector exposes rework
+  commits by subject and churn by file, but does not join them. A claim that "4
+  of those commits were rework" is NOT MEASURED until it does.

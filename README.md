@@ -287,10 +287,12 @@ node skills/loop-economist/scripts/runs.mjs <repo> --since 14d   # transcripts +
 node skills/loop-economist/scripts/runs.mjs --self-test
 ```
 
-> **Measured:** the bar this skill's output is graded against is written
-> ([`BAR.md`](skills/loop-economist/evals/gauntlet/BAR.md)) and the mechanical pre-check is
-> self-tested, but **no gauntlet round has been run yet** — the rounds table is
-> empty. Treat it as unproven where `loop-doctor` is proven.
+> **Measured:** graded by a blind critic against
+> [`BAR.md`](skills/loop-economist/evals/gauntlet/BAR.md).
+> Round 1 **failed** — the review quoted 95 commits where the window held 94, so
+> its headline unit cost was wrong, and it never named the verdict's caps.
+> Round 2 **passed** 16/16 with every figure independently recomputed. Rounds in
+> [`ROUNDS.md`](skills/loop-economist/evals/gauntlet/ROUNDS.md).
 
 ### What it measures
 
@@ -493,9 +495,12 @@ as a side effect.
 cut. `loop-economist` tells you the bill; this itemises the preamble that is
 charged again on every single tick.
 
-> **Measured:** the bar is written ([`BAR.md`](skills/wake-weight/evals/gauntlet/BAR.md))
-> and the mechanical pre-check is self-tested, but **no gauntlet round has been
-> run yet**.
+> **Measured:** graded by a blind critic against
+> [`BAR.md`](skills/wake-weight/evals/gauntlet/BAR.md).
+> Round 1 **failed** — the critic traced the driver and found three files
+> charged to a tick that never loads them, and one 8k file missed entirely.
+> Round 2 **passed** 15/15, "no fixes required". Rounds in
+> [`ROUNDS.md`](skills/wake-weight/evals/gauntlet/ROUNDS.md).
 
 ![wake-weight report — per-tick and per-window cost, a table of every loaded file with why it is loaded and how fast it grew, cuts with savings and risks](docs/showcase/wake-weight.png)
 
@@ -536,9 +541,12 @@ absence just turns into re-derivation.
 **What it answers:** what should verify the work before it lands — and how to
 keep that verification from becoming the slowest part of the day.
 
-> **Measured:** the bar is written ([`BAR.md`](skills/green-gate/evals/gauntlet/BAR.md))
-> and the mechanical pre-check is self-tested, but **no gauntlet round has been
-> run yet**.
+> **Measured:** graded by a blind critic against
+> [`BAR.md`](skills/green-gate/evals/gauntlet/BAR.md).
+> Rounds 1 and 2 both **failed** — round 2 found that "the touched workspace's
+> tests" ran no unit suite at all for the two workspaces holding 88 of the 134
+> unit files. Round 3 is running. Rounds in
+> [`ROUNDS.md`](skills/green-gate/evals/gauntlet/ROUNDS.md).
 
 ![green-gate design — three tiers with budgets and what each blocks, a selection fraction, ledger proposals to promote/demote/quarantine, and the mechanisms that keep it off the critical path](docs/showcase/green-gate.png)
 
@@ -610,7 +618,9 @@ shrink, on evidence.
   pre-check (`node evals/bar-check.mjs <skill> <artifact.md>`, self-tested
   against pass/fail fixtures), and one shared blind critic
   ([`evals/CRITIC.md`](evals/CRITIC.md)) run in a fresh context that has not
-  seen how the artifact was made. Rounds are appended to each skill's
+  seen how the artifact was made. `--collector <run.json>` diffs the artifact's
+  headline figures against a fresh collection, which is how a stale number gets
+  caught by machine rather than by a critic reading carefully. Rounds are appended to each skill's
   `ROUNDS.md`, failures included. Three rounds is the budget; if it is not a
   pass by round 3, the gap gets recorded rather than the bar lowered. Fixes go
   into the skill, never into the artifact by hand — an artifact patched to

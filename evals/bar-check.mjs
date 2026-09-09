@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 // Mechanical pre-check for a gauntlet artifact.
 //
-//   node evals/bar-check.mjs <skill> <artifact.md>
+//   node evals/bar-check.mjs <skill> <artifact.md> [--collector run.json]
 //   node evals/bar-check.mjs --self-test
+//
+// With --collector it also cross-checks the artifact's headline figures against
+// a fresh collector run. A stale number is the one defect a careful writer
+// still makes and a critic has to catch by hand — this catches it for free.
 //
 // It measures only what a machine can measure exactly — word counts, section
 // presence, row shape, list length. Everything else is the critic's job, and
@@ -33,12 +37,15 @@ export const SPECS = {
     citedTables: [/leak|misroute|no-converge|ill-formed/i],
     sessionsLocate: true,   // a run's evidence is a session id, not a file:line
     requireVerdict: /\b(compounding|productive|expensive|spinning)\b/i,
+    requireCaps: /\bcap(s|ped|ping)?\b/i,
+    figures: { "commits": "derived.commits", "sessions": "derived.sessions", "tokens per commit": "derived.tokensPerCommit" },
   },
   "requeue": {
     proseMax: 350, leadMax: 50, doNextMax: 5,
     opensWith: "table",
     sections: [/^#+\s*health of the queue/im, /^#+\s*proposed order/im, /^#+\s*hygiene/im],
     citedTables: [/duplicate|contradiction|ghost|stale/i],
+    figures: { "open items": "summary.open", "acceptance share": "summary.acceptanceShare" },
     requireLanes: /\b(loop|subloop|gauntlet|human|blocked)\b/i,
   },
   "sharpen-intent": {
@@ -48,6 +55,8 @@ export const SPECS = {
     citedTables: [],
     locatedSection: /does the work trace back/,
     requireVerdict: /\b(steering|usable|decorative|absent)\b/i,
+    requireCaps: /\bcap(s|ped|ping)?\b/i,
+    figures: { "open items": "traceability.openItems", "traced": "traceability.traced" },
   },
   "green-gate": {
     proseMax: 350, leadMax: 50, doNextMax: 4,
@@ -55,6 +64,7 @@ export const SPECS = {
     sections: [/^#+\s*the gate/im, /^#+\s*what the ledger says/im, /^#+\s*why this will not become the bottleneck/im],
     citedTables: [],
     locatedSection: /the gate/,
+    figures: { "test files": "suite.total", "e2e specs": "suite.byKind.e2e", "unit tests selected": "selection.byKind.unit" },
   },
   "wake-weight": {
     proseMax: 300, leadMax: 40, doNextMax: 3,
@@ -62,6 +72,7 @@ export const SPECS = {
     sections: [/^#+\s*what is loaded/im, /^#+\s*the cuts/im, /^#+\s*what not to cut/im],
     citedTables: [],
     locatedSection: /what is loaded/,
+    figures: { "per-tick tokens": "summary.provenTokensEst", "window cost": "summary.windowCostEst", "90-day projection": "summary.projectedIn90d" },
   },
   "loop-atlas": {
     proseMax: 400, leadMax: 60, doNextMax: 5,
@@ -117,7 +128,20 @@ function dataRows(tableLines) {
   return tableLines.filter((l) => !/^\s*\|[\s:|-]+\|\s*$/.test(l) && (l.match(/\|/g) ?? []).length >= 2);
 }
 
-export function barCheck(skill, md) {
+// How a number is legitimately written in prose: raw, grouped, k, M, or a rate.
+function renderings(n) {
+  if (typeof n !== "number" || !Number.isFinite(n)) return [];
+  const out = new Set([String(n)]);
+  out.add(n.toLocaleString("en-US"));
+  out.add(n.toLocaleString("en-US").replace(/,/g, " "));
+  out.add(n.toLocaleString("en-US").replace(/,/g, "\u202f"));
+  if (n >= 1000) { out.add(`${Math.round(n / 1000)}k`); out.add(`${(n / 1000).toFixed(1)}k`); }
+  if (n >= 1e6) { out.add(`${Math.round(n / 1e6)}M`); out.add(`${(n / 1e6).toFixed(1)}M`); out.add(`${(n / 1e6).toFixed(2)}M`); }
+  if (n < 10) { out.add(n.toFixed(2)); out.add(n.toFixed(1)); }
+  return [...out].filter(Boolean);
+}
+
+export function barCheck(skill, md, collector = null) {
   const spec = SPECS[skill];
   if (!spec) throw new Error(`no spec for skill: ${skill}`);
   const b = blocks(md);
@@ -192,6 +216,25 @@ export function barCheck(skill, md) {
     verdict: hedged.length ? "REVIEW" : "PASS",
   });
 
+  // M10 — the caps must be named where the class has them. A verdict word on
+  // its own does not show the caps were considered.
+  if (spec.requireCaps) {
+    const has = spec.requireCaps.test(md);
+    add("M10", "the verdict's caps are named", has ? "found a cap statement" : "no mention of the caps", has);
+  }
+
+  // M11 — headline figures match a fresh collector run. Catches the stale
+  // number: a review written from yesterday's collection.
+  if (collector && spec.figures) {
+    for (const [label, path] of Object.entries(spec.figures)) {
+      const val = path.split(".").reduce((x, k) => (x == null ? undefined : x[k]), collector);
+      const forms = renderings(val);
+      if (!forms.length) { rows.push({ id: "M11", what: `${label} present in collector`, evidence: `collector has no ${path}`, verdict: "NOT MEASURED" }); continue; }
+      const found = forms.some((f) => md.includes(f));
+      add("M11", `${label} matches the collector`, found ? `${val} appears as one of ${forms.slice(0, 3).join(" / ")}` : `collector says ${val} (${forms.slice(0, 3).join(" / ")}) — not found in the artifact`, found);
+    }
+  }
+
   const failed = rows.filter((r) => r.verdict === "FAIL").length;
   return { skill, rows, failed, prose, lead, verdict: failed ? "FAIL" : "PASS" };
 }
@@ -227,8 +270,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (args.includes("--self-test")) selfTest();
   else {
     const [skill, path] = args;
-    if (!skill || !path) { console.error("usage: bar-check.mjs <skill> <artifact.md>"); process.exit(2); }
-    const res = barCheck(skill, readFileSync(path, "utf8"));
+    if (!skill || !path) { console.error("usage: bar-check.mjs <skill> <artifact.md> [--collector run.json]"); process.exit(2); }
+    const ci = args.indexOf("--collector");
+    const collector = ci >= 0 && args[ci + 1] ? JSON.parse(readFileSync(args[ci + 1], "utf8")) : null;
+    const res = barCheck(skill, readFileSync(path, "utf8"), collector);
     console.log(render(res));
     process.exit(res.verdict === "PASS" ? 0 : 1);
   }

@@ -57,6 +57,13 @@ Pick the window from the loop's cadence: at least **20 ticks or 14 days**,
 whichever is longer. Say the window in the first line of the review; every
 rate is meaningless without it.
 
+**Write the review from one collection, and quote that collection's numbers.**
+A rolling window moves: a review drafted from Monday's run and finished on
+Tuesday will state a commit count that no longer exists, and every derived rate
+inherits it. Re-run the collector immediately before writing, and verify with
+`node evals/bar-check.mjs loop-economist <artifact> --collector <run.json>`,
+which compares the headline figures against the collection.
+
 No transcripts (a loop that runs elsewhere, or a fresh machine) → the
 budget half is `NOT MEASURED`. Score effectiveness, plan quality and
 convergence from git and the records, and say plainly which four numbers
@@ -90,6 +97,12 @@ a number, mean → verdict (`compounding · productive · expensive ·
 spinning`), then the caps: nothing shipped caps at *spinning*; more than
 three human turns a run caps at *productive*; rework over 0.4 caps at
 *expensive*.
+
+**Show the mean and name every cap, including the ones that do not bind.** Add
+the numbers up and check the division — a mean that disagrees with its own six
+scores is the easiest thing in the review to falsify. Then one line: which caps
+were tested, which applied, and which did not. A verdict word alone does not
+show the caps were considered.
 
 Write the reason before the digit. A reason citing two out-of-band metrics
 cannot carry a 3.

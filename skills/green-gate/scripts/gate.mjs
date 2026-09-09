@@ -96,7 +96,16 @@ function selectFor(repoPath, changed, tests) {
     else misses.push(c);
   }
   const all = [...new Set(out.flatMap((o) => o.tests))];
-  return { mapped: out, unmapped: misses, selected: all, selectedCount: all.length };
+  // Split by kind: a selection reported as one number lets a design claim a
+  // fraction for a tier whose own rules forbid half of what is in it.
+  const unit = all.filter((t) => !E2E_HINT.test(t));
+  const e2e = all.filter((t) => E2E_HINT.test(t));
+  return {
+    mapped: out, unmapped: misses,
+    selected: all, selectedCount: all.length,
+    byKind: { unit: unit.length, e2e: e2e.length },
+    forTier: { T1: unit, T2: e2e },   // e2e never belongs in the commit gate
+  };
 }
 
 // ------------------------------------------------------------- the ledger

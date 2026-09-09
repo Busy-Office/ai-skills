@@ -32,13 +32,34 @@ tick**, plus the ledger CI does not keep.
 
 | tier | when | scope | budget | on breach |
 |---|---|---|---|---|
-| **T0 · inner** | every attempt, before the diff is even complete | typecheck the touched package + the unit tests that name the changed modules | **90 s** | drop the typecheck of untouched packages; never skip the selected tests |
-| **T1 · commit** | before the commit lands | the touched workspace's unit suite + lint | **5 min** | fall back to T0's selection, record `gate-degraded`, and commit with the degradation named in the message |
-| **T2 · deep** | off the critical path — every N ticks, before a deploy, or on a cadence | end-to-end, cross-workspace, build | **no budget, because nothing waits on it** | a failure opens a follow-up item; it does not roll back the tick that caused it |
+| **T0 · inner** | every attempt, before the diff is even complete | typecheck the touched package + the unit tests that name the changed modules | **90 s** | drop to the selected tests alone and skip the typecheck; record `gate-degraded: typecheck`. The selected tests are never skipped — if they alone exceed the budget, the selection is too wide and that is the finding |
+| **T1 · commit** | before the commit lands | the touched workspace's unit suite + lint — **or the root suite when the change crosses workspaces, or when the touched workspace has no suite of its own** | **5 min** | fall back to T0's selection, record `gate-degraded`, and commit with the degradation named in the message |
+| **T2 · deep** | off the critical path — every N ticks, before a deploy, or on a cadence | end-to-end, cross-workspace, build | **a deadline, not a wait: it must finish before the next deploy gate** (and a per-shard ceiling, so one hung spec cannot hold the batch) | drop the lowest-value shards by catches-per-minute, record what was dropped as green debt, and let the batch close. A failure opens a follow-up item; it does not roll back the tick that caused it |
+
+"Asynchronous" is not the same as "unbounded". T2 blocks nothing, but a tier
+with no deadline quietly becomes a tier that never completes, and then the
+deploy gate is passing on checks that never ran. The deadline is what makes
+green debt real rather than notional.
 
 T0 and T1 are synchronous and small. **T2 is asynchronous and is the only place
 the expensive things live.** That split is what keeps a 284-spec end-to-end
 suite from turning a 30-minute tick into a three-hour one.
+
+## Every check lands somewhere, and "somewhere" is named
+
+Take the list of check commands the collector found and place each one, by
+name, in exactly one tier. Two rules stop this quietly failing:
+
+- **A narrowing is not a placement.** T0 running a *subset* of T1's unit tests
+  is T1's check, scoped — not a second check. Counting it twice makes the tier
+  table look complete while a real command sits unplaced.
+- **Subsumption must be stated.** If a workspace `build` is covered by the
+  root `pnpm -r build` in T2, write that sentence. An unnamed check is one
+  nobody decided about, and the commonest way a gate has a hole in it is a
+  workspace whose suite no tier actually runs.
+
+Check the arithmetic of your own claim: the per-tier counts must sum to the
+number of distinct commands the collector found.
 
 ## Choosing what runs, per change
 
@@ -66,6 +87,14 @@ does not hang**:
 A degradation is a fact in the ledger, not a failure. Three degradations in a
 row on the same check is the signal to re-tier it, and the rebalance does that
 automatically (`ledger.md`).
+
+## State the rule even when the count is zero
+
+A design is judged on the rules it commits to, not on what happened to come up
+this week. If nothing is flaky today, the quarantine rule — owner and expiry —
+still gets written down; if no check is demotable yet, the 20-run floor still
+gets stated. Otherwise the first time it matters, the rule is invented under
+pressure by whoever is on the keyboard.
 
 ## Deferred work is debt, and debt is visible
 

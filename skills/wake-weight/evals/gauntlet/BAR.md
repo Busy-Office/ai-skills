@@ -29,7 +29,12 @@ criteria. A green pre-check is not a pass.
 7. **A "what not to cut" section exists** and names at least one thing —
    including anything whose absence would turn into re-derivation.
 8. **Nothing written to the target repo**, no project command run.
-9. **The heuristic's edges are stated**: which rows the collector could not
+9. **The path being modelled is named.** A project can hold more than one
+   driver — a script loop and a self-scheduling one. The report says which
+   path's wake it measured and, where the records show ticks on another path,
+   says so. An owner acting on the wake weight of a driver that has not fired
+   lately is being misled by an accurate number.
+10. **The heuristic's edges are stated**: which rows the collector could not
    prove are read every tick, and that a driver reading something the rules
    never name would be invisible.
 
@@ -43,7 +48,10 @@ Pass requires, in addition to the shared list:
 1. **Sum check.** The per-file token estimates sum to the stated per-tick
    total within 2%.
 2. **Provenance check.** For two rows of the critic's choosing, the cited file
-   and line really do name that file on a line with a read verb.
+   and line really do name that file on a line with a read verb. Where a rule
+   wraps across two lines, citing either the verb line or the filename line is
+   acceptable — the citation must land the reader on the rule, not on a
+   particular half of it.
 3. **The dominant class is named** and the prescribed cut matches it — an
    archive rule for a queue, a tail read for a log, on-demand for a map.
 4. **Cut 1 is the largest saving that is also safe** (dead weight before
