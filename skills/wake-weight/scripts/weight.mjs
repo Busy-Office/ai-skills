@@ -27,6 +27,10 @@ const ALWAYS_LOADED = ["CLAUDE.md", "AGENTS.md", ".claude/CLAUDE.md", ".cursorru
 const READ_VERB = /\b(read|open|load|consult|check|reads?|append to|update|driven by|against)\b/i;
 const PATH_ON_LINE = /(?:^|[\s`"'(])((?:[\w.-]+\/)*[\w.-]+\.(?:md|json|ya?ml|txt))/g;
 const IMPORT = /^@([\w./-]+)\s*$/gm;
+// A rule can name a file and read only part of it — "tail of X (last 5
+// entries)", "the top section of Y". Counting the whole file then overstates
+// the wake, badly: on the first real project this was 90k of a claimed 172k.
+const SCOPED = /\b(tail|head|top section|first \d+|last ~?\d+|latest \d+|most recent|excerpt|summary of|section of|top of)\b/i;
 const CLASSES = [
   ["queue", /(BACKLOG|ROADMAP|TODO|TASKS?|MILESTONES?|QUEUE|SCENARIOS)/i],
   ["record", /(LOOP-STATUS|ORCHESTRATOR-STATE|STATUS|STATE|INBOX|GATES?|HUMAN|LOG|HISTORY|JOURNAL|SESSION|CHANGELOG|MANUAL-ACTIONS)/i],
@@ -91,7 +95,7 @@ export function weight(repoPathIn, opts = {}) {
   const has = (f) => files.includes(f) || existsSync(join(repoPath, f));
 
   const loaded = new Map();          // file -> {why, viaFile}
-  const add = (f, why, via) => { if (!loaded.has(f) && has(f)) loaded.set(f, { why, via }); };
+  const add = (f, why, via) => { if (!loaded.has(f) && has(f)) loaded.set(f, { why, via, scoped: null }); };
 
   // 1. handed over without asking
   for (const f of ALWAYS_LOADED) add(f, "always loaded", null);
@@ -118,7 +122,21 @@ export function weight(repoPathIn, opts = {}) {
       for (const p of line.matchAll(PATH_ON_LINE)) {
         const target = p[1].replace(/^\.?\//, "");
         const hit = files.find((x) => x === target || x.endsWith("/" + target));
-        if (hit) add(hit, `named in ${basename(f)}`, f);
+        if (!hit) continue;
+        add(hit, `named in ${basename(f)}`, f);
+        // Scope belongs to the file, not the line: "read A, tail of B, and the
+        // top section of C" scopes B and C only. Read the clause around this
+        // path — bounded by the commas either side, not by a character count,
+        // or "tail of X" leaks onto the file listed just before it.
+        const at = p.index ?? 0;
+        const before = line.slice(Math.max(0, at - 40), at);
+        const clauseBefore = before.slice(before.lastIndexOf(",") + 1);
+        const after = line.slice(at + p[1].length).replace(/^[`"']/, "");
+        const clauseAfter = after.slice(0, Math.min(after.search(/[,;]|$/) < 0 ? 20 : after.search(/[,;]|$/), 20));
+        const scope = `${clauseBefore} ${clauseAfter}`.match(SCOPED)?.[0]?.toLowerCase() ?? null;
+        const row = loaded.get(hit);
+        if (scope && !row.scoped) row.scoped = scope;
+        else if (!scope && row.scoped) row.conflict = `${basename(f)} reads it whole; another rule reads only the ${row.scoped}`;
       }
     }
   }
@@ -128,13 +146,21 @@ export function weight(repoPathIn, opts = {}) {
     const mm = measure(repoPath, file);
     if (!mm) continue;
     delete mm.text;
-    rows.push({ ...mm, why: meta.why, via: meta.via, growth: growth(repoPath, file, sinceMs, opts.git) });
+    // A scoped read charges an unknown fraction of the file. Keep the full
+    // size for reference, but never let it into the headline total.
+    rows.push({
+      ...mm, why: meta.why, via: meta.via, scoped: meta.scoped, conflict: meta.conflict ?? null,
+      tokensEstFull: mm.tokensEst,
+      tokensEst: meta.scoped ? null : mm.tokensEst,
+      growth: growth(repoPath, file, sinceMs, opts.git),
+    });
   }
-  rows.sort((a, b) => b.tokensEst - a.tokensEst);
+  rows.sort((a, b) => (b.tokensEst ?? 0) - (a.tokensEst ?? 0) || b.tokensEstFull - a.tokensEstFull);
 
-  const total = rows.reduce((a, r) => a + r.tokensEst, 0);
+  const total = rows.reduce((a, r) => a + (r.tokensEst ?? 0), 0);
+  const scopedRows = rows.filter((r) => r.scoped);
   const byClass = {};
-  for (const r of rows) byClass[r.class] = (byClass[r.class] ?? 0) + r.tokensEst;
+  for (const r of rows) if (r.tokensEst) byClass[r.class] = (byClass[r.class] ?? 0) + r.tokensEst;
   const grew = rows.filter((r) => r.growth && r.growth.net > 0)
     .sort((a, b) => b.growth.net - a.growth.net)
     .map((r) => ({ file: r.file, netLines: r.growth.net, commits: r.growth.commits }));
@@ -155,6 +181,8 @@ export function weight(repoPathIn, opts = {}) {
   const ticks = Number(opts.ticks ?? 0) || null;
   const warnings = [];
   if (!rows.length) warnings.push("nothing is loaded at wake that this collector can see — no CLAUDE.md, AGENTS.md or loop skill found");
+  for (const r of scopedRows) if (r.conflict) warnings.push(`rules disagree on how much of ${r.file} is read: ${r.conflict} — the heavier reading is the one that decides the cost`);
+  if (scopedRows.length) warnings.push(`${scopedRows.length} file(s) are read partially by rule (${scopedRows.map((r) => `${basename(r.file)}: ${r.scoped}`).join(", ")}) — counted as unknown, not as their full size`);
   if (total > 40000) warnings.push(`the preamble is ~${Math.round(total / 1000)}k tokens before any work starts`);
   const projected = grew.length && rows.length
     ? Math.round(total + grew.reduce((a, g) => a + g.netLines, 0) * 3 * (total / rows.reduce((a, r) => a + r.lines, 0)))
@@ -167,14 +195,16 @@ export function weight(repoPathIn, opts = {}) {
     files: rows,
     summary: {
       filesLoaded: rows.length,
-      totalLines: rows.reduce((a, r) => a + r.lines, 0),
+      totalLines: rows.filter((r) => !r.scoped).reduce((a, r) => a + r.lines, 0),
+      scopedFiles: scopedRows.length,
       totalTokensEst: total,
       byClass,
-      heaviest: rows.slice(0, 3).map((r) => ({ file: r.file, tokensEst: r.tokensEst, share: Number((r.tokensEst / total).toFixed(2)) })),
+      heaviest: rows.filter((r) => r.tokensEst).slice(0, 3).map((r) => ({ file: r.file, tokensEst: r.tokensEst, share: Number((r.tokensEst / total).toFixed(2)) })),
       ticks,
       windowCostEst: ticks ? total * ticks : null,
       projectedIn90d: projected,
     },
+    scopedReads: scopedRows.map((r) => ({ file: r.file, scoped: r.scoped, tokensEstFull: r.tokensEstFull, why: r.why, conflict: r.conflict })),
     grew, archivable, warnings,
   };
 }
