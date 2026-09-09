@@ -1,0 +1,13 @@
+{
+  "summary.files": 2,
+  "summary.open": 7,
+  "summary.withAcceptance": 3,
+  "summary.acceptanceShare": 0.43,
+  "summary.vague": 2,
+  "summary.blocked": 1,
+  "summary.needsHuman": 2,
+  "summary.duplicates": 2,
+  "summary.contradictions": 1,
+  "intentFiles": ["README.md"],
+  "contradictions.0.text": "improve the dashboard"
+}

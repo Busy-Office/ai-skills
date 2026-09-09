@@ -1,7 +1,7 @@
 {
   "name": "busy-office",
-  "version": "0.2.0",
-  "description": "Busy Office skills for Claude Code: progress-dashboard (one-page stakeholder status for any git project) and loop-doctor (explain, diagnose and improve a scheduled autonomous loop). Shape-detecting, read-only collectors with fixtures; per-project overrides via .claude/<skill>.json.",
+  "version": "0.3.0",
+  "description": "Busy Office skills for Claude Code: progress-dashboard (one-page stakeholder status), loop-doctor (design of a scheduled autonomous loop), loop-economist (what the loop's actual runs cost and produced) and requeue (reprioritise and sharpen the queue the loop is fed). Shape-detecting, read-only collectors with fixtures; per-project overrides via .claude/<skill>.json.",
   "author": {
     "name": "Busy Office",
     "url": "https://github.com/Busy-Office"
@@ -21,6 +21,13 @@
     "orchestrator",
     "cron",
     "routine",
-    "audit"
+    "audit",
+    "tokens",
+    "cost",
+    "efficiency",
+    "multi-agent",
+    "orchestration",
+    "backlog",
+    "prioritisation"
   ]
 }

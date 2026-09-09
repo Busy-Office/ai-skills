@@ -1,0 +1,15 @@
+{
+  "derived.sessions": 1,
+  "derived.billableTokens": 6660,
+  "derived.cacheHitRate": 0.9,
+  "derived.humanTurns": 1,
+  "derived.toolErrors": 2,
+  "derived.toolCallsPerEdit": 3.5,
+  "derived.thinkingShare": 0.4,
+  "derived.sidechainShare": 0.17,
+  "derived.thrashSessions": ["s1"],
+  "derived.subagentMix": { "Explore": 1 },
+  "records.0.openItems": 2,
+  "records.0.vagueItems": 1,
+  "sessions.0.repeatedToolCalls.0.times": 3
+}

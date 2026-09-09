@@ -40,6 +40,8 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 |---|---|---|
 | [progress-dashboard](#progress-dashboard) | One-page stakeholder progress dashboard for any git project | "how is this project going", "where are we", "what's blocked", "what's waiting on me", "status update" |
 | [loop-doctor](#loop-doctor) | Explains, diagnoses and prescribes for a scheduled autonomous loop | "how does our loop work", "review the loop", "the loop is stuck / doesn't stop", "is LOOPS.md out of date" |
+| [loop-economist](#loop-economist) | Measures what the loop's actual runs cost and produced | "what is the loop costing", "is it efficient", "why does it keep redoing work", "are we using the right agents" |
+| [requeue](#requeue) | Reprioritises and sharpens the queue the loop is fed | "what should we work on next", "reprioritise the backlog", "the roadmap is stale" |
 
 ---
 
@@ -230,6 +232,85 @@ skill's reviews passed 30/30 objective checks vs 16/30 for free-form
 reviews at similar token cost — its edge was consistency and the safety
 checks a free-form review skips (kill switch, self-approval, block-vs-log
 contradictions).
+
+---
+
+## loop-economist
+
+**What it answers:** what a unit of shipped change actually cost, and
+whether the right agent produced it. Where `loop-doctor` reads the loop's
+documents, loop-economist reads its **runs** — every Claude Code session
+transcript and every commit in a window.
+
+### Usage
+
+> how efficient is our loop?
+> what is the loop costing us in tokens?
+> why does it keep redoing the same work?
+> are we using the right agents for this?
+
+```bash
+node skills/loop-economist/scripts/runs.mjs <repo> --since 14d   # transcripts + git
+node skills/loop-economist/scripts/runs.mjs --self-test
+```
+
+### What it measures
+
+| group | numbers |
+|---|---|
+| Budget | billable tokens, **tokens per commit**, cache hit rate, subagent share, thinking share, wall clock |
+| Effectiveness | commits and diff size, queue movement, sessions that burned tokens and edited nothing |
+| Convergence | rework commits, churn files, sessions that repeated one identical call, tool error rate, tool calls per edit |
+| Autonomy load | human turns per run, interrupts |
+| Plan quality | share of open items with an acceptance test, and whether the runs that thrashed were on the vague ones |
+| Agent fit | model mix, subagent mix and tool mix against a routing table — over-powered, unrouted, or no verifier at all |
+
+Six dimensions are scored 0–5 into a verdict (`compounding · productive ·
+expensive · spinning`), and every prescription closes a named finding: a
+verifier seam, routing the searching out to a search subagent, cache
+discipline, a per-tick budget, a persona split, and for items one pass
+cannot reach — a **bounded subloop** (try · verify · adjust, each round
+must change the approach) or a **gauntlet** (k independent attempts, a bar
+written first, a judge that wrote none of them).
+
+It ends by naming the binding constraint: the actor (fix it here), the
+input (hand off to `requeue`), or the design (hand off to `loop-doctor`).
+
+Transcripts are never quoted — sessions are cited by id and by number.
+
+---
+
+## requeue
+
+**What it answers:** what the loop should be fed next, and which items are
+not tasks yet. Most loops that look broken are being handed wishes.
+
+### Usage
+
+> what should we work on next?
+> reprioritise the backlog
+> which of these can the loop actually finish?
+
+```bash
+node skills/requeue/scripts/queue.mjs <repo>
+node skills/requeue/scripts/queue.mjs --self-test
+```
+
+### What it does
+
+- **Hygiene first** — duplicates, contradictions (done in one file, open
+  in another), ghosts that trace to no intent, stale items with their age.
+- **Ranks** against the project's intent document by strict precedence:
+  **unblocks › intent › readiness › decay › cost**, one reason per item.
+- **Splits the lanes** — `loop`, `loop, subloop`, `loop, gauntlet`, and
+  `human` (a credential, an account, a decision — it leaves the loop's
+  queue and becomes a gate item with the exact ask).
+- **Sharpens the top items** into *object · test · bound*; where no test
+  can be written, it chooses honestly between a question for a person, a
+  bounded spike, and deletion.
+
+The output is a proposal. It writes to the repo only when asked, and never
+reorders and deletes in the same commit.
 
 ---
 
