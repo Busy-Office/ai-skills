@@ -166,3 +166,11 @@ and prefer "in this window" to "always".
 - `references/patterns.md` — subloop, gauntlet, verifier seam, routing,
   cache, budget, escalate-to-input.
 - `references/report-template.md` — the review, exactly.
+
+## Related
+
+`loop-doctor` reads the same loop's documents and judges the design;
+`loop-atlas` draws the flow and the crew as they are; `requeue` fixes the input
+when the items were never tasks; `sharpen-intent` fixes what the items are
+ranked against. Step 6 names which of them the findings actually belong to —
+that hand-off is part of the review, not an afterthought.

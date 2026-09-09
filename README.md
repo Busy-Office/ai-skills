@@ -45,6 +45,28 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 | [sharpen-intent](#sharpen-intent) | Makes the intent / objective / key-focus document steer | "what is this project really for", "sharpen the objectives", "what should we focus on now", "the goals are vague" |
 | [loop-atlas](#loop-atlas) | The loop as one animated picture; the agents as a deck of cards | "show me how the whole loop works", "diagram our agent workflow", "which agent should I use", "roster of our agents" |
 
+### The loop family
+
+Five of these skills share a subject — an autonomous, multi-agent engineering
+loop — and answer different questions about it. Claude picks by description, but
+when you want to be explicit:
+
+| ask | skill | what it reads |
+|---|---|---|
+| *How does this thing work? Is the design sound, safe, does it stop?* | **loop-doctor** | the loop's **documents** |
+| *What is it costing, and is the right agent doing the work?* | **loop-economist** | the **runs** — transcripts and commits |
+| *Show me the whole thing, and who is on the crew* | **loop-atlas** | definitions + observed summons |
+| *What should it work on next?* | **requeue** | the queue |
+| *What is any of this for?* | **sharpen-intent** | the purpose document |
+
+They hand off to each other rather than overlap: the economist names its binding
+constraint (the actor → fix it there; the input → `requeue`; the design →
+`loop-doctor`), `requeue` ranks against whatever `sharpen-intent` produced, and
+`loop-atlas` only draws — its vacancies and gaps are the other two's input.
+
+The two loops in the middle are the same loop seen from opposite sides: a loop
+can score well on its documents and still ship the same file four times.
+
 ---
 
 ## progress-dashboard
