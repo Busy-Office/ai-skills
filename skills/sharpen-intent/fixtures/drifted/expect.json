@@ -1,0 +1,14 @@
+{
+  "primary": "intent.md",
+  "summary.sources": 1,
+  "summary.measurableStatements": 1,
+  "summary.outcomeStatements": 1,
+  "summary.outputOnlyStatements": 2,
+  "summary.hedges": ["world-class"],
+  "summary.hasNonGoals": true,
+  "traceability.openItems": 3,
+  "traceability.traced": 2,
+  "traceability.share": 0.67,
+  "traceability.untraced.0.text": "Add SSO login with Okta",
+  "warnings.0": "no rules file (CLAUDE.md / LOOPS.md / SKILL.md) points at intent.md — an actor would never load it"
+}

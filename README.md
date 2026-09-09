@@ -42,6 +42,7 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 | [loop-doctor](#loop-doctor) | Explains, diagnoses and prescribes for a scheduled autonomous loop | "how does our loop work", "review the loop", "the loop is stuck / doesn't stop", "is LOOPS.md out of date" |
 | [loop-economist](#loop-economist) | Measures what the loop's actual runs cost and produced | "what is the loop costing", "is it efficient", "why does it keep redoing work", "are we using the right agents" |
 | [requeue](#requeue) | Reprioritises and sharpens the queue the loop is fed | "what should we work on next", "reprioritise the backlog", "the roadmap is stale" |
+| [sharpen-intent](#sharpen-intent) | Makes the intent / objective / key-focus document steer | "what is this project really for", "sharpen the objectives", "what should we focus on now", "the goals are vague" |
 
 ---
 
@@ -311,6 +312,47 @@ node skills/requeue/scripts/queue.mjs --self-test
 
 The output is a proposal. It writes to the repo only when asked, and never
 reorders and deletes in the same commit.
+
+---
+
+## sharpen-intent
+
+**What it answers:** what the project is actually for, stated so it can
+settle an argument — and which of today's work does not trace back to it.
+`requeue` ranks against this document; `loop-doctor` checks the loop is
+anchored to it. Both are only as good as the sentence underneath.
+
+### Usage
+
+> what is this project really for?
+> sharpen our objectives
+> what should we focus on now?
+
+```bash
+node skills/sharpen-intent/scripts/intent.mjs <repo>
+node skills/sharpen-intent/scripts/intent.mjs --self-test
+```
+
+### What it does
+
+- **Finds every purpose claim** across `intent.md`, `CONTEXT.md`, charters,
+  visions, PRDs, READMEs and `## Objective` headings inside rules files —
+  each statement marked outcome vs output-only, measurable, names an
+  audience, hedged.
+- **Decides canonicity** by who *loads* it: an intent no `CLAUDE.md`,
+  `LOOPS.md` or loop `SKILL.md` points at scores 0 and caps the verdict,
+  however good the prose.
+- **Traceability** — which open backlog items share language with the
+  stated purpose and which share none, with each untraced item read as
+  off-purpose, out-of-date intent, or wording only.
+- **Scores** clarity, falsifiability, focus, boundaries, canonicity and
+  traceability into `steering · usable · decorative · absent`.
+- **Drafts the rewrite**: for whom · the change · the bet · the measure and
+  horizon · the falsifier · non-goals, then ≤ 3 objectives and exactly one
+  key focus. Gaps stay visible as `TO DECIDE — <question>`; it never
+  invents a purpose, and never writes to the repo unasked.
+- **Asks at most five questions**, with options, only what the files cannot
+  answer.
 
 ---
 
