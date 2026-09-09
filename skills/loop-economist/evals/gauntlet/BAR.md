@@ -20,6 +20,12 @@ still say nothing true. The criteria below are what the critic adds.
 1. **The pair, not the ratio alone.** Tokens per commit appears with both its
    halves (billable total and commit count) in the first screen. A review that
    quotes a unit cost without the counts behind it is a FAIL.
+1b. **The unit cost excludes bookkeeping.** Where any commits touched only the
+   loop's own records, the review leads with `tokensPerShippingCommit`, gives
+   the record-only count and share, and does not present the diluted figure as
+   the unit cost. Quoting the uncorrected number as the headline is a FAIL — on
+   real projects it has been wrong by up to 2.3× and has reversed the ranking
+   between projects.
 2. **Cache reads are outside the bill.** Cache-read tokens are reported
    separately and never summed into the billable figure.
 3. **Every rate carries its window and its n.** "0.26 rework (5 of 19

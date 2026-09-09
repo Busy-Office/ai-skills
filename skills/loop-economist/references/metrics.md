@@ -8,7 +8,9 @@ A number **with a band and a named cause** is.
 | metric | where | reads as |
 |---|---|---|
 | `billableTokens` | input + output + cache-creation, summed over sessions | the bill for the window. Cache *reads* are not in it — report them separately, never add them in |
-| `tokensPerCommit` | billable ÷ commits | the unit cost of shipped change. The single most useful number in the review |
+| `tokensPerCommit` | billable ÷ commits | the unit cost *if every commit shipped something*. Read it beside the next row, never alone |
+| `tokensPerShippingCommit` | billable ÷ (commits that touched anything but the loop's own records) | **the honest unit cost.** This is the number to lead with |
+| `commitsByKind`, `recordOnlyShare` | commits split code / mixed / record-only | how much of the commit count is bookkeeping |
 | `tokensPerSession` | billable ÷ sessions | run size. Rising with flat `tokensPerCommit` means bigger runs, not worse ones |
 | `cacheHitRate` | cache-read ÷ (cache-read + cache-create + input) | prompt-cache discipline. **< 0.6** with many short runs ⇒ the loop rebuilds context every tick |
 | `outputTokens`, `thinkingShare` | thinking ÷ output | **> 0.6** on routine mechanical work means the actor is reasoning where it should be reading a rule |
@@ -74,6 +76,28 @@ they did. Judge against `agent-fit.md`. The two failures to look for:
   is a wide search (`toolCallsPerEdit` high, Grep/Glob dominating
   `topTools`), or a verify step performed by the same context that wrote
   the code — no independent check ever happened.
+
+## The bookkeeping trap
+
+A loop that appends to its own log and commits it every tick manufactures
+commits that shipped nothing. They land in the denominator and the unit cost
+falls, so the loop looks more efficient the more bookkeeping it does.
+
+Measured across six real projects, `recordOnlyShare` ran from 0 to 0.57, and
+correcting for it **reordered the ranking completely**: the project that looked
+cheapest at 106k was 245k once its 57% record-only commits came out, and the one
+that looked mid-table at 296k turned out to be the most expensive of the six at
+597k. Any conclusion drawn from the uncorrected number was wrong.
+
+Report both, always, and lead with the corrected one:
+
+> 216M billable over 779 shipping commits — **245k each**. A further 1 250
+> commits (57%) touched only the loop's own records; counting those gives 106k,
+> which is the number not to quote.
+
+The same caution applies to any per-commit rate, `reworkRate` included: a
+bookkeeping commit cannot be rework, so a loop that commits its log often has a
+flattering rework rate for the same reason.
 
 ## The population trap
 

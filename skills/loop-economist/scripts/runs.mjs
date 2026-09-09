@@ -25,7 +25,7 @@ const REWORK_SUBJECT = /^(fix|revert|hotfix|redo|retry|correct|repair|undo|amend
 const REARM_TOOL = /^(ScheduleWakeup|CronCreate|Monitor|TaskOutput)$/;
 // The files a loop rewrites every tick by design. Repeatedly editing one is
 // the loop keeping its records, not failing to converge on a change.
-const RECORD_FILE = /(LOOP-STATUS|ORCHESTRATOR-STATE|BACKLOG|ROADMAP|INBOX|GATES?|STATUS|CHANGELOG|SESSION|HISTORY|JOURNAL|MANUAL-ACTIONS|HUMAN-GATES)[^/]*\.(md|json|txt|ya?ml)$/i;
+const RECORD_FILE = /(LOOP-STATUS|LOOP-LOG|LOOP-METRICS|ORCHESTRATOR-STATE|RESUME|BACKLOG|ROADMAP|INBOX|GATES?|STATUS|CHANGELOG|SESSION|HISTORY|JOURNAL|MANUAL-ACTIONS|HUMAN-GATES|INDEX)[^/]*\.(md|jsonl?|txt|ya?ml)$|(^|\/)(\.roundtable|\.agents\/runs|docs\/loop)\//i;
 const HARNESS_NOISE = /^\s*(\[Request interrupted|<command-name>|<command-message>|<local-command-|<task-notification>|<system-reminder>|Caveat: The messages below)/;
 
 function projectSlug(repoPath) { return repoPath.replace(/[/.]/g, "-"); }
@@ -194,7 +194,13 @@ function collectGit(repoPath, sinceMs) {
       fileCommits.set(m[3], (fileCommits.get(m[3]) ?? 0) + 1);
     }
     const coauthor = body.match(/Co-Authored-By:\s*([^<\n]+)/i)?.[1]?.trim() ?? null;
-    g.commits.push({ sha: sha.slice(0, 8), date, author, subject, coauthor, files: files.length, insertions: ins, deletions: del, fileList: files });
+    // A commit that touches only the loop's own bookkeeping is not shipped
+    // change. Counting it dilutes every per-commit rate: a loop that commits
+    // its log each tick looks cheap without producing anything more.
+    const kind = files.length === 0 ? "empty"
+      : files.every((f) => RECORD_FILE.test(f)) ? "record"
+        : files.some((f) => RECORD_FILE.test(f)) ? "mixed" : "code";
+    g.commits.push({ sha: sha.slice(0, 8), date, author, subject, coauthor, kind, files: files.length, insertions: ins, deletions: del, fileList: files });
   }
   const seen = new Set();
   for (const c of [...g.commits].reverse()) { // oldest first
@@ -269,6 +275,9 @@ function derive(sessions, git) {
   const edits = Object.values(tools).length ? (tools.Edit ?? 0) + (tools.Write ?? 0) + (tools.MultiEdit ?? 0) : 0;
   const toolCalls = Object.values(tools).reduce((a, b) => a + b, 0);
   const commits = git.commits.length;
+  const byKind = { code: 0, mixed: 0, record: 0, empty: 0 };
+  for (const c of git.commits) byKind[c.kind ?? "code"]++;
+  const shipping = commits - byKind.record - byKind.empty;   // commits that changed something real
   const round = (n, d = 2) => (Number.isFinite(n) ? Number(n.toFixed(d)) : null);
   return {
     sessions: sessions.length,
@@ -277,6 +286,10 @@ function derive(sessions, git) {
     cacheReadTokens: cacheRead,
     cacheHitRate: round(cacheRead / Math.max(1, cacheRead + sum((s) => s.tokens.cacheCreate + s.tokens.in))),
     tokensPerCommit: commits ? Math.round(billable / commits) : null,
+    // The honest unit cost: bookkeeping commits excluded.
+    tokensPerShippingCommit: shipping ? Math.round(billable / shipping) : null,
+    commitsByKind: byKind,
+    recordOnlyShare: commits ? Number((byKind.record / commits).toFixed(2)) : null,
     tokensPerSession: sessions.length ? Math.round(billable / sessions.length) : null,
     outputTokens: sum((s) => s.tokens.out),
     thinkingShare: round(sum((s) => s.tokens.thinking) / Math.max(1, sum((s) => s.tokens.out))),
@@ -321,6 +334,9 @@ export function runs(repoPathIn, opts = {}) {
   const warnings = [];
   if (!existsSync(tdir)) warnings.push(`no transcripts at ${tdir} — session evidence unavailable, judge from git and records only`);
   else if (sessions.length === 0) warnings.push(`no sessions in window (${opts.since ?? "14d"}) under ${tdir}`);
+  if ((derived.recordOnlyShare ?? 0) >= 0.3) {
+    warnings.push(`${derived.commitsByKind.record} of ${derived.commits} commits (${derived.recordOnlyShare}) touch only the loop's own records — tokens per commit is diluted by bookkeeping. Quote tokensPerShippingCommit (${derived.tokensPerShippingCommit}) as the unit cost, and say both.`);
+  }
   const cov = derived.commitCoverage;
   if (cov && cov.share < 0.5) {
     warnings.push(`the observed sessions ran ${cov.commitCalls} \`git commit\` calls against ${cov.commits} commits in the window (${cov.share}) — the rest were made by runs that left no transcript here (a headless, remote or pre-window loop). Tokens per commit mixes two populations: report it over the ${cov.observed} covered commits, or mark it NOT MEASURED and say why.`);
