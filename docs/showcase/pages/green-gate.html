@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Gate design — acme-export</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .tier { font: 700 12px var(--mono); }
+  .t0 { color: var(--good); } .t1 { color: var(--warn); } .t2 { color: var(--ink-3); }
+  .budget { font: 600 13px var(--mono); }
+  .blocks { font-size: 12.5px; }
+  .prop { font: 600 10.5px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+  .promote { color: var(--good); } .demote { color: var(--warn); } .quarantine { color: var(--bad); } .keep { color: var(--ink-3); }
+  .mech { border-left: 3px solid var(--accent); background: var(--panel); padding: 12px 16px; margin-bottom: 8px; }
+  .mech b { font-weight: 650; }
+  .frac { font: 600 13px var(--mono); }
+</style></head>
+<body><div class="page">
+
+<header>
+  <h1>Gate design — acme-export</h1>
+  <p class="lede">205 test files, 71 of them end-to-end. Run them all on every
+    tick and a 30-minute cadence becomes a 3-hour one. CI already splits fast
+    from slow and shards the slow half — this brings that same split forward to
+    the commit, and adds the ledger CI does not keep.</p>
+  <div class="meta">collected 2026-09-09 · nothing was run · 15 check commands across 6 workspaces</div>
+</header>
+
+<h2>What exists</h2>
+<div class="kpis">
+  <div class="kpi"><div class="k">Check commands</div><div class="v">15 <small>· 6 workspaces</small></div></div>
+  <div class="kpi"><div class="k">Test files</div><div class="v">205 <small>· 134 unit · 71 e2e</small></div></div>
+  <div class="kpi"><div class="k">Runs them today</div><div class="v">CI <small>· not the tick</small></div></div>
+  <div class="kpi flag"><div class="k">Ledger</div><div class="v">absent</div></div>
+</div>
+<p class="lede" style="margin-top:14px">CI runs <code>validate</code> (typecheck · lint · unit · contract · migrations)
+  concurrently with a <b>3-way sharded</b> Playwright job, and gates the deploy on both. The tick gates on nothing —
+  which is where the 0.23 rework rate comes from.</p>
+
+<h2>The gate</h2>
+<table>
+  <tr><th style="width:96px">Tier</th><th style="width:150px">Runs</th><th style="width:290px">Scope</th><th style="width:92px">Budget</th><th style="width:150px">On breach</th><th>Blocks</th></tr>
+  <tr>
+    <td class="tier t0">T0 inner</td><td>every attempt</td>
+    <td>typecheck the touched package + unit tests naming the changed modules</td>
+    <td class="budget">90 s</td>
+    <td>drop untouched typecheck; never the selected tests</td>
+    <td class="blocks">nothing — it is advice to the builder</td>
+  </tr>
+  <tr>
+    <td class="tier t1">T1 commit</td><td>before the commit lands</td>
+    <td>the touched workspace's unit suite + lint <span class="mono" style="color:var(--ink-3)">(mirrors CI's <code>validate</code>)</span></td>
+    <td class="budget">5 min</td>
+    <td>fall back to T0, record <code>gate-degraded</code></td>
+    <td class="blocks"><b>the commit</b> — the item is requeued, the loop takes the next one</td>
+  </tr>
+  <tr>
+    <td class="tier t2">T2 deep</td><td>every 10 ticks · pre-deploy</td>
+    <td>71 e2e specs, cross-workspace, build <span class="mono" style="color:var(--ink-3)">(mirrors CI's sharded job)</span></td>
+    <td class="budget">none</td>
+    <td>—</td>
+    <td class="blocks">nothing waits on it; a failure opens a follow-up item</td>
+  </tr>
+</table>
+<p class="lede" style="margin-top:12px"><b>Selection:</b> for a typical single-screen change, T1 runs
+  <span class="frac">8 of 205</span> tests (0.04) — 8 unit, 0 e2e. One changed file mapped to no test; that is a
+  coverage item, not a reason to run all 205.</p>
+
+<h2>What the ledger says</h2>
+<table>
+  <tr><th style="width:170px">Check</th><th style="width:64px">Runs</th><th style="width:80px">Catches</th><th style="width:88px">Median</th><th style="width:110px">Catches/min</th><th style="width:78px">Flake</th><th>Proposal</th></tr>
+  <tr><td class="mono">unit</td><td class="num mono">30</td><td class="num mono">3</td><td class="num mono">18 s</td><td class="num mono">0.33</td><td class="num mono">0.00</td><td><span class="prop promote">promote</span> — cheap enough to run earlier</td></tr>
+  <tr><td class="mono">e2e</td><td class="num mono">24</td><td class="num mono">0</td><td class="num mono">420 s</td><td class="num mono">0.00</td><td class="num mono">0.00</td><td><span class="prop demote">demote</span> — 168 min spent, nothing caught</td></tr>
+  <tr><td class="mono">e2e:checkout</td><td class="num mono">20</td><td class="num mono">0</td><td class="num mono">90 s</td><td class="num mono">0.00</td><td class="num mono">0.25</td><td><span class="prop quarantine">quarantine</span> — needs an owner and an expiry date</td></tr>
+  <tr><td class="mono">migrations:drift</td><td class="num mono">12</td><td class="num mono">1</td><td class="num mono">22 s</td><td class="num mono">0.23</td><td class="num mono">0.00</td><td><span class="prop keep">keep</span> — <span class="tag">pinned</span> one-way door, exempt from demotion</td></tr>
+</table>
+<p class="lede" style="margin-top:12px"><i>Illustrative ledger. On a project with none, the first gate is an honest
+  guess — the design ships the row format and says to re-run this after 50 runs.</i></p>
+
+<h2>Why this will not become the bottleneck</h2>
+<div class="mech"><b>Budgets degrade, they never hang.</b> A T1 breach falls back to T0's selection, records what was skipped, and pushes it into T2's next batch.</div>
+<div class="mech"><b>A red gate blocks the commit, not the loop.</b> The item returns to the queue with the failure text; the next tick takes different work. Nothing sits waiting.</div>
+<div class="mech"><b>The expensive tier is asynchronous.</b> 71 e2e specs never sit on the critical path — only the deploy waits on them.</div>
+<div class="mech"><b>Deferred work is visible as green debt.</b> The deploy gate refuses to pass with debt older than one cycle — the one place blocking is deliberate.</div>
+<div class="mech"><b>The gate can shrink.</b> Every run appends a ledger row; the rebalance may demote as well as promote, so the gate gets cheaper as evidence accumulates instead of ratcheting up after every incident.</div>
+
+<h2>Do next</h2>
+<ol class="bullets">
+  <li><b>Wire T1 into the tick</b> — one rules line: run the touched workspace's unit tests and lint before committing, requeue on red.</li>
+  <li><b>Start the ledger</b> at <code>docs/gate-ledger.jsonl</code>, one row per gate run, with <code>caught</code> set only when a failure led to a fix on the same item.</li>
+  <li><b>Move e2e to every 10 ticks</b> and pre-deploy, off the tick's critical path.</li>
+  <li><b>Re-run this after 50 gate runs</b> — the first tiering is a guess until the ledger can grade it.</li>
+</ol>
+
+<footer>Read 7 package manifests, 205 test files, 1 CI workflow and 0 ledger rows · no project command was run · target repo untouched.</footer>
+</div></body></html>

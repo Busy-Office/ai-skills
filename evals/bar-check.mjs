@@ -49,6 +49,13 @@ export const SPECS = {
     locatedSection: /does the work trace back/,
     requireVerdict: /\b(steering|usable|decorative|absent)\b/i,
   },
+  "green-gate": {
+    proseMax: 350, leadMax: 50, doNextMax: 4,
+    opensWith: "table",
+    sections: [/^#+\s*the gate/im, /^#+\s*what the ledger says/im, /^#+\s*why this will not become the bottleneck/im],
+    citedTables: [],
+    locatedSection: /the gate/,
+  },
   "wake-weight": {
     proseMax: 300, leadMax: 40, doNextMax: 3,
     opensWith: "table",

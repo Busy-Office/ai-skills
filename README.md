@@ -45,10 +45,11 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 | [sharpen-intent](#sharpen-intent) | Makes the intent / objective / key-focus document steer | "what is this project really for", "sharpen the objectives", "what should we focus on now", "the goals are vague" |
 | [loop-atlas](#loop-atlas) | The loop as one animated picture; the agents as a deck of cards | "show me how the whole loop works", "diagram our agent workflow", "which agent should I use", "roster of our agents" |
 | [wake-weight](#wake-weight) | What every run pays before it does any work, and what to cut | "why is each run so expensive", "trim the context", "CLAUDE.md has got too big", "what loads at startup" |
+| [green-gate](#green-gate) | Verification tiered so it never becomes the bottleneck | "nothing checks the work before it commits", "the tests are too slow", "the gate blocks everything", "flaky tests" |
 
 ### The loop family
 
-Six of these skills share a subject — an autonomous, multi-agent engineering
+Seven of these skills share a subject — an autonomous, multi-agent engineering
 loop — and answer different questions about it. Claude picks by description, but
 when you want to be explicit:
 
@@ -58,6 +59,7 @@ when you want to be explicit:
 | *What is it costing, and is the right agent doing the work?* | **loop-economist** | the **runs** — transcripts and commits |
 | *Show me the whole thing, and who is on the crew* | **loop-atlas** | definitions + observed summons |
 | *What is every run paying before it starts?* | **wake-weight** | the files loaded at wake |
+| *What checks the work before it lands — without stalling?* | **green-gate** | the checks, the suite, the CI, the gate ledger |
 | *What should it work on next?* | **requeue** | the queue |
 | *What is any of this for?* | **sharpen-intent** | the purpose document |
 
@@ -526,6 +528,72 @@ pointer), **on-demand** (the map, the playbook). Each with a saving per tick
 *and* across the window, a cost, and a risk — plus the section people skip,
 **what not to cut**: the definition of done, the intent, and anything whose
 absence just turns into re-derivation.
+
+---
+
+## green-gate
+
+**What it answers:** what should verify the work before it lands — and how to
+keep that verification from becoming the slowest part of the day.
+
+> **Measured:** the bar is written ([`BAR.md`](skills/green-gate/evals/gauntlet/BAR.md))
+> and the mechanical pre-check is self-tested, but **no gauntlet round has been
+> run yet**.
+
+![green-gate design — three tiers with budgets and what each blocks, a selection fraction, ledger proposals to promote/demote/quarantine, and the mechanisms that keep it off the critical path](docs/showcase/green-gate.png)
+
+*Sample on illustrative data. The gate is three things with different budgets,
+and only one of them ever blocks anything.*
+
+### Usage
+
+> nothing verifies our work before it commits
+> the test suite is too slow to run in the loop
+> some of these tests are flaky and people are ignoring red
+
+```bash
+node skills/green-gate/scripts/gate.mjs <repo> --changed "src/a.ts,src/b.ts"
+node skills/green-gate/scripts/gate.mjs --self-test
+```
+
+### The one rule
+
+> **The gate blocks the commit. It never blocks the loop.**
+
+A red gate returns the item to the queue with the failure attached and the next
+tick takes different work. A loop that sits waiting on a check has been turned
+into a queue of one — which is how gates get switched off.
+
+### How it stays proportionate
+
+| tier | scope | budget | blocks |
+|---|---|---|---|
+| **T0 inner** | typecheck the touched package + the unit tests that name the changed modules | 90 s | nothing — advice to the builder |
+| **T1 commit** | the touched workspace's unit suite + lint | 5 min | **the commit** |
+| **T2 deep** | e2e, cross-workspace, build | none — asynchronous | only a deploy, via green debt |
+
+Budgets **degrade rather than hang**: a breach runs the cheaper tier, records
+what was skipped, and pushes it into the next deep batch. Selection is reported
+as a fraction — *"T1 runs 8 of 205 for a typical change"* — because that is what
+makes it proportionate, and unmapped changes are named as a coverage gap rather
+than an excuse to run everything.
+
+**It reads your CI first.** A project with CI has already drawn the fast/slow
+line under real pressure — often with the slow suite sharded. The design mirrors
+that rather than inventing a second, competing definition of green.
+
+### How it gets cheaper over time
+
+Every run appends a ledger row: duration, blocked minutes, tests selected of
+total, result, and `caught` — set only when a failure led to a fix on the same
+item, which is what separates a catch from a flake. From those: **catches per
+minute**, flake rate, selection rate. Then promote / keep / demote / quarantine,
+with three guard-rails — nothing demoted under 20 runs, nothing demoted that
+guards a one-way door (money, deletion, migrations, auth), and every quarantine
+carries an owner and an expiry so it cannot become a graveyard.
+
+A gate that can only grow becomes the bottleneck by arithmetic. This one can
+shrink, on evidence.
 
 ---
 

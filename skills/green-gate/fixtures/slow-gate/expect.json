@@ -1,0 +1,16 @@
+{
+  "suite.byKind": { "unit": 2, "e2e": 3 },
+  "suite.total": 5,
+  "ci": [],
+  "selection.selectedCount": 1,
+  "selection.selected.0": "tests/csv.test.ts",
+  "ledger.present": true,
+  "ledger.runs": 74,
+  "ledger.byCheck.unit.caught": 3,
+  "ledger.byCheck.unit.catchesPerMin": 0.333,
+  "ledger.byCheck.e2e.totalMin": 168,
+  "ledger.byCheck.e2e:checkout.flakeRate": 0.25,
+  "rebalance.0.action": "promote",
+  "rebalance.1.action": "demote",
+  "rebalance.2.action": "quarantine"
+}
