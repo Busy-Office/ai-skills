@@ -34,6 +34,60 @@ git clone https://github.com/Busy-Office/ai-skills.git ~/Projects/ai-skills
 ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-dashboard
 ```
 
+## Start here
+
+Everything is read-only: no skill writes to your repo, runs your build, or
+installs anything, so trying one costs nothing but tokens. The order that
+matters is whether your loop has **history yet**.
+
+**If a loop has been running for a couple of weeks** — start with the one that
+routes you:
+
+```
+/busy-office:loop-economist        what a unit of shipped change costs, and who did it
+```
+
+It ends by naming the **binding constraint** and handing off, so you rarely have
+to choose the next skill yourself:
+
+| it says the problem is | run next |
+|---|---|
+| the actor — no verifier, unrouted searching | its own prescriptions; the verifier template |
+| the input — items were never tasks | `requeue`, then `sharpen-intent` if nothing traces to a purpose |
+| the design — two drivers, no stop, contradictory rules | `loop-doctor` |
+| the preamble — cost before any work starts | `wake-weight` |
+
+**If the loop is new, or you have no transcripts yet**, three of the skills need
+history and will say so rather than guess. Start on the input side instead:
+
+```
+/busy-office:sharpen-intent        what is this for, and what doesn't trace to it
+/busy-office:requeue               what should it work on next
+/busy-office:loop-doctor           is the design safe to run unattended
+```
+
+**Two that are cheap and need nothing** — good for a first look at any project,
+new or old:
+
+```
+/busy-office:loop-atlas            the flow on one page, the agents as a card deck
+/busy-office:wake-weight           what every run pays before it does any work
+```
+
+**When someone asks how it is going**, `/busy-office:progress-dashboard`
+publishes a one-page status from whatever records the project already keeps.
+
+### What needs history, and what it does without it
+
+| skill | needs | without it |
+|---|---|---|
+| loop-economist | session transcripts, ≥ 20 ticks or 14 days | budget dimensions read `NOT MEASURED`; still scores effectiveness and convergence from git |
+| wake-weight | a tick count | reports per-tick only, says the window total is unknown |
+| loop-atlas | transcripts | the deck draws from agent definitions, every card reads `not observed` |
+| loop-doctor · requeue · sharpen-intent · progress-dashboard | files only | — |
+
+Nothing degrades silently: each says which numbers it could not see.
+
 ## Skills
 
 | skill | what it does | trigger phrases |
