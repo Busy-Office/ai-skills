@@ -47,6 +47,18 @@ evidence is in the rework and churn numbers.
   Judge from `toolCallsPerEdit`: fan-out is worth it when the reading
   dominates, not when the deciding does.
 
+## Price the roster before judging it
+
+`perAgent` gives each subagent type's average cost per summon, its model and
+its real tool mix. Read those three together before calling any routing wrong:
+
+- A **verifier** whose tool mix is all `Read`/`Grep` and never runs the test
+  command is not verifying — it is reviewing. Say which you found.
+- A **searcher** that costs as much per summon as the builder is not saving the
+  caller anything; either its brief is too wide or its output shape is unstated.
+- The **most expensive summon on the page** deserves one line of justification
+  in the review, whichever agent it is.
+
 ## Reading the mix
 
 - Heavy model + `topTools` dominated by Read/Grep/Bash ⇒ **over-powered**;

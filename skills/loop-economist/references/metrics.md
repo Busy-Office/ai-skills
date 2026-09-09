@@ -13,6 +13,8 @@ A number **with a band and a named cause** is.
 | `cacheHitRate` | cache-read ÷ (cache-read + cache-create + input) | prompt-cache discipline. **< 0.6** with many short runs ⇒ the loop rebuilds context every tick |
 | `outputTokens`, `thinkingShare` | thinking ÷ output | **> 0.6** on routine mechanical work means the actor is reasoning where it should be reading a rule |
 | `sidechainShare` | subagent tokens ÷ billable | fan-out cost. **> 0.5** with `commits` flat ⇒ the crew researches more than it ships |
+| `perAgent[type]` | one row per subagent type: runs, tokens, `avgTokensPerRun`, model, `topTools` | **what a summon of each actually costs.** This is the number an agent-fit decision needs, and the one people guess at |
+| `commitCoverage` | `git commit` calls seen in the transcripts ÷ commits in the window | whether these sessions are the ones that made these commits. Below **0.5**, tokens-per-commit is mixing two populations — see below |
 | `minutesTotal` | wall clock | pair with tokens: cheap-but-slow and fast-but-expensive need opposite fixes |
 
 Cost bands are per-project. Establish the project's own baseline from the
@@ -72,6 +74,20 @@ they did. Judge against `agent-fit.md`. The two failures to look for:
   is a wide search (`toolCallsPerEdit` high, Grep/Glob dominating
   `topTools`), or a verify step performed by the same context that wrote
   the code — no independent check ever happened.
+
+## The population trap
+
+A loop that runs headless — a cron driver, a CI job, a remote session — leaves
+no transcript under `~/.claude/projects/<project>`. The commits are still in
+git. Divide one by the other and you get a confident number about two
+different populations.
+
+`commitCoverage` is the test, and it counts **`git commit` calls in the
+transcripts**, not session timespans: one long interactive session's window
+spans every commit in the repo and proves nothing. A share above 1 is normal
+(retries and amends each count a call). A share below 0.5 means most of the
+work is invisible here: report the unit cost over the covered commits, or mark
+it `NOT MEASURED` and say which runs you could not see.
 
 ## Honesty rules
 

@@ -17,6 +17,9 @@ import { homedir } from "node:os";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VAGUE = /\b(improve|look at|consider|explore|clean ?up|review|polish|tidy)\b/i;
 const REWORK_SUBJECT = /^(fix|revert|hotfix|redo|retry|correct|repair|undo|amend)\b/i;
+// User-role rows the harness writes on the person's behalf. Counting these as
+// human turns inflates the autonomy-load metric, which caps the verdict.
+const HARNESS_NOISE = /^\s*(\[Request interrupted|<command-name>|<command-message>|<local-command-|<task-notification>|<system-reminder>|Caveat: The messages below)/;
 
 function projectSlug(repoPath) { return repoPath.replace(/[/.]/g, "-"); }
 
@@ -45,7 +48,7 @@ function readSession(file) {
     start: null, end: null, minutes: 0, branch: null, cwd: null,
     models: {}, humanTurns: 0, assistantTurns: 0, sidechainTurns: 0,
     tokens: { in: 0, out: 0, cacheRead: 0, cacheCreate: 0, thinking: 0, sidechain: 0 },
-    tools: {}, subagents: {}, toolErrors: 0, interrupts: 0,
+    tools: {}, subagents: {}, toolErrors: 0, interrupts: 0, commitCalls: 0,
     editedFiles: {}, repeatedToolCalls: [],
   };
   const callSig = new Map();
@@ -76,6 +79,7 @@ function readSession(file) {
           const kind = b.input?.subagent_type ?? "general-purpose";
           s.subagents[kind] = (s.subagents[kind] ?? 0) + 1;
         }
+        if (b.name === "Bash" && /\bgit\s+commit\b/.test(String(b.input?.command ?? ""))) s.commitCalls++;
         const path = b.input?.file_path ?? b.input?.notebook_path;
         if (path && /^(Edit|Write|NotebookEdit|MultiEdit)$/.test(b.name)) s.editedFiles[path] = (s.editedFiles[path] ?? 0) + 1;
         const sig = b.name + "|" + JSON.stringify(b.input?.command ?? b.input?.pattern ?? path ?? b.input?.prompt ?? "").slice(0, 160);
@@ -89,7 +93,9 @@ function readSession(file) {
         const txt = JSON.stringify(c);
         if (/interrupted by user|Request interrupted/i.test(txt)) s.interrupts++;
       } else if (!r.isMeta && !r.isSidechain) {
-        s.humanTurns++;
+        const text = typeof c === "string" ? c : (Array.isArray(c) ? c.map((b) => b?.text ?? "").join(" ") : "");
+        if (HARNESS_NOISE.test(text)) { if (/interrupted/i.test(text)) s.interrupts++; }
+        else s.humanTurns++;
       }
     }
   }
@@ -98,6 +104,32 @@ function readSession(file) {
     .sort((a, b) => b[1] - a[1]).slice(0, 5).map(([sig, n]) => ({ call: sig, times: n }));
   s.billable = s.tokens.in + s.tokens.out + s.tokens.cacheCreate;
   return s;
+}
+
+// Subagent turns are NOT in the parent transcript: each lives in
+// <transcriptDir>/<sessionId>/subagents/agent-*.jsonl, with a sibling
+// .meta.json naming its agentType. Without this the fan-out cost reads zero.
+function readSubagents(dir, sessionId) {
+  const sub = join(dir, sessionId, "subagents");
+  const byType = {};
+  let tokens = 0, turns = 0, files = 0;
+  if (!existsSync(sub)) return { byType, tokens, turns, files };
+  for (const f of readdirSync(sub)) {
+    if (!f.endsWith(".jsonl")) continue;
+    let type = "unknown";
+    try { type = JSON.parse(readFileSync(join(sub, f.replace(/\.jsonl$/, ".meta.json")), "utf8")).agentType ?? "unknown"; } catch { /* no sidecar */ }
+    const rec = (byType[type] ??= { runs: 0, tokens: 0, turns: 0, tools: {} });
+    rec.runs++; files++;
+    for (const r of readJsonl(join(sub, f))) {
+      if (r.type !== "assistant" || !r.message) continue;
+      const u = r.message.usage ?? {};
+      const billed = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+      rec.tokens += billed; rec.turns++; tokens += billed; turns++;
+      if (r.message.model) rec.model = r.message.model;
+      for (const b of r.message.content ?? []) if (b?.type === "tool_use") rec.tools[b.name] = (rec.tools[b.name] ?? 0) + 1;
+    }
+  }
+  return { byType, tokens, turns, files };
 }
 
 function collectSessions(dir, sinceMs) {
@@ -110,6 +142,11 @@ function collectSessions(dir, sinceMs) {
     if (st.mtimeMs < sinceMs) continue;
     const s = readSession(p);
     if (s.assistantTurns === 0) continue;
+    const sub = readSubagents(dir, s.id);
+    s.subagentRuns = sub.files;
+    s.subagentDetail = sub.byType;
+    s.tokens.sidechain += sub.tokens;
+    s.sidechainTurns += sub.turns;
     if (s.start != null && s.start < sinceMs && s.end < sinceMs) continue;
     out.push(s);
   }
@@ -188,6 +225,22 @@ function derive(sessions, git) {
     for (const [k, v] of Object.entries(s.subagents)) agents[k] = (agents[k] ?? 0) + v;
     for (const [k, v] of Object.entries(s.models)) models[k] = (models[k] ?? 0) + v;
   }
+  // Per-agent cost, from the subagent transcripts — what a summon of each
+  // actually costs, which is the number agent-fit decisions need.
+  const perAgent = {};
+  for (const s of sessions) {
+    for (const [type, rec] of Object.entries(s.subagentDetail ?? {})) {
+      const a = (perAgent[type] ??= { runs: 0, tokens: 0, turns: 0, tools: {}, model: rec.model ?? null });
+      a.runs += rec.runs; a.tokens += rec.tokens; a.turns += rec.turns;
+      for (const [t, n] of Object.entries(rec.tools)) a.tools[t] = (a.tools[t] ?? 0) + n;
+    }
+  }
+  for (const a of Object.values(perAgent)) {
+    a.avgTokensPerRun = a.runs ? Math.round(a.tokens / a.runs) : null;
+    a.topTools = Object.entries(a.tools).sort((x, y) => y[1] - x[1]).slice(0, 4).map(([n, c]) => `${n}×${c}`);
+    delete a.tools;
+  }
+
   const edits = Object.values(tools).length ? (tools.Edit ?? 0) + (tools.Write ?? 0) + (tools.MultiEdit ?? 0) : 0;
   const toolCalls = Object.values(tools).reduce((a, b) => a + b, 0);
   const commits = git.commits.length;
@@ -216,7 +269,17 @@ function derive(sessions, git) {
     thrashSessions: sessions.filter((s) => s.repeatedToolCalls.length > 0).map((s) => s.id),
     zeroCommitSessions: sessions.filter((s) => s.billable > 20000 && Object.keys(s.editedFiles).length === 0).map((s) => s.id),
     topTools: Object.entries(tools).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, n]) => ({ name, n })),
-    modelMix: models, subagentMix: agents,
+    modelMix: models, subagentMix: agents, perAgent,
+    // Did the observed sessions actually make these commits? A loop that runs
+    // headless leaves no transcript here, and a ratio taken across the two
+    // populations is meaningless. Counting `git commit` calls in the
+    // transcripts is the precise test — a session's timespan is not, since one
+    // long session's window swallows every commit in the repo.
+    // Calls, not commits: a retried or amended commit counts twice, so a
+    // share above 1 is normal and only a low share is evidence.
+    commitCoverage: commits
+      ? { commitCalls: sum((s) => s.commitCalls), commits, share: Number((sum((s) => s.commitCalls) / commits).toFixed(2)) }
+      : null,
   };
 }
 
@@ -226,16 +289,22 @@ export function runs(repoPathIn, opts = {}) {
   const tdir = opts.transcripts ?? join(homedir(), ".claude", "projects", projectSlug(repoPath));
   const sessions = collectSessions(tdir, sinceMs);
   const git = opts.git === false ? { commits: [], rework: { reworkCommits: [], churnFiles: [] }, error: "skipped" } : collectGit(repoPath, sinceMs);
+  const derived = derive(sessions, git);
   const warnings = [];
   if (!existsSync(tdir)) warnings.push(`no transcripts at ${tdir} — session evidence unavailable, judge from git and records only`);
   else if (sessions.length === 0) warnings.push(`no sessions in window (${opts.since ?? "14d"}) under ${tdir}`);
+  const cov = derived.commitCoverage;
+  if (cov && cov.share < 0.5) {
+    warnings.push(`the observed sessions ran ${cov.commitCalls} \`git commit\` calls against ${cov.commits} commits in the window (${cov.share}) — the rest were made by runs that left no transcript here (a headless, remote or pre-window loop). Tokens per commit mixes two populations: report it over the ${cov.observed} covered commits, or mark it NOT MEASURED and say why.`);
+  }
+
   return {
     repoPath, collectedAt: new Date().toISOString(),
     window: { since: new Date(sinceMs).toISOString(), spec: opts.since ?? "14d" },
     transcriptDir: tdir,
     sessions: sessions.map((s) => ({ ...s, editedFiles: Object.entries(s.editedFiles).map(([file, n]) => ({ file, n })).sort((a, b) => b.n - a.n).slice(0, 10) })),
     git, records: findRecords(repoPath),
-    derived: derive(sessions, git),
+    derived,
     warnings,
   };
 }

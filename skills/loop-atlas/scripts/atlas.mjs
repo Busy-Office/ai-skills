@@ -20,7 +20,7 @@ const IGNORE = new Set(["node_modules", ".git", "dist", "build", "__archived", "
 
 const STAGE_PATTERNS = [
   ["trigger", /(crontab|schedule:|StartInterval|launchd|\/loop\s+\d+[mhd]|every \d+ (minutes?|hours?)|cron)/i],
-  ["select", /(pick the (top|next)|select an? item|next item|choose the item|top of the (backlog|queue))/i],
+  ["select", /(pick (up )?the (top|next|first)|select (an?|the) (item|task|story)|next (item|task|ticket|story)|choose the (item|task)|top of the (backlog|queue|list)|highest[- ]priority|first unchecked|read .*(BACKLOG|ROADMAP|QUEUE))/i],
   ["act", /(implement|build|make the change|write the code|apply the fix)/i],
   ["verify", /(run the tests?|npm test|pytest|typecheck|lint|acceptance|definition of done|green)/i],
   ["gate", /(human gate|approval|sign-?off|GATE-|blocked on owner|manual action)/i],
@@ -28,12 +28,14 @@ const STAGE_PATTERNS = [
   ["stop", /(stop (when|if)|halt|kill switch|STATUS: COMPLETE|do not continue|exit 1)/i],
 ];
 
+// Matched against the agent's name first (people name an agent by its job),
+// then against what it says it does. Order matters only for ties.
 const ROLE_HINTS = [
-  ["search", /(search|explore|find|locate|grep|research|investigate|discover)/i],
-  ["plan", /(plan|architect|design|strategy|roadmap|decompose)/i],
-  ["build", /(implement|build|write code|edit|refactor|fix|develop|scaffold)/i],
-  ["verify", /(review|verify|audit|check|test|lint|validate|critic|qa)/i],
-  ["record", /(document|report|summari|dashboard|publish|write up|status)/i],
+  ["verify", /(review|verif|audit|check|test|lint|validat|critic|skeptic|sceptic|adversar|red.?team|qa|security|guard)/i],
+  ["search", /(search|explore|find|locate|grep|research|investigat|discover|scout)/i],
+  ["plan", /(plan|architect|design|strateg|roadmap|decompose|product|manager)/i],
+  ["build", /\b(implement|build|write code|edit|refactor|fix|develop|scaffold|engineer|cod(e|er))/i],
+  ["record", /(document|report|summari|dashboard|publish|write up|status|scribe|historian)/i],
 ];
 
 function walk(root, maxDepth = 5, filter = () => true) {
@@ -115,12 +117,40 @@ function readSkills(dir, origin) {
   return out;
 }
 
+// Subagent turns live in <transcriptDir>/<sessionId>/subagents/agent-*.jsonl,
+// each with a .meta.json naming its agentType — not in the parent transcript.
+// This is where a card's real cost and tool mix come from.
+function readSubagents(dir, sessionId) {
+  const sub = join(dir, sessionId, "subagents");
+  const byType = {};
+  if (!existsSync(sub)) return byType;
+  for (const f of readdirSync(sub)) {
+    if (!f.endsWith(".jsonl")) continue;
+    let type = "unknown";
+    try { type = JSON.parse(readFileSync(join(sub, f.replace(/\.jsonl$/, ".meta.json")), "utf8")).agentType ?? "unknown"; } catch { /* no sidecar */ }
+    const rec = (byType[type] ??= { runs: 0, tokens: 0, turns: 0, tools: {}, model: null });
+    rec.runs++;
+    let text; try { text = readFileSync(join(sub, f), "utf8"); } catch { continue; }
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      let r; try { r = JSON.parse(line); } catch { continue; }
+      if (r.type !== "assistant" || !r.message) continue;
+      const u = r.message.usage ?? {};
+      rec.tokens += (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+      rec.turns++;
+      if (r.message.model) rec.model = r.message.model;
+      for (const b of r.message.content ?? []) if (b?.type === "tool_use") rec.tools[b.name] = (rec.tools[b.name] ?? 0) + 1;
+    }
+  }
+  return byType;
+}
+
 // ------------------------------------------------------- observed summons
 function observe(transcriptDir, sinceMs) {
   const seen = {
     sessions: 0, summons: {}, skillCalls: {}, modelMix: {},
     sidechainTokens: 0, sidechainTurns: 0, mainTokens: 0, toolsInSidechain: {},
-    promptWords: {},
+    promptWords: {}, perAgent: {},
   };
   if (!transcriptDir || !existsSync(transcriptDir)) return { ...seen, available: false };
   for (const f of readdirSync(transcriptDir)) {
@@ -129,6 +159,13 @@ function observe(transcriptDir, sinceMs) {
     let st; try { st = statSync(p); } catch { continue; }
     if (st.mtimeMs < sinceMs) continue;
     let text; try { text = readFileSync(p, "utf8"); } catch { continue; }
+    for (const [type, rec] of Object.entries(readSubagents(transcriptDir, f.replace(/\.jsonl$/, "")))) {
+      const a = (seen.perAgent[type] ??= { runs: 0, tokens: 0, turns: 0, tools: {}, model: null });
+      a.runs += rec.runs; a.tokens += rec.tokens; a.turns += rec.turns; a.model ??= rec.model;
+      for (const [t, n] of Object.entries(rec.tools)) a.tools[t] = (a.tools[t] ?? 0) + n;
+      seen.sidechainTokens += rec.tokens; seen.sidechainTurns += rec.turns;
+      for (const [t, n] of Object.entries(rec.tools)) seen.toolsInSidechain[t] = (seen.toolsInSidechain[t] ?? 0) + n;
+    }
     let counted = false;
     for (const line of text.split("\n")) {
       if (!line.trim()) continue;
@@ -154,6 +191,11 @@ function observe(transcriptDir, sinceMs) {
   }
   for (const [k, v] of Object.entries(seen.promptWords)) {
     seen.promptWords[k] = Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+  }
+  for (const a of Object.values(seen.perAgent)) {
+    a.avgTokensPerRun = a.runs ? Math.round(a.tokens / a.runs) : null;
+    a.topTools = Object.entries(a.tools).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([n, c]) => `${n}×${c}`);
+    delete a.tools;
   }
   return { ...seen, available: true };
 }
@@ -204,6 +246,7 @@ export function atlas(repoPathIn, opts = {}) {
     ...a,
     summons: observed.summons?.[a.name] ?? 0,
     avgPromptWords: observed.promptWords?.[a.name] ?? null,
+    observed: observed.perAgent?.[a.name] ?? null,   // real cost, turns and tool mix
   })).sort((a, b) => b.summons - a.summons);
 
   const flow = readFlow(repoPath);
@@ -222,6 +265,7 @@ export function atlas(repoPathIn, opts = {}) {
     observed: {
       available: observed.available, sessions: observed.sessions,
       summons: observed.summons, skillCalls: observed.skillCalls, modelMix: observed.modelMix,
+      perAgent: observed.perAgent,
       sidechainTokens: observed.sidechainTokens, sidechainTurns: observed.sidechainTurns,
       mainTokens: observed.mainTokens, toolsInSidechain: observed.toolsInSidechain,
     },

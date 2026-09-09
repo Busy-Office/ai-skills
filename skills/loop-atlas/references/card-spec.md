@@ -32,12 +32,17 @@ layout; **every value on it is evidence**.
 
 ## Rules for each field
 
-**Name, class, model** — from the agent file's frontmatter. Class comes
-from what the description actually says the agent does, not from its name:
+**Name, class, model** — from the agent file's frontmatter. The classes are
 `scout` (finds), `planner` (decides shape), `builder` (changes code),
-`verifier` (checks someone else's work), `scribe` (records, reports,
-publishes). An agent that claims three classes is a finding — say so on
-the card in one line rather than picking one silently.
+`verifier` (checks someone else's work) and `scribe` (records, reports,
+publishes).
+
+Take the class from the **name** first — people name an agent by its job, and
+`ui-tester`, `skeptic` and `principal-engineer` each say what they are — then
+from what the description says it *does*. Two rules keep that honest: a
+refusal clause describes what the agent must **not** do, so "refuses to edit
+code" never makes a builder; and an agent whose name and description disagree
+is a finding, said in one line on the card rather than resolved silently.
 
 **Good at** — one line, plain, no adjectives that could describe any
 agent. "Sweeps many files and returns only the conclusion" is good;
@@ -54,7 +59,7 @@ file does not grant is not on the card.
 |---|---|---|
 | **reach** | how much ground one summon covers | tool grant (Glob/Grep/WebFetch = wide), whether it gets its own context |
 | **precision** | how narrow and checkable its output is | whether the agent file states an output shape; observed avg brief length |
-| **cost** | what a summon spends (**5 = expensive**, label it so) | model, whether it re-reads the codebase, observed sidechain tokens |
+| **cost** | what a summon spends (**5 = expensive**, label it so) | `observed.avgTokensPerRun` when the runs show it — a measured number, not a guess. Falling back to model and re-reading behaviour is for agents never summoned |
 | **autonomy** | how far it goes without a human | tool grant (write access, Bash), whether its instructions end in a gate |
 
 Where a stat cannot be derived, print `—`, not a guess. A deck of
@@ -73,9 +78,14 @@ useful rather than decorative.
 must reconstruct the flow diagram; if a card hands off to nothing, it is
 either the last stage or a dead end, and the page says which.
 
-**Seen** — observed summons in the window, average brief length, top
-tools used inside its sidechains. `Never summoned in <window>` is a fine
-and interesting value: print it.
+**Seen** — observed summons in the window, average brief length, and from the
+agent's own subagent transcripts: average tokens per run, the model it actually
+ran on, and its real top tools. `Never summoned in <window>` is a fine and
+interesting value: print it.
+
+The model on the card is the one the runs used, which is not always the one the
+file declares. An agent whose frontmatter says `sonnet` and whose transcripts
+say `opus-4-8` is a finding, and the card shows both.
 
 ## The main actor gets a card too
 
