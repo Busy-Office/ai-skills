@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Mechanical pre-check for a gauntlet artifact.
 //
-//   node evals/bar-check.mjs <skill> <artifact.md> [--collector run.json]
+//   node evals/bar-check.mjs <skill> <artifact.md> [--collector run.json] [--target repo]
 //   node evals/bar-check.mjs --self-test
 //
 // With --collector it also cross-checks the artifact's headline figures against
@@ -15,7 +15,7 @@
 //
 // Run this BEFORE the critic. It makes the cheap failures cheap.
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -133,7 +133,7 @@ function renderings(n) {
   return [...out].filter(Boolean);
 }
 
-export function barCheck(skill, md, collector = null) {
+export function barCheck(skill, md, collector = null, target = null) {
   const spec = SPECS[skill];
   if (!spec) throw new Error(`no spec for skill: ${skill}`);
   const b = blocks(md);
@@ -142,7 +142,11 @@ export function barCheck(skill, md, collector = null) {
 
   // M1 — prose budget
   const prose = words(b.prose);
-  add("M1", `prose ≤ ${spec.proseMax} words`, `${prose} words outside tables, diagrams and code`, prose <= spec.proseMax);
+  add("M1", `prose ≤ ${spec.proseMax} words`,
+    prose <= spec.proseMax
+      ? `${prose} words outside tables, diagrams and code`
+      : `${prose} words — cut ${prose - spec.proseMax}`,
+    prose <= spec.proseMax);
 
   // M2 — the lede, and what opens the artifact
   const afterTitle = md.replace(/^#[^\n]*\n/, "");
@@ -198,6 +202,54 @@ export function barCheck(skill, md, collector = null) {
   if (spec.requireLanes) {
     const laneRows = dataRows(b.tableRows).filter((l) => spec.requireLanes.test(l)).length;
     add("M8", "items carry a lane", `${laneRows} rows name a lane`, laneRows > 0);
+  }
+
+  // M13 — every file:line the artifact cites actually exists, at that line.
+  // Critics were spending tool calls opening four citations "at random"; a
+  // script opens all of them for nothing, and a turn not taken is the whole
+  // saving — a subagent's bill is the sum of its context at each turn.
+  if (target) {
+    const cites = [...new Set([...md.matchAll(/`?([\w./-]+\.(?:md|mjs|js|ts|tsx|py|sh|ps1|ya?ml|json|toml|astro|css|html))(?::(\d+))?`?/g)]
+      .map((m) => ({ file: m[1], line: m[2] ? Number(m[2]) : null }))
+      .filter((c) => !c.file.startsWith("evals/") && c.file.includes("."))
+      .map((c) => JSON.stringify(c)))].map((x) => JSON.parse(x));
+    // A citation may be written in full once and by basename afterwards, which
+    // is ordinary prose rather than a bad reference — resolve it the way a
+    // reader would before failing it.
+    let tree = null;
+    const resolve = (rel) => {
+      const direct = join(target, rel);
+      if (existsSync(direct)) return direct;
+      if (tree === null) {
+        tree = [];
+        const skip = new Set(["node_modules", ".git", "dist", "build", "worktrees", ".next", "coverage"]);
+        const walk = (d, depth) => {
+          if (depth > 5) return;
+          let ents; try { ents = readdirSync(d, { withFileTypes: true }); } catch { return; }
+          for (const e of ents) {
+            if (e.isDirectory()) { if (!skip.has(e.name)) walk(join(d, e.name), depth + 1); }
+            else tree.push(join(d, e.name));
+          }
+        };
+        walk(target, 0);
+      }
+      const base = rel.split("/").pop();
+      return tree.find((f) => f.endsWith("/" + rel)) ?? tree.find((f) => f.endsWith("/" + base)) ?? null;
+    };
+    const bad = [];
+    for (const c of cites) {
+      const p2 = resolve(c.file);
+      if (!p2) { bad.push(`${c.file} (no such file)`); continue; }
+      if (c.line != null) {
+        const n = readFileSync(p2, "utf8").split("\n").length;
+        if (c.line > n) bad.push(`${c.file}:${c.line} (file has ${n} lines)`);
+      }
+    }
+    if (cites.length) {
+      add("M13", "every cited file:line exists in the target",
+        bad.length ? `${bad.length} of ${cites.length} bad: ${bad.slice(0, 3).join(", ")}` : `all ${cites.length} citations resolve`,
+        bad.length === 0);
+    }
   }
 
   // M12 — an interval claim is almost always the denominator of a cost
@@ -276,7 +328,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     if (!skill || !path) { console.error("usage: bar-check.mjs <skill> <artifact.md> [--collector run.json]"); process.exit(2); }
     const ci = args.indexOf("--collector");
     const collector = ci >= 0 && args[ci + 1] ? JSON.parse(readFileSync(args[ci + 1], "utf8")) : null;
-    const res = barCheck(skill, readFileSync(path, "utf8"), collector);
+    const ti = args.indexOf("--target");
+    const target = ti >= 0 ? args[ti + 1] : null;
+    const res = barCheck(skill, readFileSync(path, "utf8"), collector, target);
     console.log(render(res));
     process.exit(res.verdict === "PASS" ? 0 : 1);
   }

@@ -72,12 +72,34 @@ BAR GAPS (optional):
 
 - One critic per artifact, fresh context every time. A critic that graded the
   previous round has seen the fixes and is no longer blind.
-- **A round costs about 300k billable** — a fresh context, built and discarded.
-  So run `bar-check` locally and fix everything it finds *before* dispatching:
-  a round that fails on a word count or a stale figure has spent a critic on
-  what a script does for nothing. Rounds are for judgement, not for arithmetic.
-- Consider a smaller model for the critic. Grading against a written bar, with
-  the instrument's output in hand, is careful reading rather than invention.
+### What a round costs, and why
+
+A subagent's bill is **the sum of its context at every turn**, not the size of
+what it reads. The material a critic actually needs is about 16k — the bar, the
+artifact, the anchors. A round measured at ~309k, because ten turns of
+exploration re-cache a context that grows with each one:
+
+```
+turn 1 context 16k → turn 10 context ~94k
+cache creation ≈ 16+24+32+…+94 ≈ 500k
+```
+
+So cost is driven by **turns**, and every turn removed saves more than the last.
+The budget below follows from that arithmetic:
+
+| rule | why |
+|---|---|
+| **Run `bar-check --collector <json> --target <repo>` and fix everything it finds *before* dispatching** | it now settles M1–M13: word budgets, sections, located rows, verdict vocabulary, the caps sentence, headline figures against a fresh collection, cadence sourcing, and **every citation in the artifact**. A round that fails on any of those spent ~300k to report what a script reports for nothing |
+| **Give the critic the instrument's output, not the collector's** | telling it to regenerate a 13k JSON and read it costs a turn and a third of its context. Paste the bar-check block instead and let it verify by exception |
+| **Cap the brief.** Name the criteria that need judgement; the mechanical ones are already settled | fewer questions, fewer turns |
+| **Three rounds, not five** | the budget already said so; the fourth and fifth rounds on the decommissioned skill found things `bar-check` now catches |
+| **Batch artifacts into one critic where the skills differ** | one cache build instead of three |
+| **A smaller model is enough** | grading against a written bar with the instrument's output in hand is careful reading, not invention |
+
+Together these target **~100k a round rather than ~300k**, and three rounds
+rather than nine. That is a projection from the turn arithmetic above, not a
+measurement — the honest way to check it is to price the next round from the
+transcripts (`perAgent[].avgTokensPerRun`) and compare.
 - Budget three rounds per skill. If it is not PASS by round 3, stop and record
   the gap in `ROUNDS.md` rather than lowering the bar. Lowering a bar to reach
   a pass is the failure mode this whole apparatus exists to prevent.
