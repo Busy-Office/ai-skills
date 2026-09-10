@@ -2,6 +2,7 @@
 // Mechanical pre-check for a gauntlet artifact.
 //
 //   node evals/bar-check.mjs <skill> <artifact.md> [--collector run.json] [--target repo]
+//   node evals/bar-check.mjs <skill> <artifact.md> --pack out.md ...   # evidence pack
 //   node evals/bar-check.mjs --self-test
 //
 // With --collector it also cross-checks the artifact's headline figures against
@@ -14,8 +15,16 @@
 // perfectly shaped and still say nothing true.
 //
 // Run this BEFORE the critic. It makes the cheap failures cheap.
+//
+// --pack writes everything a critic needs into one file: the artifact, the
+// class's criteria, the mechanical results, the collector fields the bar cares
+// about, and every cited line pulled from the target. A subagent's bill is the
+// sum of its context at each turn, so a critic that reads one file in one turn
+// costs a fraction of one that explores for ten. Put the pack first in the
+// prompt and the brief last: the stable prefix is what a cache can reuse across
+// a batch of critics.
 
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -321,7 +330,74 @@ function selfTest() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const args = process.argv.slice(2);
+  function buildPack(skill, artifactPath, md, res, collector, target) {
+  const spec = SPECS[skill];
+  const bar = (() => {
+    try { return readFileSync(join(HERE, "..", "skills", skill, "evals", "gauntlet", "BAR.md"), "utf8"); }
+    catch { return "(bar not found)"; }
+  })();
+  // Only the collector fields the bar actually cross-checks — not the whole
+  // JSON, which is a third of a critic's context for facts it will not use.
+  const figures = {};
+  if (collector && spec.figures) {
+    for (const [label, path] of Object.entries(spec.figures)) {
+      figures[label] = path.split(".").reduce((x, k) => (x == null ? undefined : x[k]), collector);
+    }
+  }
+  // The cited lines, pulled once, so nobody opens files to check them.
+  const cited = [];
+  if (target) {
+    for (const m of md.matchAll(/`?([\w./-]+\.(?:md|mjs|js|ts|tsx|py|sh|ps1|ya?ml|json|toml|astro|css|html)):(\d+)`?/g)) {
+      const [, file, lineNo] = m;
+      try {
+        const lines = readFileSync(join(target, file), "utf8").split("\n");
+        const i = Number(lineNo) - 1;
+        if (lines[i] != null) cited.push(`${file}:${lineNo}  ${lines[i].trim().slice(0, 160)}`);
+      } catch { /* M13 already reported it */ }
+    }
+  }
+  return `# Evidence pack — ${skill}
+
+Everything needed to grade this artifact. You should not need to open the repo
+or re-run a collector; if you do, say which fact was missing and why.
+
+## The artifact
+
+${md}
+
+---
+
+## The bar
+
+${bar}
+
+---
+
+## Mechanical results (already settled — do not re-check)
+
+\`\`\`
+${render(res)}
+\`\`\`
+
+## Collector figures the bar cross-checks
+
+${Object.entries(figures).map(([k, v]) => `- **${k}**: ${JSON.stringify(v)}`).join("\n") || "(no collector supplied)"}
+
+## Cited lines, pulled from the target
+
+${cited.length ? cited.map((c) => "- `" + c + "`").join("\n") : "(none with line numbers, or no target supplied)"}
+
+---
+
+## Your job
+
+Grade only what the mechanical results above do **not** settle: the judgement
+criteria in the bar's class section, the truth of the claims, and whether the
+evidence supports the verdict. Return the shape the critic prompt specifies.
+`;
+}
+
+const args = process.argv.slice(2);
   if (args.includes("--self-test")) selfTest();
   else {
     const [skill, path] = args;
@@ -330,7 +406,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const collector = ci >= 0 && args[ci + 1] ? JSON.parse(readFileSync(args[ci + 1], "utf8")) : null;
     const ti = args.indexOf("--target");
     const target = ti >= 0 ? args[ti + 1] : null;
-    const res = barCheck(skill, readFileSync(path, "utf8"), collector, target);
+    const md = readFileSync(path, "utf8");
+    const res = barCheck(skill, md, collector, target);
+    const pi = args.indexOf("--pack");
+    if (pi >= 0 && args[pi + 1]) {
+      const out = buildPack(skill, path, md, res, collector, target);
+      writeFileSync(args[pi + 1], out);
+      console.log(`${render(res)}\n\npack → ${args[pi + 1]}  (${Math.round(out.length / 4000)}k tokens; a critic reads this in one turn)`);
+      process.exit(res.verdict === "PASS" ? 0 : 1);
+    }
     console.log(render(res));
     process.exit(res.verdict === "PASS" ? 0 : 1);
   }
