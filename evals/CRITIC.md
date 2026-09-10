@@ -91,15 +91,49 @@ The budget below follows from that arithmetic:
 |---|---|
 | **Run `bar-check --collector <json> --target <repo>` and fix everything it finds *before* dispatching** | it now settles M1–M13: word budgets, sections, located rows, verdict vocabulary, the caps sentence, headline figures against a fresh collection, cadence sourcing, and **every citation in the artifact**. A round that fails on any of those spent ~300k to report what a script reports for nothing |
 | **Give the critic the instrument's output, not the collector's** | telling it to regenerate a 13k JSON and read it costs a turn and a third of its context. Paste the bar-check block instead and let it verify by exception |
+| **Pack a re-grade; let a first grade explore** | see below — this is the one place cost and quality genuinely conflict |
 | **Cap the brief.** Name the criteria that need judgement; the mechanical ones are already settled | fewer questions, fewer turns |
 | **Three rounds, not five** | the budget already said so; the fourth and fifth rounds on the decommissioned skill found things `bar-check` now catches |
 | **Batch artifacts into one critic where the skills differ** | one cache build instead of three |
 | **A smaller model is enough** | grading against a written bar with the instrument's output in hand is careful reading, not invention |
 
-Together these target **~100k a round rather than ~300k**, and three rounds
-rather than nine. That is a projection from the turn arithmetic above, not a
-measurement — the honest way to check it is to price the next round from the
-transcripts (`perAgent[].avgTokensPerRun`) and compare.
+### When the pack is wrong
+
+`bar-check --pack` puts everything a critic needs in one 4k file, and a critic
+that reads one file costs a fraction of one that explores for ten turns. It is
+the right tool for a **re-grade**, where the question is *did the fix land* and
+the answer is fully contained in the artifact and the instrument.
+
+It is the wrong tool for a **first grade**, and the record says so plainly. Four
+of the most valuable findings this apparatus has produced came from a critic
+going and looking at something nobody thought to hand it:
+
+- that the driver invokes one loop skill and not the other, so three files were
+  charged to a tick that never loads them;
+- that a commit gate scoped to "the touched workspace's tests" ran no unit suite
+  at all for the two workspaces holding most of the unit tests;
+- that a migration count was inflated 3.7× by worktree copies;
+- that a cadence used as the denominator of a cost argument appears nowhere in
+  the repo.
+
+A critic handed a pack grades the pack. It cannot find what the pack's author
+did not think to include — and *what the author did not think to include* is
+where those four findings lived. Packing a first grade buys a cheaper round by
+removing the reason to run one.
+
+So: **explore on the first grade of any artifact, pack every re-grade.** Tell
+the explorer what the instrument has already settled so it spends its turns on
+judgement rather than arithmetic, and cap them.
+
+### Honesty about these numbers
+
+The per-round figures above are a model, not a measurement: ~309k was observed,
+the ~100k target is derived from assumed turn counts and context growth that
+were never directly observed. Whether a batch of critics sharing an identical
+prefix actually reuses a cache is likewise assumed, not verified.
+
+Price the next round from the transcripts — `perAgent[].avgTokensPerRun`, which
+the collector already reports — and correct this section from what it says.
 - Budget three rounds per skill. If it is not PASS by round 3, stop and record
   the gap in `ROUNDS.md` rather than lowering the bar. Lowering a bar to reach
   a pass is the failure mode this whole apparatus exists to prevent.
