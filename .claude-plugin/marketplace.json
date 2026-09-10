@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Reusable Claude Code skills from Busy Office. Install the busy-office plugin to get every skill, namespaced as busy-office:<skill>.",
-    "version": "0.8.0"
+    "version": "0.9.0"
   },
   "plugins": [
     {
       "name": "busy-office",
       "source": "./",
       "description": "progress-dashboard \u2014 one-page stakeholder progress dashboard for any git project, built from whatever records it keeps (ADRs, roadmaps, gates, backlogs, changelogs, PRs). loop-doctor \u2014 explains how a scheduled autonomous loop works, finds redundant/contradictory/invalid detail across the files that govern it, and prescribes improvements. loop-economist \u2014 measures what a loop's actual runs cost and produced from session transcripts and git, scores six dimensions and prescribes fixes. requeue \u2014 reviews and reorders the queue the loop is fed, splits it into loop/subloop/gauntlet/human lanes and sharpens vague items into tasks. sharpen-intent \u2014 sharpens the intent/objective/key-focus document the whole ranking chain bottoms out in, and reports which work traces back to it. loop-atlas \u2014 draws the whole loop as one animated picture and the agents that run it as a deck of cards. wake-weight \u2014 what a run pays before it does any work, and what to cut.",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "author": {
         "name": "Busy Office",
         "url": "https://github.com/Busy-Office"

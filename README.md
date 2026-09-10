@@ -643,8 +643,16 @@ is not in the code, and a call site is not in a review.
   against pass/fail fixtures), and one shared blind critic
   ([`evals/CRITIC.md`](evals/CRITIC.md)) run in a fresh context that has not
   seen how the artifact was made. `--collector <run.json>` diffs the artifact's
-  headline figures against a fresh collection, which is how a stale number gets
-  caught by machine rather than by a critic reading carefully. Rounds are appended to each skill's
+  headline figures against a fresh collection and `--target <repo>` opens every
+  citation in it — a stale number and a dead reference are caught by machine
+  rather than by a critic reading carefully, which is both cheaper and stricter
+  than sampling four by hand.
+- **Explore on a first grade; pack a re-grade.** `--pack` writes everything a
+  critic needs into one small file, which is right when the question is *did the
+  fix land* and wrong when it is *what is wrong here* — a critic handed a pack
+  grades the pack, and four of this repo's most valuable findings came from one
+  going and looking at something nobody thought to hand it. Cost and quality
+  genuinely conflict here, and the rule names which side wins when. Rounds are appended to each skill's
   `ROUNDS.md`, failures included. Three rounds is the budget; if it is not a
   pass by round 3, the gap gets recorded rather than the bar lowered. Fixes go
   into the skill, never into the artifact by hand — an artifact patched to
