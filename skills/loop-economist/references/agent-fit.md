@@ -34,6 +34,29 @@ Small loops can collapse Planner into Builder. **Never collapse Verifier
 into Builder** — that is the one seam that pays for itself, and the
 evidence is in the rework and churn numbers.
 
+## What a summon actually costs
+
+A subagent pays **full cache-creation cost for a context it uses once**. The
+caller's context is built once and reused — a long session runs at a 0.98 cache
+hit rate across hundreds of turns. A fresh subagent has no cache: it reads its
+brief, its references and the repo, burns that over a handful of tool calls, and
+throws it away.
+
+Measured on a real session: 28 summons cost **8.17M billable, 60% of everything
+spent**, averaging **309k per run** — against a main actor that spent 5.45M
+across 737 turns.
+
+Two consequences worth carrying:
+
+- **The reported figure is not the bill.** A completion line saying
+  `subagent_tokens: 65k` counts input and output. Billable including cache
+  creation was roughly five times that. Price fan-out from the transcripts
+  (`perAgent[].avgTokensPerRun`), never from the notification.
+- **Cheap questions do not deserve fresh contexts.** A summon that could have
+  been a grep, a script, or a check the caller already had the context for is
+  paying ~300k to avoid a few thousand. Run the mechanical check locally first
+  and summon only for what genuinely needs an independent mind.
+
 ## Fan-out rules
 
 - Fan out over **independent** dimensions (files, review axes, candidate
@@ -43,6 +66,11 @@ evidence is in the rework and churn numbers.
   paying twice.
 - Cap the crew per tick. Unbounded fan-out is how `sidechainShare` passes
   0.5 while `commits` stays flat.
+- **Run the instrument before the reviewer.** Where a mechanical check can fail
+  the work — a word count, a missing section, a figure that disagrees with the
+  collector — run it locally and fix what it finds before spending a summon. A
+  reviewer dispatched at a fault the caller could have caught costs ~300k to
+  report something a script reports for nothing.
 - One context, one pass, is the right answer more often than it looks.
   Judge from `toolCallsPerEdit`: fan-out is worth it when the reading
   dominates, not when the deciding does.

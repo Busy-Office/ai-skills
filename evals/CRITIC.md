@@ -72,6 +72,12 @@ BAR GAPS (optional):
 
 - One critic per artifact, fresh context every time. A critic that graded the
   previous round has seen the fixes and is no longer blind.
+- **A round costs about 300k billable** — a fresh context, built and discarded.
+  So run `bar-check` locally and fix everything it finds *before* dispatching:
+  a round that fails on a word count or a stale figure has spent a critic on
+  what a script does for nothing. Rounds are for judgement, not for arithmetic.
+- Consider a smaller model for the critic. Grading against a written bar, with
+  the instrument's output in hand, is careful reading rather than invention.
 - Budget three rounds per skill. If it is not PASS by round 3, stop and record
   the gap in `ROUNDS.md` rather than lowering the bar. Lowering a bar to reach
   a pass is the failure mode this whole apparatus exists to prevent.
