@@ -99,6 +99,7 @@ Nothing degrades silently: each says which numbers it could not see.
 | [sharpen-intent](#sharpen-intent) | Makes the intent / objective / key-focus document steer | "what is this project really for", "sharpen the objectives", "what should we focus on now", "the goals are vague" |
 | [loop-atlas](#loop-atlas) | The loop as one animated picture; the agents as a deck of cards | "show me how the whole loop works", "diagram our agent workflow", "which agent should I use", "roster of our agents" |
 | [wake-weight](#wake-weight) | What every run pays before it does any work, and what to cut | "why is each run so expensive", "trim the context", "CLAUDE.md has got too big", "what loads at startup" |
+| [solo-flow](#solo-flow) | Trunk-based git branching and release model for a repo with exactly one writer | "what git workflow for our agent/loop", "should we use GitFlow", "write git rules into AGENTS.md", "does develop earn its keep" |
 
 ### The loop family
 
@@ -596,6 +597,41 @@ pointer), **on-demand** (the map, the playbook). Each with a saving per tick
 *and* across the window, a cost, and a risk — plus the section people skip,
 **what not to cut**: the definition of done, the intent, and anything whose
 absence just turns into re-derivation.
+
+---
+
+## solo-flow
+
+**What it answers:** what git branching and release model to use for a repo
+with exactly one writer — an agent or a loop, no other humans committing.
+GitFlow's `develop`/`feature`/`release`/`hotfix` branches exist to coordinate
+people who would otherwise collide; a single writer has no one to
+coordinate with, so most of that ceremony is state the loop pays to track
+for no return.
+
+### Usage
+
+> what git workflow should our agent/loop use?
+> should we use GitFlow / GitHub Flow / trunk-based development?
+> write the git rules into AGENTS.md / CLAUDE.md
+> does our develop branch actually do anything?
+
+There's no collector script — this is a prescriptive and audit skill, not
+a data-shape one. It hands back the branch model, the day-to-day flow, the
+release-tag mechanics, and a setup checklist to paste into the project's
+own rules file.
+
+### What it does
+
+Trunk-based development, named for this specific case: one branch
+(`main`), short-lived local work branches (`feat/*`, `fix/*`, `chore/*`,
+never pushed), CI as the sole independent check, and releases as
+annotated tags cut straight off `main` — no `develop`/`release` dance to
+keep in sync. Before prescribing it, it asks the one question that
+decides whether a second branch is actually justified: does anything
+outside the loop consume integration state *before* a release tag exists?
+If yes, it hands over the two-branch (GitLab-Flow-shaped) variant instead
+of forcing trunk-based where it doesn't fit.
 
 ---
 
