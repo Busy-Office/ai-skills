@@ -50,8 +50,12 @@ and the one defect that stops it steering.>
 
 **The bet:** <one arguable sentence>.
 
-**We will know it worked when** <measure with a unit> by <horizon>.
-**It was wrong if** <the falsifier>.
+**We will know it worked when** <measure with a unit> by <horizon> — must not
+restate an objective's own measure verbatim; it is the headline signal, the
+objectives are the components of it.
+**It was wrong if** <the falsifier — attempt a real sentence from what the
+sources support first; only fall back to TO DECIDE if no source gives any
+basis for one, and say so explicitly rather than leaving the line bare>.
 
 **Non-goals:** <two, one of them tempting>.
 
@@ -61,11 +65,18 @@ and the one defect that stops it steering.>
 3. <outcome> — measure: <…>
 
 ## Key focus — now
-**<the one objective the next weeks belong to>** · until <date or event>.
+**<the one objective the next weeks belong to>** · until <date or event —
+attempt one from the sources' own horizon before falling back to TO DECIDE>.
 Everything else waits, on purpose.
 
 TO DECIDE — <any question the sources could not answer, left as a question>
 ```
+
+Every clause in **The change** and **The bet** must trace to a source
+statement or a collector fact — check each clause against what you actually
+read before writing it. A detail that sounds plausible (including one that
+echoes this skill's own `anatomy.md` examples) but appears in no source is
+invented; mark it TO DECIDE instead of asserting it.
 
 ## To decide (≤ 5 questions)
 
@@ -73,7 +84,10 @@ TO DECIDE — <any question the sources could not answer, left as a question>
 
 ## Do next (≤ 5)
 
-1. Put the draft at `<path>` and point `<rules file>` at it — one line.
+1. Write the draft's content into `<canonical path>` (create or replace it —
+   pointing a rules file at a file that still holds the old, unsharpened
+   text accomplishes nothing) and point `<rules file>` at that path — the
+   two are one step, not one.
 2. …
 
 ---

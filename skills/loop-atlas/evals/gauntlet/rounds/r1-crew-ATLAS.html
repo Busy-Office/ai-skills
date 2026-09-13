@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>crew — the loop and its crew</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --panel: #ffffff; --ink: #1b1b1f; --sub: #55555f;
+    --line: #d8d6d0; --accent: #7a3fd1; --accent-2: #c2410c;
+    --gap: #b91c1c; --gap-bg: #fdf1f1;
+    --card-bg: #ffffff; --card-line: #e2e0da; --chip: #efeceb;
+    --good: #15803d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15151a; --panel: #1d1d24; --ink: #eceaf5; --sub: #a6a3b8;
+      --line: #333340; --accent: #b98bff; --accent-2: #ff9f68;
+      --gap: #ff8787; --gap-bg: #2a1616;
+      --card-bg: #20202a; --card-line: #34343f; --chip: #2a2a35;
+      --good: #4ade80;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15151a; --panel: #1d1d24; --ink: #eceaf5; --sub: #a6a3b8;
+    --line: #333340; --accent: #b98bff; --accent-2: #ff9f68;
+    --gap: #ff8787; --gap-bg: #2a1616;
+    --card-bg: #20202a; --card-line: #34343f; --chip: #2a2a35;
+    --good: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .meta { color: var(--sub); font-size: 0.85rem; margin-bottom: 18px; }
+  .lede { font-size: 1rem; color: var(--ink); max-width: 70ch; margin-bottom: 28px; }
+  h2 { font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--sub); margin: 40px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .diagram-scroll { overflow-x: auto; }
+  svg { display: block; }
+  .replay-btn { margin-top: 10px; background: var(--chip); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px; font-size: 0.85rem; cursor: pointer; }
+  .replay-btn:hover { border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
+  caption { caption-side: top; text-align: left; color: var(--sub); font-size: 0.8rem; margin-bottom: 6px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--sub); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+  .vacant-cell { color: var(--gap); font-weight: 600; }
+  .absence { color: var(--sub); font-style: italic; }
+
+  .window-table { margin-top: 10px; }
+
+  .deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 8px; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .card.vacant { border-style: dashed; border-color: var(--gap); background: var(--gap-bg); }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .card-name { font-weight: 700; font-size: 1.02rem; }
+  .card-class { font-size: 0.72rem; color: var(--sub); text-transform: uppercase; letter-spacing: .04em; }
+  .emblem { font-size: 1.6rem; text-align: center; background: var(--chip); border-radius: 10px; padding: 6px 0; }
+  .goodat { font-size: 0.85rem; font-style: italic; color: var(--sub); }
+  .abilities { font-size: 0.83rem; margin: 0; padding-left: 0; list-style: none; }
+  .abilities li { margin-bottom: 3px; }
+  .cost-tag { color: var(--accent-2); font-size: 0.78rem; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 0.78rem; margin: 4px 0; }
+  .bar { display: inline-block; letter-spacing: -1px; color: var(--accent); }
+  .bar .empty { color: var(--line); }
+  .field { font-size: 0.82rem; }
+  .field b { color: var(--sub); font-weight: 600; text-transform: uppercase; font-size: 0.68rem; letter-spacing: .03em; display: block; }
+  .seen { font-size: 0.75rem; color: var(--sub); border-top: 1px dashed var(--line); padding-top: 6px; margin-top: 2px; }
+
+  ul.findings { font-size: 0.95rem; padding-left: 20px; }
+  ul.findings li { margin-bottom: 8px; }
+  .footer { margin-top: 40px; font-size: 0.78rem; color: var(--sub); border-top: 1px solid var(--line); padding-top: 10px; }
+
+  /* --- animation --- */
+  .edge { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 400; stroke-dashoffset: 400; animation: draw 1s ease forwards; }
+  .edge.dashed { stroke: var(--gap); stroke-dasharray: 6 6; animation: none; stroke-dashoffset: 0; }
+  .stage-box { opacity: 0; transform: translateY(6px); animation: enter .5s ease forwards; }
+  .stage-box.gap rect { stroke: var(--gap); stroke-dasharray: 5 4; fill: var(--gap-bg); }
+  .stage-box text.label { fill: var(--ink); font-size: 12px; font-weight: 600; }
+  .stage-box text.sub { fill: var(--sub); font-size: 10px; }
+  .stage-box text.gap-label { fill: var(--gap); font-size: 10px; font-weight: 700; }
+  .pulse-dot { r: 5; fill: var(--accent-2); offset-rotate: 0deg; }
+  #s-trigger { animation-delay: .0s }
+  #s-select  { animation-delay: .15s }
+  #s-act     { animation-delay: .3s }
+  #s-verify  { animation-delay: .45s }
+  #s-gate    { animation-delay: .6s }
+  #s-record  { animation-delay: .75s }
+  #s-stop    { animation-delay: .9s }
+  #e-t-s { animation-delay: .1s }
+  #e-s-a { animation-delay: .25s }
+  #e-a-v { animation-delay: .4s }
+  #e-v-r { animation-delay: .55s }
+  #e-r-x { animation-delay: .7s }
+  #e-rearm { animation-delay: .85s }
+
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes enter { to { opacity: 1; transform: translateY(0); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; }
+    .edge { stroke-dashoffset: 0 !important; }
+    .stage-box { opacity: 1 !important; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>crew — the loop and its crew</h1>
+  <div class="meta">window: 30d · collected 2026-09-10 · fixture: <code>skills/loop-atlas/fixtures/crew</code></div>
+
+  <p class="lede">Every 30 minutes the loop wakes, picks the top backlog item, builds it, runs the
+  tests, records one status line, and re-arms — with no gate anywhere in the files between
+  verify and record.</p>
+
+  <h2>The flow</h2>
+  <div class="panel">
+    <div class="diagram-scroll">
+      <svg id="flow-svg" viewBox="0 0 1180 300" width="100%" role="img"
+           aria-label="One tick: trigger every 30 minutes leads to select from the backlog file (main actor), then act (builder, 3 summons), then verify (main actor, runs tests), then a gate stage with no evidence in any file, then record (scribe agent defined but never summoned), which either re-arms the trigger or stops when the backlog is empty.">
+        <!-- lanes -->
+        <text x="8" y="24" class="sub" font-size="10" fill="var(--sub)">MAIN ACTOR</text>
+        <text x="8" y="104" class="sub" font-size="10" fill="var(--sub)">BUILDER</text>
+        <text x="8" y="184" class="sub" font-size="10" fill="var(--sub)">SCRIBE (never summoned)</text>
+
+        <!-- edges -->
+        <path id="e-t-s" class="edge" d="M140,40 L230,40" />
+        <path id="e-s-a" class="edge" d="M320,40 C370,40 370,120 420,120" />
+        <path id="e-a-v" class="edge" d="M560,120 C610,120 610,40 660,40" />
+        <path id="e-v-r" class="edge" d="M790,40 C860,40 860,200 900,200" />
+        <path id="e-r-x" class="edge" d="M1040,200 L1100,200" />
+        <path id="e-rearm" class="edge dashed" d="M970,230 C700,270 300,270 90,230 C50,200 50,90 90,50" />
+
+        <!-- gap edge to gate -->
+        <path class="edge dashed" d="M790,50 C820,90 820,140 810,175" />
+
+        <!-- trigger -->
+        <g id="s-trigger" class="stage-box">
+          <rect x="20" y="15" width="120" height="50" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="80" y="35" text-anchor="middle" class="label">trigger</text>
+          <text x="80" y="50" text-anchor="middle" class="sub">every 30 min</text>
+          <text x="80" y="61" text-anchor="middle" class="sub" font-size="9">CLAUDE.md:3</text>
+        </g>
+
+        <!-- select -->
+        <g id="s-select" class="stage-box">
+          <rect x="230" y="15" width="130" height="50" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="295" y="32" text-anchor="middle" class="label">select</text>
+          <text x="295" y="46" text-anchor="middle" class="sub">backlog file</text>
+          <text x="295" y="58" text-anchor="middle" class="sub" font-size="9">CLAUDE.md:4</text>
+        </g>
+
+        <!-- act -->
+        <g id="s-act" class="stage-box">
+          <rect x="420" y="95" width="140" height="50" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="490" y="112" text-anchor="middle" class="label">act</text>
+          <text x="490" y="126" text-anchor="middle" class="sub">builder · 3 summons</text>
+          <text x="490" y="138" text-anchor="middle" class="sub" font-size="9">builder.md:7</text>
+        </g>
+
+        <!-- verify -->
+        <g id="s-verify" class="stage-box">
+          <rect x="660" y="15" width="130" height="50" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="725" y="32" text-anchor="middle" class="label">verify</text>
+          <text x="725" y="46" text-anchor="middle" class="sub">main actor · tests</text>
+          <text x="725" y="58" text-anchor="middle" class="sub" font-size="9">CLAUDE.md:6</text>
+        </g>
+
+        <!-- gate (vacant) -->
+        <g id="s-gate" class="stage-box gap">
+          <rect x="760" y="175" width="130" height="50" rx="10" fill="var(--gap-bg)" stroke="var(--gap)" stroke-dasharray="5 4"/>
+          <text x="825" y="195" text-anchor="middle" class="gap-label">gate — vacant</text>
+          <text x="825" y="210" text-anchor="middle" class="gap-label" font-size="9">no evidence in any file</text>
+        </g>
+
+        <!-- record -->
+        <g id="s-record" class="stage-box">
+          <rect x="900" y="175" width="140" height="50" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="970" y="192" text-anchor="middle" class="label">record</text>
+          <text x="970" y="206" text-anchor="middle" class="sub">scribe · never summoned</text>
+          <text x="970" y="218" text-anchor="middle" class="sub" font-size="9">CLAUDE.md:7</text>
+        </g>
+
+        <!-- stop / re-arm -->
+        <g id="s-stop" class="stage-box">
+          <rect x="1100" y="175" width="70" height="50" rx="10" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="1135" y="196" text-anchor="middle" class="label" font-size="11">stop</text>
+          <text x="1135" y="210" text-anchor="middle" class="sub" font-size="9">CLAUDE.md:8</text>
+        </g>
+
+        <text x="530" y="290" text-anchor="middle" class="sub" font-size="10">re-arm edge (dashed, returns to trigger) · exit: stop sentinel "backlog empty" (CLAUDE.md:8) · no evidence for a gate/budget/error exit</text>
+
+        <circle class="pulse-dot">
+          <animateMotion dur="2.6s" begin="0.1s" fill="freeze"
+            path="M140,40 L230,40 C260,40 320,40 320,40 C370,40 370,120 420,120 L560,120 C610,120 610,40 660,40 L790,40 C860,40 860,200 900,200 L1040,200 L1100,200"/>
+        </circle>
+      </svg>
+    </div>
+    <button class="replay-btn" onclick="replayFlow()">▸ replay</button>
+    <script>
+      function replayFlow(){
+        const svg = document.getElementById('flow-svg');
+        const clone = svg.cloneNode(true);
+        svg.replaceWith(clone);
+        clone.id = 'flow-svg';
+      }
+    </script>
+
+    <table>
+      <caption>Every stage, its actor, what it reads or writes, and the file:line behind the claim.</caption>
+      <thead><tr><th>stage</th><th>actor</th><th>reads / writes</th><th>evidence</th></tr></thead>
+      <tbody>
+        <tr><td>trigger</td><td>main actor</td><td>—</td><td><code>CLAUDE.md:3</code></td></tr>
+        <tr><td>select</td><td>main actor</td><td>the backlog file the rule names (not created in this fixture)</td><td><code>CLAUDE.md:4</code></td></tr>
+        <tr><td>act</td><td>builder (3 summons)</td><td>working tree</td><td><code>.claude/agents/builder.md:7</code>, <code>CLAUDE.md:5</code></td></tr>
+        <tr><td>verify</td><td>main actor</td><td>test suite</td><td><code>CLAUDE.md:6</code></td></tr>
+        <tr><td>gate</td><td class="vacant-cell">— vacant —</td><td>—</td><td class="absence">no evidence in any file</td></tr>
+        <tr><td>record</td><td>scribe (file only — never summoned)</td><td>the status file the rule names (not created in this fixture)</td><td><code>.claude/agents/scribe.md:3</code>, <code>CLAUDE.md:7</code></td></tr>
+        <tr><td>stop</td><td>main actor</td><td>—</td><td><code>CLAUDE.md:8</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The crew</h2>
+  <div class="deck">
+
+    <div class="card">
+      <div class="card-head"><span class="card-name">main actor</span><span class="card-class">main actor · claude-opus-5</span></div>
+      <div class="emblem">🧭</div>
+      <div class="goodat">"Good at: runs the whole tick — selects, delegates build and verify, and decides when to stop."</div>
+      <ul class="abilities">
+        <li>▸ summon a subagent (Agent tool) — cost: fresh context per summon</li>
+        <li>▸ invoke a skill (tdd, requeue observed) — cost: one skill load each</li>
+        <li>▸ read/run directly when no summon is warranted — cost: shares session context</li>
+      </ul>
+      <div class="stats">
+        <div>REACH <span class="bar">—</span></div>
+        <div>PRECISION <span class="bar">—</span></div>
+        <div>COST <span class="bar">█████<span class="empty">░</span></span> 5 (measured: 5850 tok, session)</div>
+        <div>AUTONOMY <span class="bar">█████</span> 5 (no gate file between verify and record)</div>
+      </div>
+      <div class="field"><b>Summon when</b>every tick, by default — it is the session itself</div>
+      <div class="field"><b>Weakness</b>moves from verify straight to record with nothing between them — no file defines a gate to hand it</div>
+      <div class="field"><b>Hands off to</b>builder (act), then itself (verify), then scribe (record) — per the flow above</div>
+      <div class="seen">Seen: observed.mainTokens 5850 vs observed.sidechainTokens 2925 for the whole crew combined · model: claude-opus-5 (observed.modelMix)</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-name">scout</span><span class="card-class">search · model —</span></div>
+      <div class="emblem">🔍</div>
+      <div class="goodat">"Good at: broad fan-out search across many files, returns only the conclusion."</div>
+      <ul class="abilities">
+        <li>▸ Read — cost: fresh context per summon</li>
+        <li>▸ Grep — cost: fresh context per summon</li>
+        <li>▸ Glob — cost: fresh context per summon</li>
+      </ul>
+      <div class="stats">
+        <div>REACH <span class="bar">████<span class="empty">░</span></span> 4 (Read+Grep+Glob, own context)</div>
+        <div>PRECISION <span class="bar">—</span></div>
+        <div>COST <span class="bar">—</span></div>
+        <div>AUTONOMY <span class="bar">██<span class="empty">░░░</span></span> 2 (read-only, no write tool)</div>
+      </div>
+      <div class="field"><b>Summon when</b>you need every call site of something and don't want the file dumps</div>
+      <div class="field"><b>Weakness</b>cannot write — do not hand it work that ends in a change</div>
+      <div class="field"><b>Hands off to</b>planner or builder, whichever needs what it found</div>
+      <div class="seen">Seen: 3 summons · avg prompt 8 words · Tools: Read · Grep · Glob</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-name">builder</span><span class="card-class">build · sonnet</span></div>
+      <div class="emblem">🔧</div>
+      <div class="goodat">"Good at: implements one task with the minimum diff and stops at the stated bound."</div>
+      <ul class="abilities">
+        <li>▸ Read / Edit / Write — cost: one commit</li>
+        <li>▸ Bash (run tests) — cost: shares its own context</li>
+        <li>▸ Grep / Glob — cost: shares its own context</li>
+      </ul>
+      <div class="stats">
+        <div>REACH <span class="bar">██<span class="empty">░░░</span></span> 2 (bound to the stated item, not fan-out)</div>
+        <div>PRECISION <span class="bar">████<span class="empty">░</span></span> 4 (avg prompt 7 words — narrow, bounded briefs)</div>
+        <div>COST <span class="bar">—</span></div>
+        <div>AUTONOMY <span class="bar">████<span class="empty">░</span></span> 4 (write + Bash, no gate named in its file)</div>
+      </div>
+      <div class="field"><b>Summon when</b>a task with a stated diff bound is already written</div>
+      <div class="field"><b>Weakness</b>refuses to widen scope — do not hand it an item with no bound</div>
+      <div class="field"><b>Hands off to</b>verify (main actor runs the tests next)</div>
+      <div class="seen">Seen: 3 summons · avg prompt 7 words · Tools: Read · Edit · Write · Bash · Grep · Glob</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-name">planner</span><span class="card-class">plan · opus</span></div>
+      <div class="emblem">🗺️</div>
+      <div class="goodat">"Good at: turns a backlog item into an acceptance test and a file list before any code is written."</div>
+      <ul class="abilities">
+        <li>▸ Read / Grep / Glob — cost: fresh context per summon</li>
+        <li>▸ WebFetch — cost: fresh context per summon</li>
+      </ul>
+      <div class="stats">
+        <div>REACH <span class="bar">████<span class="empty">░</span></span> 4 (Grep/Glob/WebFetch — wide)</div>
+        <div>PRECISION <span class="bar">████<span class="empty">░</span></span> 4 (own file states an output shape: test + file list + risks)</div>
+        <div>COST <span class="bar">—</span></div>
+        <div>AUTONOMY <span class="bar">█<span class="empty">░░░░</span></span> 1 (refuses to edit code)</div>
+      </div>
+      <div class="field"><b>Summon when</b>a backlog item needs an acceptance test before any code is touched</div>
+      <div class="field"><b>Weakness</b>refuses to edit — do not hand it a task and expect a diff back</div>
+      <div class="field"><b>Hands off to</b>builder (act)</div>
+      <div class="seen">Seen: 1 summon · avg prompt 12 words · Tools: Read · Grep · Glob · WebFetch</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-name">verifier</span><span class="card-class">verify · sonnet</span></div>
+      <div class="emblem">🛡️</div>
+      <div class="goodat">"Good at: pre-commit audit — reads the staged diff and reports findings in tiers."</div>
+      <ul class="abilities">
+        <li>▸ Read / Grep / Glob — cost: fresh context per summon</li>
+        <li>▸ Bash (inspect, not fix) — cost: shares its own context</li>
+      </ul>
+      <div class="stats">
+        <div>REACH <span class="bar">███<span class="empty">░░</span></span> 3 (Grep/Glob, no write)</div>
+        <div>PRECISION <span class="bar">████<span class="empty">░</span></span> 4 (own file: "returns findings in tiers" — a stated shape)</div>
+        <div>COST <span class="bar">—</span></div>
+        <div>AUTONOMY <span class="bar">██<span class="empty">░░░</span></span> 2 (report-only, no write tool)</div>
+      </div>
+      <div class="field"><b>Summon when</b>a staged diff needs review against repo standards before it lands</div>
+      <div class="field"><b>Weakness</b>reports only, does not fix — do not hand it something that needs fixing</div>
+      <div class="field"><b>Hands off to</b>builder, if it reports something to fix</div>
+      <div class="seen">Seen: 1 summon · avg prompt 13 words · Tools: Read · Grep · Glob · Bash</div>
+      <div class="field" style="margin-top:4px; font-size:0.75rem; color:var(--sub);"><b>Finding</b>the tick's own <code>verify</code>-stage file evidence (<code>CLAUDE.md:6</code>) never names this agent — it cites only "run the tests", not the audit.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-name">scribe</span><span class="card-class">record · haiku</span></div>
+      <div class="emblem">📜</div>
+      <div class="goodat">"Good at: records the tick — one status line, the gate log, the dashboard."</div>
+      <ul class="abilities">
+        <li>▸ Read / Write — cost: one commit</li>
+        <li>▸ Bash — cost: shares its own context</li>
+      </ul>
+      <div class="stats">
+        <div>REACH <span class="bar">█<span class="empty">░░░░</span></span> 1 (Read/Write only, no search tool)</div>
+        <div>PRECISION <span class="bar">—</span></div>
+        <div>COST <span class="bar">—</span></div>
+        <div>AUTONOMY <span class="bar">███<span class="empty">░░</span></span> 3 (writes without a stated gate; never changes code)</div>
+      </div>
+      <div class="field"><b>Summon when</b>after the work has landed, to append the tick record</div>
+      <div class="field"><b>Weakness</b>never summoned in this window — the record stage its file describes ran, if it ran, unwritten by the agent named for it</div>
+      <div class="field"><b>Hands off to</b>trigger (re-arm) or stop</div>
+      <div class="seen">Seen: never summoned in 30d window · Tools: Read · Write · Bash</div>
+    </div>
+
+  </div>
+
+  <table class="window-table">
+    <caption>in the window</caption>
+    <tbody>
+      <tr><th>summons</th><td>builder 3 · scout 3 · planner 1 · verifier 1 · scribe 0</td></tr>
+      <tr><th>skills invoked</th><td>tdd 1 · requeue 1</td></tr>
+      <tr><th>subagent tokens</th><td>2925 of 8775 total (observed.sidechainTokens / [observed.mainTokens + observed.sidechainTokens])</td></tr>
+      <tr><th>never summoned</th><td>scribe</td></tr>
+      <tr><th>undefined but summoned</th><td>none (observed.undefinedButUsed is empty)</td></tr>
+      <tr><th>vacancies</th><td>none among the five classes — every class (search / plan / build / verify / record) has a defined agent; the vacancy on this page is the <b>gate stage</b>, not a class</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What the picture shows</h2>
+  <ul class="findings">
+    <li>The verify stage's own file evidence (<code>CLAUDE.md:6</code>) never names the verifier agent, even though the verifier was summoned once in the window — the audit and the "run the tests" rule are two different things the files don't connect.</li>
+    <li>Gate has no evidence in any file — the diagram draws it as a dashed gap between verify and record, and that gap is real: nothing in the fixture stops or approves a tick before it records.</li>
+    <li>Scribe is named in <code>CLAUDE.md:7</code> for the record stage but was never summoned in this window — the record lane on the diagram is a lane the runs never used.</li>
+    <li>Builder and scout are the most-used cards (3 summons each); planner and verifier each fired once, and the deck orders them in that observed sequence, not file order.</li>
+    <li>The main actor's own tokens (5850) outweigh the whole crew's combined subagent tokens (2925) — most of this tick's spend is the session itself, not a card on this deck.</li>
+  </ul>
+
+  <div class="footer">Read 6 files and 1 transcript · counts and ids only · target repo untouched.</div>
+</div>
+</body>
+</html>
