@@ -135,13 +135,33 @@ nothing to merge back into.
 2. Add the CI workflow: one trigger on push to `main`, a second on tag
    push for publishing. Confirm the first run actually passes before
    relying on it to gate anything.
-3. Write the rules above into the agent's instructions (`AGENTS.md` or
+3. Do **not** require a pull request on `main` — there's no second
+   reviewer for one to wait on, and requiring one just adds a step the
+   agent approves itself, which is approval in name only. Do still make
+   GitHub enforce the checks and the "never force-push/delete main" rule
+   from the permissions table above, since those cost nothing in velocity
+   (no human waits on them) but stop a skipped or interrupted check-step
+   from landing a red commit anyway:
+   ```bash
+   gh api -X PUT repos/<owner>/<repo>/branches/main/protection \
+     -F required_pull_request_reviews=null \
+     -F restrictions=null \
+     -F enforce_admins=false \
+     -F allow_force_pushes=false \
+     -F allow_deletions=false \
+     -f required_status_checks[strict]=true \
+     -f 'required_status_checks[contexts][]=<your CI job name>'
+   ```
+   Check for a `CODEOWNERS` file before assuming this is fully off — it can
+   silently re-impose a review requirement independent of the branch
+   protection settings above.
+4. Write the rules above into the agent's instructions (`AGENTS.md` or
    `CLAUDE.md`), with the release-trigger rules in one place the loop
    actually reads before selecting work (for example `LOOP.md`) — not
    copied into both, so there's exactly one copy to keep current.
-4. `.gitignore` the loop's own state and tool output — it shouldn't be
+5. `.gitignore` the loop's own state and tool output — it shouldn't be
    part of the history the checks above are protecting.
-5. If a `develop` branch (or any other stale integration branch) already
+6. If a `develop` branch (or any other stale integration branch) already
    exists from a prior setup, don't delete it blind. Confirm every commit
    on it is already reachable from `main`:
    ```bash
