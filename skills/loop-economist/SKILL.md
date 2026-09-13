@@ -34,6 +34,10 @@ flowchart LR
   `git log` and the collector.
 - **Never quote a transcript.** Sessions contain the user's own words and
   their code. Cite a session by id and a metric, never by content.
+- **Read bounded.** `derived` and `warnings` fully; `sessions` and
+  `git.commits` by id only, when a finding needs that one entry's
+  evidence. Never read the full `runs.json` — it scales with the window,
+  `derived` doesn't.
 - **One context, one pass.** No subagents by default — reviewing a
   fan-out problem by fanning out is its own joke.
 - **Leave a receipt** in the footer: transcripts read, window, commits,
@@ -45,13 +49,30 @@ flowchart LR
 
 ```bash
 node <skill-dir>/scripts/runs.mjs <repo-path> --since 14d > <scratchpad>/runs.json
+jq '{derived, warnings, records, git: {commits: (.git.commits | length), rework: .git.rework}}' <scratchpad>/runs.json
 ```
 
-Sessions (tokens by kind, models, tools, subagents by type, human turns,
-interrupts, tool errors, repeated identical calls, files edited), git
-(commits, churn, rework commits), the loop's records (open/done/vague
-items), and the derived rates. Read all of it — it is evidence, not
-conclusions.
+`derived` already carries every rate this review reports — tokens per
+commit, cache hit rate, subagent share, rework rate, the session-id lists
+for thrash and zero-commit — and costs a few hundred tokens regardless of
+window. **Read that slice fully; do not read the full `runs.json` top to
+bottom.** The `sessions` array and `git.commits` are per-run raw detail
+that scales with the window (every session's tool/subagent breakdown,
+every commit's numstat) and the review never quotes them — findings cite
+a session id or a sha, not their contents. Treat the full file as an
+index: pull one entry only when a finding needs to cite that specific
+session or commit —
+
+```bash
+jq --arg id "<session-id>" '.sessions[] | select(.id == $id)' <scratchpad>/runs.json
+```
+
+— never `Read` the whole `runs.json` into context. Sessions (tokens by
+kind, models, tools, subagents by type, human turns, interrupts, tool
+errors, repeated identical calls, files edited), git (commits, churn,
+rework commits), and the loop's records (open/done/vague items) are the
+raw material `derived` is computed from; the numbers are the evidence,
+not the raw rows.
 
 Pick the window from the loop's cadence: at least **20 ticks or 14 days**,
 whichever is longer. Say the window in the first line of the review; every
