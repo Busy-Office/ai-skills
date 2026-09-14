@@ -1,0 +1,59 @@
+{
+  "skill_name": "graph-engineer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in <repo>. Our release-notes agent lives in AGENT.md — six steps, each one 'then' the next, and it takes ages because every step waits for the last. Can you redraw it as a graph, tell me which steps can actually run in parallel, and give me a Workflow script for it? Put the review and the script in <scratchpad>/, don't write into the repo and don't run anything.",
+      "expected_output": "Diagram-first graph review: ≤60-word lede, mermaid graph with node ids showing three independent readers (changelog, commits, dependency diff) fanning into one writer — the diamond; node table with a JSON-schema output shape per node and model/effort; edge table naming the variable that crosses each edge, with 1→2 and 2→3 cut as carrying no data; step 4 (combine/sort/dedupe) done as code not an agent; step 6 replaced by a separate verifier node prompted to refute, or named as a vacancy; barrier table with the one earned barrier (the writer needs all three); cost block with agent count, critical path formula and the caps; a plain-JS script with a pure-literal meta first; lint rows all closed; do-next ≤5; receipt.",
+      "files": ["fixtures/linear-chain/AGENT.md"],
+      "assertions": [
+        "Opens with a mermaid graph whose nodes carry ids, ≤60 words before it",
+        "Edge table names the variable crossing each edge, and marks 1→2 and 2→3 as carrying none",
+        "Steps 1, 2 and 3 are drawn as independent nodes that run at once",
+        "Step 4 (combine, sort, dedupe) is implemented as plain code, not an agent() call",
+        "Step 6's self-check is replaced by a separate verifier node prompted to refute, or explicitly named as a vacancy",
+        "Every node in the node table has an output schema, and every agent() in the script carries one",
+        "Exactly one barrier is kept and its cross-item need is stated",
+        "Cost block gives the agent count and the critical path as max(readers) + writer + verifier, labelled estimate",
+        "Script is plain JS with export const meta as a pure literal first, and no Date.now/Math.random/new Date()",
+        "Footer receipt: files read, lint rows found and closed, nothing written into the repo, workflow not launched"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "cd <repo> — someone left a workflow at fixtures/smelly-workflow/workflow.js that audits routes for missing auth. It works but it's slow, and I don't trust the loop at the end. Review it as a graph, run whatever checks you have, and give me a fixed version. Review to <scratchpad>/GRAPH-REVIEW.md, fixed script to <scratchpad>/workflow.js. Don't run it.",
+      "expected_output": "Review that runs scripts/graph-lint.mjs first and pastes its shape summary; names all eight planted smells by id with line numbers (G3 Date.now, G14 silent slice cap, G5 flatMap without filter(Boolean), G6 parallel→map→parallel, G7 agent-as-plumbing, G8 while(true), G9 dedupe against confirmed, G11 phase inside a stage); closes each with the exact change; a rewrite using pipeline() with opts.phase, filter(Boolean), the merge as code, a bounded cycle deduped against a seen Set with a budget guard, the cap removed or logged; re-lint shows zero rows; cost block; receipt.",
+      "files": ["fixtures/smelly-workflow/workflow.js"],
+      "assertions": [
+        "Runs the lint before the judgement pass and includes its output",
+        "Lists every planted id — G3, G5, G6, G7, G8, G9, G11, G14 — each with the line it fires on",
+        "Does not report G1, G2, G4 or G12 against the original",
+        "The rewrite replaces the parallel→map→parallel with a pipeline() and uses opts.phase instead of phase() inside a stage",
+        "The rewrite has .filter(Boolean) on every parallel() result before it is consumed",
+        "The 'Combine these results' agent is replaced by flatMap plus a Map keyed by file:line",
+        "The cycle has a dry counter, a budget.remaining() guard, and dedupes against a seen Set, not confirmed",
+        "Date.now() is removed and the timestamp passed via args, and the slice cap is removed or logged with the count dropped",
+        "The rewrite is re-linted and the review states zero open rows",
+        "Footer receipt: lint rows found and closed, nothing written into the repo, workflow not launched"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to sweep <repo>/src for bugs but I have no idea how many there are — finding one usually turns up more. Design me a workflow that keeps looking until it stops finding new ones, checks each finding from a few different angles before it counts, and tell me roughly how many agents and how long it'll take before I run it. Design and script only, into <scratchpad>/, don't launch it.",
+      "expected_output": "Graph review of a converging cycle: mermaid diagram with finder fan-out, dedupe-against-seen edge as code, a perspective-diverse verifier (correctness, security, reproduces) with a majority rule, and the loop-back edge with its stop condition; node table with schemas and a cheaper tier on the finders; the cycle's guards — dry counter (K consecutive empty rounds), budget.remaining(), and the 1000-agent lifetime cap — all present in the script; cost block with expected rounds, agents per round × rounds, critical path per round, concurrency min(16, CPUs−2), all labelled estimate; lint clean; not launched; receipt.",
+      "files": [],
+      "assertions": [
+        "Opens with a mermaid graph with node ids showing the loop-back edge and its stop condition, ≤60 words before it",
+        "The cycle stops after K consecutive rounds with nothing new, and K is stated",
+        "Fresh findings are deduped against a Set of everything seen, not against confirmed results, and the review says why",
+        "The cycle has a budget.remaining() guard and names the 1000-agent lifetime cap",
+        "Verification uses at least three distinct lenses with a majority rule, run by nodes other than the finders",
+        "The dedupe and the majority count are plain code, not agent() calls",
+        "Finders are tiered to a cheaper model or lower effort with the reason; the synthesis node is not",
+        "Cost block gives agents per round, expected rounds, critical path per round, and the concurrency cap min(16, CPUs−2), each labelled estimate with its formula",
+        "Script is plain JS, meta a pure literal first, no forbidden calls, and lint reports zero rows",
+        "The review says how to run it and confirms it was not launched"
+      ]
+    }
+  ]
+}

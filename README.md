@@ -52,7 +52,7 @@ to choose the next skill yourself:
 
 | it says the problem is | run next |
 |---|---|
-| the actor — no verifier, unrouted searching | its own prescriptions; the verifier template |
+| the actor — no verifier, unrouted searching | its own prescriptions; the verifier template; `graph-engineer` when the fix is the shape of the run itself |
 | the input — items were never tasks | `requeue`, then `sharpen-intent` if nothing traces to a purpose |
 | the design — two drivers, no stop, contradictory rules | `loop-doctor` |
 | the preamble — cost before any work starts | `wake-weight` |
@@ -77,6 +77,12 @@ new or old:
 **When someone asks how it is going**, `/busy-office:progress-dashboard`
 publishes a one-page status from whatever records the project already keeps.
 
+**When the question is one run's shape, not the loop around it** — "this
+agent does A then B then C, can it fan out?", "review this Workflow script",
+"how do I make the discovery loop stop?" — `/busy-office:graph-engineer`
+redraws it as a graph, lints the script, and estimates the bill before you run
+it.
+
 ### What needs history, and what it does without it
 
 | skill | needs | without it |
@@ -84,7 +90,7 @@ publishes a one-page status from whatever records the project already keeps.
 | loop-economist | session transcripts, ≥ 20 ticks or 14 days | budget dimensions read `NOT MEASURED`; still scores effectiveness and convergence from git |
 | wake-weight | a tick count | reports per-tick only, says the window total is unknown |
 | loop-atlas | transcripts | the deck draws from agent definitions, every card reads `not observed` |
-| loop-doctor · requeue · sharpen-intent · progress-dashboard | files only | — |
+| loop-doctor · requeue · sharpen-intent · progress-dashboard · graph-engineer · solo-flow | files only | — |
 
 Nothing degrades silently: each says which numbers it could not see.
 
@@ -100,6 +106,7 @@ Nothing degrades silently: each says which numbers it could not see.
 | [loop-atlas](#loop-atlas) | The loop as one animated picture; the agents as a deck of cards | "show me how the whole loop works", "diagram our agent workflow", "which agent should I use", "roster of our agents" |
 | [wake-weight](#wake-weight) | What every run pays before it does any work, and what to cut | "why is each run so expensive", "trim the context", "CLAUDE.md has got too big", "what loads at startup" |
 | [solo-flow](#solo-flow) | Trunk-based git branching and release model for a repo with exactly one writer | "what git workflow for our agent/loop", "should we use GitFlow", "write git rules into AGENTS.md", "does develop earn its keep" |
+| [graph-engineer](#graph-engineer) | Redraws a linear agent as an orchestration graph and reviews Workflow scripts — contracts, fan-out, barriers, verifiers, converging cycles, tiering, cost | "this agent does A then B then C, parallelise it", "review this workflow script", "parallel() or pipeline()?", "where does the verifier go", "how many agents will this cost" |
 
 ### The loop family
 
@@ -123,6 +130,13 @@ constraint (the actor → fix it there; the input → `requeue`; the design →
 
 The two loops in the middle are the same loop seen from opposite sides: a loop
 can score well on its documents and still ship the same file four times.
+
+**`graph-engineer` is not one of the six.** It looks *inside* one run — how a
+single job is decomposed across subagents (fan-out, barriers, verifiers,
+cycles) — where the family looks at the loop *around* runs (cadence, state
+between ticks, gates, the crew). The economist hands off to it when its finding
+is the actor and the fix is the run's shape; nothing in the family draws that
+graph, and graph-engineer never judges the tick.
 
 ---
 
@@ -632,6 +646,66 @@ decides whether a second branch is actually justified: does anything
 outside the loop consume integration state *before* a release tag exists?
 If yes, it hands over the two-branch (GitLab-Flow-shaped) variant instead
 of forcing trunk-based where it doesn't fit.
+
+---
+
+## graph-engineer
+
+**What it answers:** what shape one run's work should take. A linear agent —
+"do A, then B, then C" — is a graph already, the worst one: a chain where every
+step waits for the last, one context holds everything, and one stall kills the
+run. graph-engineer redraws it: cuts the arrows that carry no data, fans out
+what is independent, merges only where the whole set is needed, puts a
+verifier on the edge a wrong answer would cross, makes cycles converge, tiers
+the models by judgement, and says what the run will cost before it is
+launched. It also reviews an existing Workflow script for the same things.
+
+### Usage
+
+> this agent does A then B then C — which steps can run in parallel?
+> review fixtures/…/workflow.js as a graph and give me a fixed version
+> parallel() or pipeline() here?
+> design a bug sweep that keeps looking until it stops finding new ones
+> how many agents will this cost, and how long will it take?
+
+```bash
+node skills/graph-engineer/scripts/graph-lint.mjs <workflow-script.js>   # shape + G rows
+node skills/graph-engineer/scripts/graph-lint.mjs --self-test
+```
+
+The lint returns the script's shape (agent, `parallel()`, `pipeline()`, loop
+and phase counts, static fan-out widths, an agent estimate) and one row per
+mechanical smell — `G1`–`G15` in
+[`references/anti-patterns.md`](skills/graph-engineer/references/anti-patterns.md):
+forbidden calls that break resume, results consumed without `filter(Boolean)`,
+`parallel → transform → parallel` where a pipeline would do, an agent whose
+job is plumbing, a cycle with no exit, dedupe against confirmed instead of
+seen, `phase()` inside a stage, silent caps. The review closes every row or
+disputes it with the reason.
+
+> **Bar.** Reviews are graded by a blind critic against
+> [`BAR.md`](skills/graph-engineer/evals/gauntlet/BAR.md): diagram first with
+> node ids, every edge naming what crosses it, every barrier carrying its
+> cross-item need or removed, every cycle with a dry counter and a budget
+> guard, every figure labelled estimate with its formula, the script plain JS
+> with a pure-literal `meta`, and the workflow **not launched**.
+
+### What it does
+
+One artifact — a graph review: mermaid diagram with node ids; node table
+(job · in · out schema · model/effort · verifier); edge table (what
+variable crosses, code or agent); barrier table (the cross-item need that
+earns each one, or the pipeline that replaces it); cost block (agents,
+critical path, the caps this run will meet — concurrency `min(16, CPUs − 2)`,
+≤ 4096 items per call, ≤ 1000 agents per run — all labelled estimate); the
+lint rows and how each was closed; the script; do-next. It writes the script
+where you name, never into the repo unasked, and never runs it — the Workflow
+tool runs only on your explicit opt-in.
+
+Fixtures: [`linear-chain`](skills/graph-engineer/fixtures/linear-chain) (a
+six-step "then" agent with the diamond hiding inside it) and
+[`smelly-workflow`](skills/graph-engineer/fixtures/smelly-workflow) (a script
+with eight planted smells the lint must find).
 
 ---
 
