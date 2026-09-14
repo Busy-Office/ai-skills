@@ -46,6 +46,22 @@ flowchart LR
 - **Leave a receipt** in the footer: what was read, lint rows found and
   closed, nothing written into the repo.
 
+## Load only what the job needs
+
+The references are ~9.5k tokens together; no job needs all of them. Read the
+ones in the job's row, plus any a lint row points to — not the rest.
+
+| job | read | skip |
+|---|---|---|
+| **quick question** — "parallel() or pipeline()?", "where does the verifier go?" | the one reference that answers it | the review; answer in chat in a few lines |
+| **design from a chain** | `topologies`, `contracts`, `cost-model`, `report-template`; `verification` if a step checks work | `cycles`, `anti-patterns` |
+| **review a script** | `anti-patterns`, `report-template` | the others until a row needs one: G6 → `topologies`, G7 → `contracts`, G8/G9 → `cycles` |
+| **cycle of unknown size** | `cycles`, `verification`, `cost-model`, `report-template` | `contracts`, `anti-patterns` |
+
+A quick question gets an answer, not a review: no artifact, no script, no
+receipt — offer the full review in one line if the question hides a design
+problem.
+
 ## Workflow
 
 ### 1. Inventory the chain

@@ -44,6 +44,7 @@ flowchart LR
 | agents | | Σ(width per site) + rounds × per-round |
 | critical path | | pipeline: slowest item chain · barrier: Σ stage-slowest · waves = ceil(width / cap) |
 | cap this run | min(16, CPUs − 2) = <n> | |
+| hard limits | ≤ 4096 items per `parallel()`/`pipeline()` call · ≤ 1000 agents per run | name which one this graph comes closest to |
 | tokens | ~<n>k | agents × (prompt + return) |
 
 <One sentence: which stage dominates, and the change that moves it.>
