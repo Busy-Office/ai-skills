@@ -1,0 +1,13 @@
+// Never tuned against. If a threshold changes, this file does not.
+{"state": {"item": {"text": "Improve the UX", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "In src/auth/login.ts lock the account after 5 failed attempts within 10 minutes; add tests for the 5th and 6th attempt", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Choose whether to support SSO for the team plan this quarter", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Add pagination to GET /orders", "history": "commit c3b9 two days ago: feat(api): paginate GET /orders"}}, "want": "triage", "note": "triage would send this to: confirm-done"}
+{"state": {"item": {"text": "Refactor things", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "In scripts/backup.sh exit non-zero when the upload fails, and log the bucket name", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Which regions do we launch in first: EU or US?", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Fix the broken link in the footer", "history": "commit 2a2a today: fix(ui): footer link to /privacy"}}, "want": "triage", "note": "triage would send this to: confirm-done"}
+{"state": {"item": {"text": "Tech debt", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "Change the default page size from 20 to 50 in src/api/pagination.ts and update the pagination test", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Approve the new refund policy wording before it goes on the site", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Make search better", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}

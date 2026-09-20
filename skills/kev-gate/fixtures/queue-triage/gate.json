@@ -1,0 +1,68 @@
+{
+  "gate": "queue-triage",
+  "version": 1,
+  "mode": "shadow",
+  "purpose": "Decide whether a queue item can skip the model's triage turn. Never rewrites, reorders or drops an item.",
+  "state_shape": {
+    "item": {
+      "text": "the queue item as written"
+    }
+  },
+  "max_state_chars": 2000,
+  "questions": {
+    "kind": {
+      "type": "choice",
+      "exhaustive": true,
+      "instructions": {
+        "question": "What kind of queue item is item.text?",
+        "inspect": "item.text"
+      },
+      "criteria": {
+        "specific_task": "Names the file or component to change and a checkable result",
+        "vague_goal": "A broad wish with no named place to change and no checkable result",
+        "owner_decision": "Asks someone to decide, choose, pick or approve between business options"
+      }
+    }
+  },
+  "rules": [
+    {
+      "if": {
+        "fact": "kind:owner_decision",
+        "gte": 0.5
+      },
+      "then": "owner"
+    },
+    {
+      "if": {
+        "fact": "kind:specific_task",
+        "gte": 0.65
+      },
+      "then": "build"
+    }
+  ],
+  "default": "triage",
+  "unreachable": "triage",
+  "actions": {
+    "build": {
+      "rank": 0,
+      "reversible": true,
+      "does": "the loop builds the item as written; a wrong call costs one tick and a revert"
+    },
+    "owner": {
+      "rank": 1,
+      "reversible": true,
+      "does": "park the item under 'waiting on the owner'; a wrong call costs the owner a glance"
+    },
+    "triage": {
+      "rank": 2,
+      "reversible": true,
+      "does": "the model triages it as it would have without the gate (sharpen, confirm done, split, drop)"
+    }
+  },
+  "calibration": {
+    "model": "jaredpalmer/kev-0.5b",
+    "threshold_from": "fixtures/queue-triage/tune.jsonl only: build cases score 0.62-0.75 on specific_task, the highest other case 0.60; 0.65 gives up one build case for margin. Owner cases score 0.53-1.00 (one at 0.21), the highest other case 0.35.",
+    "note": "A noul asking whether item.history shows the work already shipped was tried and removed: it scored 0.04-0.26 on three of four shipped items. KEV does not compare two texts reliably; leave that to git or to triage.",
+    "verdict": "REFUSED on holdout (2026-09-20): 1 missed, 4 of 6 over-escalated. Kept as the worked example of a gate that passes the set it was tuned on and fails the one it was not. Do not enforce."
+  }
+}

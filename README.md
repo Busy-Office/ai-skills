@@ -107,6 +107,7 @@ Nothing degrades silently: each says which numbers it could not see.
 | [wake-weight](#wake-weight) | What every run pays before it does any work, and what to cut | "why is each run so expensive", "trim the context", "CLAUDE.md has got too big", "what loads at startup" |
 | [solo-flow](#solo-flow) | Trunk-based git branching and release model for a repo with exactly one writer | "what git workflow for our agent/loop", "should we use GitFlow", "write git rules into AGENTS.md", "does develop earn its keep" |
 | [graph-engineer](#graph-engineer) | Redraws a linear agent as an orchestration graph and reviews Workflow scripts — contracts, fan-out, barriers, verifiers, converging cycles, tiering, cost | "this agent does A then B then C, parallelise it", "review this workflow script", "parallel() or pipeline()?", "where does the verifier go", "how many agents will this cost" |
+| [kev-gate](#kev-gate) | Puts a small, fast typed-judgement model (KEV / TypeSafe Jev) in front of a loop's decisions — gate design, lint, calibration on tune + holdout, shadow before enforce | "use KEV for the first decision", "call localhost:8008 from the loop", "cheap pre-filter before Claude", "wake gate", "can a small model decide this" |
 
 ### The loop family
 
@@ -137,6 +138,12 @@ cycles) — where the family looks at the loop *around* runs (cadence, state
 between ticks, gates, the crew). The economist hands off to it when its finding
 is the actor and the fix is the run's shape; nothing in the family draws that
 graph, and graph-engineer never judges the tick.
+
+**Nor is `kev-gate`.** It puts a sub-second classifier in front of decisions
+the family and graph-engineer both surface — whether a tick wakes
+(`wake-weight`), how deep a review goes (`solo-flow`), which tier a node runs
+on (`graph-engineer`) — and owns the evidence that the classifier can be
+trusted with each one.
 
 ---
 
@@ -706,6 +713,83 @@ Fixtures: [`linear-chain`](skills/graph-engineer/fixtures/linear-chain) (a
 six-step "then" agent with the diamond hiding inside it) and
 [`smelly-workflow`](skills/graph-engineer/fixtures/smelly-workflow) (a script
 with eight planted smells the lint must find).
+
+---
+
+## kev-gate
+
+**What it answers:** which of a loop's decisions a sub-second classifier can
+take off the expensive model's hands, and how you would know. KEV (a local
+0.5B model behind `POST /v1/systemone`, API-compatible with hosted TypeSafe
+Jev) answers `choice` / `score` / yes-no questions with probabilities in about
+half a second on a CPU. It is also confidently wrong in ways a reader never
+would be — asked "is this safe to merge?" it waved a `DROP COLUMN` migration
+through at 0.86. kev-gate keeps the speed and measures the rest: a gate is
+narrow **questions**, **rules in code** that turn the answers into an action,
+and a **calibration record** from cases the thresholds never saw.
+
+### Usage
+
+> we run KEV on localhost:8008 — where would it actually pay off in our loop?
+> write a gate that picks how deep the review of each change goes
+> this gate got 18/20 on its tune set, can I enforce it?
+> review fixtures/bad-gate/gate.json before I switch it on
+
+```bash
+node skills/kev-gate/scripts/kev.mjs lint <gate.json>                      # K rows
+node skills/kev-gate/scripts/kev.mjs calibrate <gate.json> <cases.jsonl>   # missed / over / misroute + sweep
+node skills/kev-gate/scripts/kev.mjs ask <gate.json> --state - --log <file.jsonl>
+node skills/kev-gate/scripts/kev.mjs outcome <file.jsonl> <id> <actual>    # what really happened
+node skills/kev-gate/scripts/kev.mjs shadow <gate.json> <file.jsonl>       # promote, or stay in shadow
+node skills/kev-gate/scripts/kev.mjs --self-test                           # no KEV needed
+```
+
+**Requires** a Kev endpoint. [kev-agent-kit](https://github.com/Busy-Office/kev-agent-kit)
+provides the local one (Docker API on 8008, playground on 8009) and, with its
+global install, the `kev` MCP server and the `kev-decision` skill; this plugin
+deliberately does not ship a second copy of either. `KEV_URL` defaults to
+`http://localhost:8008`; the path and auth header match the hosted API. `ask` fails open — KEV down, slow, over its state limit or
+answering in an unexpected shape returns the gate's highest-rank action, so
+the loop behaves as it did before the gate existed.
+
+### What it does
+
+Five rules carry it. **A gate picks who looks next; it never approves** —
+every action is reversible, and the lint refuses merge, tag, deploy or delete
+at any confidence. **Misses and over-escalations are never added together** —
+admission needs zero misses, and a gate that escalates more than half of what
+could have stayed low is refused for saving nothing. **The holdout is run
+once.** **Shadow before enforce**, and only the owner flips the mode. **KEV
+runs before or instead of a model turn, never inside one** — so the gate
+lives in the driver script, a hook, or the code between graph nodes, not in
+an MCP tool.
+
+### Measured
+
+kev-0.5b on CPU, 2026-09-20, hand-written one-line cases:
+
+| gate | tune | holdout | verdict |
+|---|---|---|---|
+| [`merge-risk`](skills/kev-gate/gates/merge-risk.json) — review depth for a finished change | 20/20, 0 missed | 12/12, 0 missed, 0 over | admitted; ships in `shadow` |
+| [`queue-triage`](skills/kev-gate/fixtures/queue-triage) — can an item skip triage | 18/20, 0 missed | 7/12, **1 missed, 4 over** | **refused**, kept as the example |
+
+What the formulation search found is in
+[`references/gate-design.md`](skills/kev-gate/references/gate-design.md): a
+ten-way category `choice` read as the *summed* probability of its risky
+options separated every merge case (AUC 1.00) where well-phrased yes/no
+questions scored 0.54; a catch-all worded "None of these" absorbed up to 0.98
+of the answer and the cases stopped separating, where "not enough evidence"
+did not; raw patches washed the signal out where subject + file
+stat did not; and it cannot compare two texts.
+
+Not the same job as the `kev-decision` skill and `kev` MCP server that
+[kev-agent-kit](https://github.com/Busy-Office/kev-agent-kit) installs: those give a running session an advisory second opinion; a gate runs
+so that the session need not start. Same endpoint, opposite position.
+
+Fixtures: [`merge-risk`](skills/kev-gate/fixtures/merge-risk),
+[`queue-triage`](skills/kev-gate/fixtures/queue-triage) (the refused gate) and
+[`bad-gate`](skills/kev-gate/fixtures/bad-gate) ("merge when KEV is
+confident", eleven planted lint rows).
 
 ---
 

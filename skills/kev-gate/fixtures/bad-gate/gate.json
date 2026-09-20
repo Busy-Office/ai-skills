@@ -1,0 +1,30 @@
+{
+  "gate": "auto-merge",
+  "version": 1,
+  "mode": "on",
+  "purpose": "Merge straight to main when KEV is confident the change is fine.",
+  "questions": {
+    "verdict": { "type": "noul", "instructions": "Is this change safe to merge?" },
+    "size": {
+      "type": "choice",
+      "instructions": { "question": "How large is change.diff?", "inspect": "change.diff" },
+      "criteria": { "small": "Under 50 lines", "large": "50 lines or more" }
+    },
+    "tone": {
+      "type": "noul",
+      "instructions": { "question": "Is the commit subject in change.diff written in the imperative mood?", "inspect": "change.diff" },
+      "criteria": { "true": { "what": "Imperative mood" }, "false": { "what": "Any other mood" } }
+    }
+  },
+  "rules": [
+    { "if": { "all": [ { "fact": "verdict", "gte": 0.9 }, { "fact": "size:small", "gte": 0.5 } ] }, "then": "merge" },
+    { "if": { "fact": "tests_passed", "gte": 0.5 }, "then": "merge" },
+    { "if": { "fact": "verdict", "lt": 0.3 }, "then": "reject" }
+  ],
+  "default": "merge",
+  "unreachable": "merge",
+  "actions": {
+    "merge": { "rank": 0, "reversible": false, "does": "git merge && git push origin main" },
+    "review": { "rank": 1, "does": "fresh-context review" }
+  }
+}

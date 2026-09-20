@@ -1,0 +1,21 @@
+// want = build (skip triage, it is buildable as written) | owner (park it for the owner) | triage (a model has to look).
+{"state": {"item": {"text": "Improve performance", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "In src/cart/tax.ts, round VAT to 2dp using bankers rounding; add a test for 0.125 -> 0.12", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Decide whether we drop IE11 support. Affects pricing page customers.", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Add dark mode toggle", "history": "commit 9f2e last week: feat: dark mode toggle shipped"}}, "want": "triage", "note": "triage would send this to: confirm-done"}
+{"state": {"item": {"text": "Make onboarding better", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "Choose between Stripe and Adyen for EU payments", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "In api/orders.ts return 404 instead of 500 when the order id is unknown; add a test", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Fix the login bug", "history": "commit 11aa yesterday: fix: login redirect loop resolved"}}, "want": "triage", "note": "triage would send this to: confirm-done"}
+{"state": {"item": {"text": "Clean up the codebase", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "Add a --json flag to cli/report.ts that prints the report as JSON; cover it in report.test.ts", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Should we charge for the export feature or keep it free?", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Add CSV export to the orders page", "history": "commit 77c1 three days ago: feat(orders): CSV export"}}, "want": "triage", "note": "triage would send this to: confirm-done"}
+{"state": {"item": {"text": "Better error handling", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "Rename the env var API_HOST to API_BASE_URL in src/config.ts and update .env.example", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Pick the data retention period for deleted accounts (legal needs to sign off)", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Upgrade to Node 22", "history": "commit 40de last month: chore: upgrade runtime to Node 22, CI green"}}, "want": "triage", "note": "triage would send this to: confirm-done"}
+{"state": {"item": {"text": "Make the dashboard faster somehow", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
+{"state": {"item": {"text": "In src/ui/Table.tsx make the header row sticky on scroll; add a visual test", "history": "none"}}, "want": "build"}
+{"state": {"item": {"text": "Decide if the free tier keeps API access after the pricing change", "history": "none"}}, "want": "owner"}
+{"state": {"item": {"text": "Modernise the stack", "history": "none"}}, "want": "triage", "note": "triage would send this to: sharpen"}
