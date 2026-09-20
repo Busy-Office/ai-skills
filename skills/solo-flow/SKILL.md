@@ -1,6 +1,6 @@
 ---
 name: solo-flow
-description: Prescribes and audits a trunk-based git workflow for a repository with exactly one writer — a single autonomous agent or loop, with no other humans committing. One branch (main), local-only short-lived work branches, CI as the sole independent check (no PRs, nothing to review socially), and releases as tags cut directly off main rather than a develop/release branch dance. Use whenever someone is setting up or reviewing git/branching/release conventions for an agent-driven or loop-driven repo, asks whether to use GitFlow/GitHub Flow/GitLab Flow/trunk-based development, wants AGENTS.md or CLAUDE.md git rules written, is deciding whether a develop branch or long-lived feature branches earn their keep, or reports branch drift, a forgotten back-merge, or an autonomous loop that got confused about which branch it was on. Also use to sanity-check an existing branching setup that looks like GitFlow but has no other human collaborators to justify it.
+description: Prescribes and audits a trunk-based git workflow for a repository with exactly one writer — a single autonomous agent or loop, with no other humans committing. One branch (main), local-only short-lived work branches, CI as the sole independent check (no PRs, nothing to review socially), and releases as tags cut directly off main rather than a develop/release branch dance. Use whenever someone is setting up or reviewing git/branching/release conventions for an agent-driven or loop-driven repo, asks whether to use GitFlow/GitHub Flow/GitLab Flow/trunk-based development, wants AGENTS.md or CLAUDE.md git rules written, is deciding whether a develop branch or long-lived feature branches earn their keep, or reports branch drift, a forgotten back-merge, or an autonomous loop that got confused about which branch it was on. Also use to sanity-check an existing branching setup that looks like GitFlow but has no other human collaborators to justify it, and when deciding how the agent should isolate each unit of work (git worktrees, a primary checkout that never leaves main, running items in parallel).
 ---
 
 # Solo Flow
@@ -46,8 +46,8 @@ consumer.
 | Branch | Where it lives | Purpose | Who merges into it |
 |---|---|---|---|
 | `main` | remote, default | the only shared state; every commit on it has already passed the full check suite | the agent, automatically, once checks pass |
-| `feat/*`, `fix/*`, `chore/*` | local only | one unit of work (one roadmap item, one bug, one cleanup) | never pushed — merged locally into `main`, then deleted |
-| `release/x.y.z` | local, ephemeral (minutes, not days) — only needed if the version bump + notes take more than one commit, or the owner wants to review notes before they're permanent | holds the version bump and release notes until the owner signs off | fast-forwarded into `main`, then discarded — nothing merges back out of it |
+| `feat/*`, `fix/*`, `chore/*` | local only, each in its own worktree | one unit of work (one roadmap item, one bug, one cleanup) | never pushed — merged locally into `main`, then the worktree and branch are deleted |
+| `release/x.y.z` | local, ephemeral (minutes, not days), in its own worktree — only needed if the version bump + notes take more than one commit, or the owner wants to review notes before they're permanent | holds the version bump and release notes until the owner signs off | fast-forwarded into `main`, then discarded — nothing merges back out of it |
 
 The permission boundary is intentionally short, because there's only one
 writer to grant permissions to:
@@ -60,19 +60,67 @@ writer to grant permissions to:
 - **Never:** force-pushing `main`, deleting `main`, committing to `main`
   without the check suite having run on that commit.
 
+## Worktrees: the primary checkout never leaves `main`
+
+Doing every work branch by `git switch` in the one checkout means the
+answer to "which branch am I on, and is it clean?" changes under the loop
+all day — and a tick that dies mid-item leaves the next one a checkout on
+the wrong branch with a dirty tree. Worktrees make the answer structural:
+
+- **The primary checkout stays on `main`, always.** Nothing switches
+  branches there. It is where merges land and where `git push` runs.
+- **Every unit of work gets its own worktree**, created off `main` and
+  placed *outside* the repo directory (a sibling like `../<repo>.wt/<slug>`),
+  so linters, test runners, and graph tools scanning the repo never trip
+  over a nested copy of it and nothing needs `.gitignore`ing:
+  ```bash
+  git worktree add ../<repo>.wt/<slug> -b feat/<slug> main
+  ```
+- **Its lifetime is the branch's lifetime.** Landing the work removes both:
+  `git worktree remove ../<repo>.wt/<slug> && git branch -d feat/<slug>`.
+- **So "where am I" has one answer:** the primary is `main`; anything else
+  is a worktree, and `git worktree list` is the complete inventory of work
+  in flight. At the start of a tick, anything on that list that isn't the
+  item being worked is an orphan from a crashed tick — resume it if it
+  holds commits or changes worth keeping, otherwise remove it. Run
+  `git worktree prune` for entries whose directory is gone. Look at a
+  dirty worktree before removing it; don't reach for `--force`.
+
+Two side benefits come free. The full check suite runs in a clean worktree,
+so it verifies exactly what's committed on the branch rather than whatever
+untracked leftovers the primary has accumulated. And several worktrees can
+exist at once: a loop may build independent items concurrently (for example
+subagents each given their own worktree) without it becoming a second
+writer, because everything still lands serially through the primary's
+`main`. Only parallelise items that don't touch the same files; sequence
+the rest, since the second one to land pays the rebase.
+
+What worktrees cost, so the loop plans for it:
+- A branch can be checked out in only one worktree, so `main` lives in the
+  primary and the merge into `main` happens there (`git -C <primary> …`),
+  never from inside a work worktree.
+- Each worktree is a fresh checkout: dependencies must be installed again
+  (use a shared package store or cache), and gitignored files — `.env`,
+  the loop's own state — don't exist in it. Keep loop state in the primary
+  and reference it by absolute path.
+- Submodules behave poorly across worktrees; if the repo has them, keep
+  one worktree at a time.
+
 ## Day-to-day flow
 
-1. `git fetch`, fast-forward local `main` to `origin/main`.
-2. Create a local work branch off `main`; one commit per item.
+1. `git fetch`, fast-forward local `main` (in the primary) to
+   `origin/main`; reconcile any orphaned worktrees (see above).
+2. Create a work branch in a new worktree off `main`; one commit per item.
 3. While building, run only the fast checks (typecheck + lint) — save the
    full suite for step 4, it's too slow to run on every save.
-4. Before merging: the full check suite, once per batch, plus one
-   independent fresh-context review of the whole diff (a different agent
-   or persona than the one that wrote it — the review is worth nothing if
-   it's the same context grading its own work).
-5. Merge: rebase onto `origin/main` if it moved, merge (fast-forward or
-   `--no-ff`, pick one convention and keep it) into local `main`, push
-   `main`, delete the local work branch.
+4. Before merging: the full check suite, once per batch, run in the work
+   worktree, plus one independent fresh-context review of the whole diff
+   (a different agent or persona than the one that wrote it — the review
+   is worth nothing if it's the same context grading its own work).
+5. Merge: in the worktree, rebase onto `origin/main` if it moved; then in
+   the primary, merge (fast-forward or `--no-ff`, pick one convention and
+   keep it) into local `main` and push `main`; then remove the worktree
+   and delete the local work branch.
 6. The merge commit message is the record: items closed, net line change,
    decisions taken, and a release recommendation when one is due.
 7. Anything handed off to another agent or repo cites the exact `main`
@@ -117,9 +165,10 @@ here should auto-recommend one.)
 
 **Steps**, using the ephemeral `release/x.y.z` branch only when the bump
 isn't a single mechanical commit:
-1. Cut `release/x.y.z` from `main` at the commit to release (skip this and
-   commit the bump straight to `main` if it's genuinely one commit and
-   needs no review before it's permanent).
+1. Cut `release/x.y.z` from `main` at the commit to release, in its own
+   worktree like any other work branch (skip this and commit the bump
+   straight to `main` if it's genuinely one commit and needs no review
+   before it's permanent).
 2. Bump the version, write the notes.
 3. Owner approves; fast-forward `main` to include that commit.
 4. Tag `vx.y.z` on that commit, push the tag, publish the GitHub release.
@@ -158,7 +207,10 @@ nothing to merge back into.
 4. Write the rules above into the agent's instructions (`AGENTS.md` or
    `CLAUDE.md`), with the release-trigger rules in one place the loop
    actually reads before selecting work (for example `LOOP.md`) — not
-   copied into both, so there's exactly one copy to keep current.
+   copied into both, so there's exactly one copy to keep current. Include
+   the worktree rule in the same place: the primary checkout stays on
+   `main`, work happens in `../<repo>.wt/<slug>`, and each tick starts by
+   listing worktrees.
 5. `.gitignore` the loop's own state and tool output — it shouldn't be
    part of the history the checks above are protecting.
 6. If a `develop` branch (or any other stale integration branch) already
@@ -196,6 +248,12 @@ catches what it was written to catch and nothing else.
 Whichever you pick, every batch should look the same in history — a mix of
 both makes `git log --graph` on `main` unreadable and tells you nothing
 about which merges were "real" batches.
+
+**A worktree is not a second branch to keep in sync.** It is scratch space
+with the same lifetime as the work branch it holds; nothing is ever
+"merged back" into it and it is never a place state accumulates. If a
+worktree has outlived its item, that's an orphan to reconcile, not
+something to keep around because it might be useful.
 
 **Tags are immutable; branches are not.** If a release tag needs to
 change, that's a new patch version, never a moved tag — a consumer who
