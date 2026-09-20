@@ -9,7 +9,8 @@
 // references/anti-patterns.md. A row is evidence, not a verdict: a false
 // positive is disputed in the review, with the reason.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // ---------------------------------------------------------------- masking --
 // Replace string/template contents and comments with spaces of the same
@@ -498,7 +499,11 @@ function selfTest() {
 }
 
 // ------------------------------------------------------------------- main --
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMain = process.argv[1] && (() => {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); }
+  catch { return false; }
+})();
+if (isMain) {
   const args = process.argv.slice(2);
   if (args.includes("--self-test")) { selfTest(); }
   else {

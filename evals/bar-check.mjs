@@ -24,7 +24,7 @@
 // prompt and the brief last: the stable prefix is what a cache can reuse across
 // a batch of critics.
 
-import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, realpathSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -329,7 +329,11 @@ function selfTest() {
   process.exit(failed ? 1 : 0);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+const isMain = process.argv[1] && (() => {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); }
+  catch { return false; }
+})();
+if (isMain) {
   function buildPack(skill, artifactPath, md, res, collector, target) {
   const spec = SPECS[skill];
   const bar = (() => {

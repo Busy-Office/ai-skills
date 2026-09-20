@@ -17,7 +17,7 @@
 //
 // See ../references/manifest.md for the manifest keys and vocabulary.
 
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { join, relative, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
@@ -653,7 +653,11 @@ function selfTest() {
 }
 
 // ---------------------------------------------------------------- cli
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+const isMain = process.argv[1] && (() => {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); }
+  catch { return false; }
+})();
+if (isMain) {
   const args = process.argv.slice(2);
   if (args.includes("--self-test")) selfTest();
   else {

@@ -33,6 +33,15 @@ const RULES = [
     why: "a count that walks .claude/worktrees/ reports the tree several times over",
   },
   {
+    name: "main guard survives a symlinked install",
+    // The README installs a single skill by symlink. A guard that compares the
+    // raw argv path to import.meta.url never fires through one: the script
+    // prints nothing and exits 0. Found in nine scripts on 2026-09-20.
+    applies: (src) => /import\.meta\.url/.test(src) && /process\.argv\[1\]/.test(src),
+    holds: (src) => /realpathSync\(fileURLToPath\(import\.meta\.url\)\)\s*===\s*realpathSync\(process\.argv\[1\]\)/.test(src),
+    why: "run through a symlink the script silently does nothing and exits 0",
+  },
+  {
     name: "excludes node_modules",
     applies: (src) => /const IGNORE\s*=\s*new Set/.test(src),
     holds: (src) => /"node_modules"/.test(src),

@@ -19,8 +19,12 @@
 // result is the gate's `unreachable` action — the loop behaves as it did
 // before the gate existed. The log holds a hash of the state, not the state.
 
-import { readFileSync, appendFileSync } from "node:fs";
+import { readFileSync, appendFileSync, realpathSync, mkdtempSync, symlinkSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const DEFAULT_URL = "http://localhost:8008";
 const DEFAULT_MAX_STATE = 6000;
@@ -377,10 +381,27 @@ async function selfTest() {
   ], { minCases: 1, minRisky: 1 });
   check("shadow joins asks to outcomes and refuses on a miss", sh.logged === 2 && sh.with_outcome === 1 && sh.verdict === "stay-shadow");
 
+  // Run this file through a symlink in a directory with a space in its name:
+  // no arguments must reach main() and exit 2 with the usage line.
+  const dir = mkdtempSync(join(tmpdir(), "kev gate "));
+  try {
+    const link = join(dir, "kev.mjs");
+    symlinkSync(fileURLToPath(import.meta.url), link);
+    const r = spawnSync(process.execPath, [link], { encoding: "utf8" });
+    check("runs when invoked through a symlink", r.status === 2 && /usage:/.test(r.stderr));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+
   console.log(failed ? failed + " failed" : "all passed");
   return failed ? 1 : 0;
 }
 
-if (import.meta.url === "file://" + process.argv[1]) {
+// Compare real paths: the README installs a skill by symlink, and a guard
+// that compares the raw argv path never fires through one — the script then
+// prints nothing and exits 0, which `calibrate` callers would read as admit.
+const isMain = process.argv[1] && (() => {
+  try { return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); }
+  catch { return false; }
+})();
+if (isMain) {
   main(process.argv.slice(2)).then((code) => { process.exitCode = code; }, (e) => { console.error(e.message); process.exitCode = 2; });
 }
