@@ -83,6 +83,23 @@ Find the decision first. It is a candidate only if all three hold:
   direction.** "Looked at harder than needed" is cheap. Name the expensive
   direction; that is what calibration will count as a miss.
 
+Then, before writing a single question, **check that the label can be
+predicted at all**:
+
+```bash
+node <skill-dir>/scripts/harvest.mjs <repo> --fit            # seconds, no model calls
+```
+
+It prints the label's base rate, the rate per area of the repo, and how well
+a zero-cost path prior ranks the cases. AUC ≥ 0.70: the paths carry it —
+write a glob, not a gate. AUC < 0.60: nothing cheap predicts this label and
+a 0.5B model will not either; the label is probably noise *for this repo*.
+Stop, or find a better label — a recorded outcome (`--labels`: a review that
+found something, a verification pass that refuted a slice) beats the
+fix-blame proxy whenever the project keeps one. This check would have
+refused both real-repo gates below in seconds; they took two design rounds
+to refuse without it.
+
 `references/placement.md` has the tier ladder and the five placements that
 have earned their keep (wake gate, review depth, failure triage, verifier
 pre-filter, model router), with the driver-script shape for each.
@@ -128,7 +145,11 @@ that matter most, each learned from a measured failure:
   shipped?" scored 0.04–0.26 on three of four shipped items. Leave
   comparison to git or to the next tier.
 
-Start from `gates/merge-risk.json` for the shape. **A copied gate brings
+Start from `gates/merge-risk.json` for the *shape* — its four risk areas
+(data deletion, auth, money, breaking interface) describe a service with
+data and money, and are true of almost nothing in a UI library or a
+pre-build repo; choose areas from what `--fit` shows gets blamed *here*.
+**A copied gate brings
 its questions, not its evidence**: the calibration record in that file is
 for the skill's own hand-written fixtures, and that holdout is spent. With
 no labelled cases of the project's own, the honest state is "linted, in
@@ -189,7 +210,11 @@ In chat, ≤ 40 lines including one table: the decision gated and its expensive 
 gate's questions in one line, tune and holdout counts (missed / over /
 misroute, never a single accuracy figure), the sweep's nearest miss,
 latency, the verdict, and what stays with the higher tier. A refused gate
-is a finished result — report it as one, with what was tried. Any number
+is a finished result — report it as one, with what was tried, and state as
+the present position (not as one option among several) what stays with the
+higher tier. When the job was a gate review, give the lint rows with their
+level — say which are warnings. The 40 lines bind any reply this skill
+produces, a review included. Any number
 quoted from an ad-hoc probe comes with its saved state and question file:
 the log keeps only a hash, so an unsaved probe cannot be checked.
 
@@ -225,6 +250,14 @@ written by the agent that made the change can leave the risk out. Path
 globs for protected areas run before the gate and do not depend on anyone's
 wording.
 
+**A gate does not travel between repos.** `merge-risk` passed its fixtures
+32 for 32, then missed 35 of 40 changes that needed a follow-up fix in a
+real UI library — its risk areas (data, auth, money, interface) were true of
+almost nothing there, so it called nearly everything light. The questions
+encode what is risky *in one codebase*. Harvest that repo's history
+(`scripts/harvest.mjs`) and design from it; never enforce a gate on the
+evidence of another project's cases.
+
 **A refused gate is cheaper than a wrong one.** If two design rounds do not
 produce an admitted gate, the decision stays with the higher tier. Say that
 and stop.
@@ -234,6 +267,10 @@ and stop.
 - `scripts/kev.mjs` — `ask` (fail-open, logged), `lint` (K rows),
   `calibrate` (missed / over / misroute, sweep), `outcome` + `shadow`
   (promotion from real traffic); `--self-test` runs without KEV.
+- `scripts/harvest.mjs` — `--fit`: can this label be predicted at all (base
+  rate, rate per area, path-prior AUC; run it first). Otherwise writes
+  labelled cases from a repo's own history — the fix-blame proxy, or the
+  project's recorded outcomes via `--labels`. Read-only; `--self-test`.
 - `gates/merge-risk.json` — review depth for a finished change. Admitted on
   its fixtures (tune 20/20, holdout 12/12, kev-0.5b, 2026-09-20); ships in
   `shadow` mode because those fixtures are not your history.

@@ -743,6 +743,8 @@ node skills/kev-gate/scripts/kev.mjs ask <gate.json> --state - --log <file.jsonl
 node skills/kev-gate/scripts/kev.mjs outcome <file.jsonl> <id> <actual>    # what really happened
 node skills/kev-gate/scripts/kev.mjs shadow <gate.json> <file.jsonl>       # promote, or stay in shadow
 node skills/kev-gate/scripts/kev.mjs --self-test                           # no KEV needed
+node skills/kev-gate/scripts/harvest.mjs <repo> --fit                      # FIRST: can this label be predicted at all? no model calls
+node skills/kev-gate/scripts/harvest.mjs <repo> --max 80 > cases.jsonl     # labelled cases from history, read-only
 ```
 
 **Requires** a Kev endpoint. [kev-agent-kit](https://github.com/Busy-Office/kev-agent-kit)
@@ -773,6 +775,14 @@ kev-0.5b on CPU, 2026-09-20, hand-written one-line cases:
 |---|---|---|---|
 | [`merge-risk`](skills/kev-gate/gates/merge-risk.json) — review depth for a finished change | 20/20, 0 missed | 12/12, 0 missed, 0 over | admitted; ships in `shadow` |
 | [`queue-triage`](skills/kev-gate/fixtures/queue-triage) — can an item skip triage | 18/20, 0 missed | 7/12, **1 missed, 4 over** | **refused**, kept as the example |
+
+Then the test that matters: 80 cases harvested from a real loop repo's
+history (`scripts/harvest.mjs` — a UI library, 40 changes later blamed by a
+fix). `merge-risk` as shipped: **42 of 80, 35 missed — refused**; a second
+repo, 25 cases: 12 of 25, all 12 blamed changes missed. A
+repo-fitted question ranked the cases (AUC 0.77) but had no usable
+threshold, so it was refused on its tune half and the holdout left unspent.
+A gate does not travel between repos; its risk areas describe one codebase.
 
 What the formulation search found is in
 [`references/gate-design.md`](skills/kev-gate/references/gate-design.md): a

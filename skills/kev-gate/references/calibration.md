@@ -44,21 +44,45 @@ Hand-written cases get a gate started; they are in the author's voice and
 flatter the gate. Replace them with history as soon as there is any.
 
 **Review depth (`merge-risk`)** — a change that needed a second look is one
-that was reverted or patched soon after:
+that was reverted or patched soon after. `scripts/harvest.mjs` writes the
+cases, read-only, with the state built the way a driver builds it (subject +
+`--stat`, ≤ 1500 characters):
 
 ```bash
-# reverted commits → want: deep-review
-git log --grep='^Revert "' --format='%H %s'
-# commits followed within 3 days by a fix touching the same files
-git log --since=90.days --format='%H %ct %s' --name-only
-# everything else older than 30 days with no follow-up → want: light-review
+node scripts/harvest.mjs <repo> --since 240.days --max 80 \
+  --exclude '^(chore\(loops\)|Record|Roadmap|docs)' > all.jsonl
 ```
 
-Build each `state` the way the driver will:
+`deep-review` = reverted, or the **most recent** earlier commit to touch a
+code file that a fix-like commit then touched within `--window-days`;
+`light-review` = neither, and older than `--settle-days`. Hub files (touched
+by more than 10% of commits) and prose files are ignored when matching, and
+every line's `note` names the commit that blamed it. Split it yourself —
+alternate lines, or older/newer — into tune and holdout *before* looking.
+
+**Run `--fit` first, and prefer a recorded outcome to the proxy.**
 
 ```bash
-git show --stat=100 --format='%s' <sha> | head -12
+node scripts/harvest.mjs <repo> --fit
+node scripts/harvest.mjs <repo> --labels outcomes.jsonl --fit
+node scripts/harvest.mjs <repo> --labels outcomes.jsonl > all.jsonl
 ```
+
+`outcomes.jsonl` is whatever the project already records about how a review
+turned out, one row per commit: `{"sha": "…", "want": "<action>", "why": "…"}`.
+`--lowest <action>` names the rank-0 action if it is not `light-review`. On
+busy-office-ui the proxy scored a path-prior AUC of 0.58 at a 14% base rate,
+flat across areas (11–17% in every area with 80 or more commits): the label
+carried no cheap signal, and the two gates designed on it were refused. A
+label no file path predicts is not necessarily wrong — but it is the first
+thing to doubt, before the question and long before the threshold.
+
+**Read a sample before trusting the label.** The first version of this rule
+("any fix-like commit touching the same file within a week") labelled 57% of
+a real repo deep, off one fix to one governance file that every slice
+touched. Blame-the-last-toucher on code files brought it to 14%. And the
+label is a proxy: in a try → verify → adjust loop a fix the next day can be
+the normal rhythm rather than something a deeper review would have caught.
 
 **Wake gate** — a tick whose session ended with no commit, no queue change
 and no message was a tick that did not need to wake. Label from the loop's
@@ -160,6 +184,29 @@ Re-run both files, and treat the gate as `shadow` until they pass, when:
 | queue-triage | holdout | 12 | 7 | 1 | 4 | 0 | **refuse** |
 
 All four files are hand-written one-line summaries by the gate's author.
-`merge-risk` ships in shadow for that reason. On this repository's last ten
+`merge-risk` ships in shadow for that reason.
+
+**On real history it did not transfer.** busy-office-ui (a CSS-first UI
+library, 2,117 commits, an active loop), 80 harvested cases, 40 of them
+blamed by a later fix:
+
+| gate | file | n | correct | missed | over | verdict |
+|---|---|---|---|---|---|---|
+| merge-risk, as shipped | 80 harvested | 80 | 42 | **35** | 3 | **refuse** |
+| scope score (repo-fitted, tune AUC 0.77) | tune half | 40 | 20 | 1 | 19 | **refuse** — holdout left unspent |
+| merge-risk, as shipped | busy-office-erp, 25 harvested (12 blamed) | 25 | 12 | **12** | 1 | **refuse** |
+
+The shipped gate answered its own question correctly — almost nothing in a
+UI library touches data, auth or money, and the missed cases' top areas were
+`additive` and `refactor` — but that fact does not predict which changes
+there needed a follow-up. A repo-fitted question did rank the cases (scope
+AUC 0.77 against 0.62 for a plain file count), yet no threshold reached zero
+misses without escalating 19 of 20 quiet changes. Two design rounds, no
+admitted gate: review depth in that repo stays with the model. A second repo
+(busy-office-erp, still at its stack-decision stage) gave the same picture
+on a single run: every one of the 12 blamed changes was a loop script, a
+benchmark or a doc, and every one was called light. The risk
+areas in `merge-risk` are an example for a service with data and money, not
+a default. On this repository's last ten
 commits (subject + stat, unlabelled) it chose light review nine times; none
 of the ten touched data, auth, money or an interface.
