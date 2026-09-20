@@ -93,8 +93,9 @@ node scripts/kev.mjs calibrate gates/merge-risk.json fixtures/merge-risk/tune.js
 | `sweep` | the same facts re-decided with every threshold moved by −0.2 … +0.2; no new model calls |
 | `latency_ms` | median and max as reported by the server |
 
-Each `missed` / `over` row carries its facts — read them before moving a
-threshold. A miss with the deciding fact at 0.02 is a question the model
+Each `missed` / `over` row carries its facts — on the **tune** report, read
+them before moving a threshold. On the holdout report read the counts and
+the sweep only (see "A spent holdout" above). A miss with the deciding fact at 0.02 is a question the model
 cannot answer, not a threshold in the wrong place; redesign the question.
 
 **The sweep is the fragility reading.** `merge-risk` on its holdout:

@@ -22,10 +22,11 @@ flowchart LR
   A["place<br/>which decision · what it costs to get wrong"] --> B["write the gate<br/>questions · rules · actions"]
   B --> C["lint<br/>kev.mjs lint → K rows"]
   C --> D["calibrate<br/>tune set → thresholds · holdout once"]
+  C --> E["shadow<br/>log beside the real decision · acts on nothing"]
   D -- refuse --> B
-  D -- admit --> E["shadow<br/>log beside the real decision"]
-  E -- promote --> F["enforce<br/>fail-open · logged"]
   E -- a miss --> B
+  D -- admit --> F["enforce<br/>fail-open · logged"]
+  E -- promote --> F
 ```
 
 ## The guard-rail
@@ -45,7 +46,11 @@ flowchart LR
 - **The holdout is run once.** Thresholds come from the tune set. If the
   holdout refuses, the gate goes back to design; the holdout is not tuned
   against, and a new holdout is written if the questions change.
-- **Shadow before enforce.** A new gate logs what it would have done beside
+- **Shadow needs only a clean lint; enforce needs both records.** A gate in
+  shadow acts on nothing, so it may start logging the day it lints — that is
+  how a project with no labelled cases gets some. `enforce` needs an
+  admitted calibration *and* a promoting shadow report; neither one alone.
+  "Switch it on" means enforce. A new gate logs what it would have done beside
   what actually happened. `mode` is flipped to `enforce` by the owner, never
   by the skill on its own, and never because calibration passed.
 - **Write nothing into the target repo unasked.** Gate drafts, cases and
@@ -184,7 +189,9 @@ In chat, ≤ 40 lines including one table: the decision gated and its expensive 
 gate's questions in one line, tune and holdout counts (missed / over /
 misroute, never a single accuracy figure), the sweep's nearest miss,
 latency, the verdict, and what stays with the higher tier. A refused gate
-is a finished result — report it as one, with what was tried.
+is a finished result — report it as one, with what was tried. Any number
+quoted from an ad-hoc probe comes with its saved state and question file:
+the log keeps only a hash, so an unsaved probe cannot be checked.
 
 ## Judgement calls
 
@@ -230,8 +237,7 @@ and stop.
 - `gates/merge-risk.json` — review depth for a finished change. Admitted on
   its fixtures (tune 20/20, holdout 12/12, kev-0.5b, 2026-09-20); ships in
   `shadow` mode because those fixtures are not your history.
-- `fixtures/bad-gate/` — a gate to review; its answer key is in
-  `evals/keys/`, not beside it.
+- `fixtures/bad-gate/` — a gate to review.
 - `fixtures/merge-risk/`, `fixtures/queue-triage/` — labelled tune and
   holdout cases; the second holds the refused gate. The measured record
   is the last table in `references/calibration.md`.
