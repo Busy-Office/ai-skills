@@ -24,6 +24,11 @@ One JSON object per line; lines starting `//` are comments.
 - At least 5 cases labelled above the lowest rank in each file. The
   calibrator refuses otherwise: zero misses of a risk it was never shown
   proves nothing.
+- **A spent holdout teaches nothing but its counts.** When a holdout
+  refuses, take the verdict and the counts back to design — not the cases.
+  Rewording a question around the holdout items it got wrong is tuning on
+  the holdout by another route. Redesign from the tune set, then write a
+  fresh holdout.
 - **These are floors for running the calibrator, not proof.** The kit's own
   guidance is that 50–100 labelled examples "can reveal obvious problems, but
   is not enough to establish reliability for rare or high-impact failures",
@@ -100,8 +105,9 @@ missed   0     0    0    0     2
 over     5     2    0    0     0
 ```
 
-One step either way still admits. A gate whose misses start at +0.1 is
-admitted and one model update from refused — record that.
+One step either way still admits. A gate whose first miss is one step away
+— in whichever direction its rules break — is admitted and one model update
+from refused; record that, with the direction.
 
 ## Setting thresholds
 

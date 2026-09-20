@@ -62,7 +62,6 @@
   "calibration": {
     "model": "jaredpalmer/kev-0.5b",
     "threshold_from": "fixtures/queue-triage/tune.jsonl only: build cases score 0.62-0.75 on specific_task, the highest other case 0.60; 0.65 gives up one build case for margin. Owner cases score 0.53-1.00 (one at 0.21), the highest other case 0.35.",
-    "note": "A noul asking whether item.history shows the work already shipped was tried and removed: it scored 0.04-0.26 on three of four shipped items. KEV does not compare two texts reliably; leave that to git or to triage.",
-    "verdict": "REFUSED on holdout (2026-09-20): 1 missed, 4 of 6 over-escalated. Kept as the worked example of a gate that passes the set it was tuned on and fails the one it was not. Do not enforce."
+    "note": "A noul asking whether item.history shows the work already shipped was tried and removed: it scored 0.04-0.26 on three of four shipped items. KEV does not compare two texts reliably; leave that to git or to triage."
   }
 }

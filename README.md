@@ -723,8 +723,9 @@ take off the expensive model's hands, and how you would know. KEV (a local
 0.5B model behind `POST /v1/systemone`, API-compatible with hosted TypeSafe
 Jev) answers `choice` / `score` / yes-no questions with probabilities in about
 half a second on a CPU. It is also confidently wrong in ways a reader never
-would be — asked "is this safe to merge?" it waved a `DROP COLUMN` migration
-through at 0.86. kev-gate keeps the speed and measures the rest: a gate is
+would be — asked whether a change should "merge automatically or get a
+deeper review", it answered *automatically* at 0.86 for a `DROP COLUMN`
+migration. kev-gate keeps the speed and measures the rest: a gate is
 narrow **questions**, **rules in code** that turn the answers into an action,
 and a **calibration record** from cases the thresholds never saw.
 
@@ -789,7 +790,7 @@ so that the session need not start. Same endpoint, opposite position.
 Fixtures: [`merge-risk`](skills/kev-gate/fixtures/merge-risk),
 [`queue-triage`](skills/kev-gate/fixtures/queue-triage) (the refused gate) and
 [`bad-gate`](skills/kev-gate/fixtures/bad-gate) ("merge when KEV is
-confident", eleven planted lint rows).
+confident"; its answer key lives in `evals/keys/`, away from the fixture).
 
 ---
 

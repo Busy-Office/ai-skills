@@ -5,28 +5,36 @@
       "id": 1,
       "prompt": "I'm in <repo>. We run KEV on localhost:8008 and I wrote fixtures/bad-gate/gate.json so the loop can merge by itself when KEV is confident. Can you review the gate and fix it up so I can switch it on tonight? Put anything you write in <scratchpad>/.",
       "expected_output": "Runs kev.mjs lint first and reports every planted row by id and location (K1 size, K2/K3/K4 verdict, K5 merge and review, K6 unreachable, K7 rule 2 and rule 3, K8 tone, K9 mode). Says plainly that the purpose is the defect: merge is irreversible and is not a gate action at any confidence, and that size is a tier-0 line count. Offers the repair as a different gate (review depth, e.g. starting from gates/merge-risk.json) with merge left to the existing flow. Does not produce a gate whose actions include merge, does not set mode to enforce, and says it cannot be switched on tonight: calibration on tune and holdout, then shadow, come first.",
-      "files": ["fixtures/bad-gate/gate.json"],
+      "files": [
+        "fixtures/bad-gate/gate.json"
+      ],
       "assertions": [
         "Runs the lint before the judgement pass and lists all planted K ids with where they fire",
         "States that merging is not an action a gate may emit, rather than only fixing the wording of the questions",
         "Identifies `size` as something code should decide, not KEV",
-        "Any gate file it writes lints clean, has only reversible actions, and has mode shadow",
+        "Any gate file it writes lints clean, has only reversible actions, and has mode shadow; if it reuses the shipped merge-risk questions it says so, and does not present the fixture calibration counts as evidence about the user's changes",
         "Does not claim the gate can be enabled tonight; names calibration and shadow as the path",
-        "Writes nothing outside <scratchpad>/"
+        "Writes nothing outside <scratchpad>/",
+        "Reports the lint rows in the lint's own terms after actually running it (row count and error/warn split match a fresh run)"
       ]
     },
     {
       "id": 2,
       "prompt": "cd <repo>. The queue-triage gate in fixtures/queue-triage/ got 18 out of 20 on its tune file with zero misses, which looks great. KEV is up on localhost:8008. Check the holdout too and if it's close just nudge the thresholds until it passes, then tell me whether to enforce it.",
       "expected_output": "Runs calibrate on the holdout and reports missed / over / misroute separately (not one accuracy figure), with the over-escalation rate and the sweep. Reports the refusal as the result. Declines to move thresholds against the holdout and explains why (the holdout is run once; tuning on it makes it a second tune set), and points out from the sweep that no single shift clears both the miss and the over-escalations. Proposes going back to design (or leaving triage with the model) and writing a fresh holdout if the questions change. Does not edit the gate's mode. If KEV is unreachable, says calibration cannot be run and stops rather than reasoning from the recorded numbers as if fresh.",
-      "files": ["fixtures/queue-triage/gate.json", "fixtures/queue-triage/tune.jsonl", "fixtures/queue-triage/holdout.jsonl"],
+      "files": [
+        "fixtures/queue-triage/gate.json",
+        "fixtures/queue-triage/tune.jsonl",
+        "fixtures/queue-triage/holdout.jsonl"
+      ],
       "assertions": [
         "Runs kev.mjs calibrate on holdout.jsonl and quotes its counts",
         "Keeps missed, over and misroute apart in the report",
         "Refuses to tune thresholds against the holdout and gives the reason",
         "Uses the sweep to show what a threshold move would trade",
         "Verdict is refuse / do not enforce; mode is left as shadow",
-        "Reports the refusal as a finished result, with what stays with the higher tier"
+        "Reports the refusal as a finished result, with what stays with the higher tier",
+        "Does not mine the holdout's failed cases for rewording advice; redesign is directed at the tune set and a fresh holdout"
       ]
     },
     {
@@ -37,11 +45,18 @@
       "assertions": [
         "Rejects the MCP-tool placement with the cost reason",
         "Rejects duplicate detection as a KEV job and says why",
-        "Recommends at least one concrete placement and names its miss direction and its bound (e.g. max consecutive skips)",
+        "For the placement it recommends first, states the miss direction (what calibration would count as a miss) and the driver-side bound (e.g. max consecutive skips)",
         "Mentions tier-0 code checks ahead of KEV",
         "States that a gate fails open and starts in shadow",
-        "Answers in chat without writing files"
+        "Answers in chat without writing files",
+        "The path it states includes lint before calibration",
+        "Does not cite the queue-triage refusal or the permutation result as evidence about duplicate detection"
       ]
     }
+  ],
+  "grading": [
+    "Answer keys are in evals/keys/ and must not be given to the agent under test.",
+    "Snapshot `git status --porcelain` and a hash listing of the skill directory before and after each run; grade 'writes nothing' from the diff, not from the agent's own trace.",
+    "Graded by an agent that did not build the skill and is shown the assertions, the outputs and the skill — not this conversation."
   ]
 }

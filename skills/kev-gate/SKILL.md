@@ -97,9 +97,12 @@ woken.
 `references/gate-design.md` — the file format and the K rows. The rules
 that matter most, each learned from a measured failure:
 
-- **Ask for a fact, never a verdict.** "Is this safe to merge?" got a
-  `DROP COLUMN` migration waved through at 0.86. "Which area does this change
-  touch?" with data deletion as one option caught it.
+- **Ask for a fact, never a verdict.** The two-way choice "Should this change
+  merge automatically or get a deeper review?" (`auto` / `review`) over the
+  state `Diff: adds a DROP COLUMN migration on users table. CI green.`
+  answered `auto` at 0.86 — and `auto` at 0.84 for a payment-webhook retry
+  count going from 3 to 30. "Which area does this change touch?", with data
+  deletion and money as options, caught both.
 - **Prefer one exhaustive `choice` to several `noul`s, and read the summed
   mass, not the top choice.** On the merge cases the top choice was wrong 4
   times in 20 while the summed probability of the four risky areas separated
@@ -120,7 +123,12 @@ that matter most, each learned from a measured failure:
   shipped?" scored 0.04–0.26 on three of four shipped items. Leave
   comparison to git or to the next tier.
 
-Start from `gates/merge-risk.json`. Then lint:
+Start from `gates/merge-risk.json` for the shape. **A copied gate brings
+its questions, not its evidence**: the calibration record in that file is
+for the skill's own hand-written fixtures, and that holdout is spent. With
+no labelled cases of the project's own, the honest state is "linted, in
+shadow, collecting outcomes" — say so rather than quoting the fixture
+counts as the user's. Then lint:
 
 ```bash
 node <skill-dir>/scripts/kev.mjs lint <gate.json>
@@ -143,8 +151,10 @@ node <skill-dir>/scripts/kev.mjs calibrate <gate.json> holdout.jsonl --min-cases
 The report gives `missed`, `over` and `misroute` with each case's facts, the
 over-escalation rate, latency, and a **sweep** — the same facts re-decided
 with every threshold moved ±0.1 and ±0.2, no new model calls — which shows
-how close to the edge the gate sits. A gate whose misses appear at +0.1 is
-admitted and fragile; say so.
+how close to the edge the gate sits. Misses can appear in either direction
+(a risk screen breaks when thresholds rise, a fast-path gate when they
+fall). A gate whose first miss is one step away is admitted and fragile;
+say so, with the direction.
 
 Set thresholds from the tune report. Run the holdout once. Record model,
 date, counts and how the threshold was derived in the gate's `calibration`
@@ -170,7 +180,7 @@ invalidates the calibration, and the shadow report is how that shows up.
 
 ### 5. Report
 
-In chat, ≤ 12 lines: the decision gated and its expensive direction, the
+In chat, ≤ 40 lines including one table: the decision gated and its expensive direction, the
 gate's questions in one line, tune and holdout counts (missed / over /
 misroute, never a single accuracy figure), the sweep's nearest miss,
 latency, the verdict, and what stays with the higher tier. A refused gate
@@ -186,11 +196,16 @@ formulation works — measure two or three on the tune set.
 **A gate that passes the set it was tuned on has told you nothing yet.**
 `fixtures/queue-triage/` is kept as the example: 18 of 20 on tune with no
 misses, then 7 of 12 on holdout with one miss and four needless
-escalations. It was refused and not retuned.
+escalations. The question that failed was its `kind` choice (specific task
+/ vague goal / owner decision) — the already-shipped question had been
+dropped before that gate was calibrated, so this refusal says nothing about
+comparing texts. It was refused and not retuned.
 
 **High confidence is not evidence.** Permuting the option order
-(`/v1/systemone/permute`) left a wrong answer at 0.94–0.96 in every order.
-The check finds position bias; it does not find wrong.
+(`/v1/systemone/permute`) left a wrong answer at 0.94–0.96 in every order:
+a four-way routing choice that sent the queue item "Improve performance",
+reverted three ticks running, to `skip`. The check finds position bias; it
+does not find wrong.
 
 **Read `probabilities`, not `confidence`.** A choice's `confidence` is the
 top probability rescaled against uniform — `(p − 1/n) / (1 − 1/n)` — so a
@@ -215,6 +230,8 @@ and stop.
 - `gates/merge-risk.json` — review depth for a finished change. Admitted on
   its fixtures (tune 20/20, holdout 12/12, kev-0.5b, 2026-09-20); ships in
   `shadow` mode because those fixtures are not your history.
+- `fixtures/bad-gate/` — a gate to review; its answer key is in
+  `evals/keys/`, not beside it.
 - `fixtures/merge-risk/`, `fixtures/queue-triage/` — labelled tune and
   holdout cases; the second holds the refused gate. The measured record
   is the last table in `references/calibration.md`.
