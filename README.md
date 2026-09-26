@@ -791,6 +791,74 @@ use OpenRouter as a fallback and keep run history. `jev web` also sends its
 question to a search provider. The guards stop mistakes, not a determined
 agent: anything running as you can read the key file.
 
+### Files
+
+Everything lives in your home folder, outside the plugin, so it survives
+plugin updates and uninstalls (`jev forget` removes the key file). Folders are
+0700, files 0600.
+
+**`~/.config/jev/secrets.env`** — the key, one dotenv line, written by the
+startup hook from plugin config (or by `jev setup`). A leading `export ` and
+quotes around the value are accepted. `JEV_AI_API_KEY` in the environment is
+not read.
+
+```
+JEV_AI_API_KEY=<your key>
+```
+
+**`~/.config/jev/projects.json`** — which repos may send, written by
+`jev allow` / `jev deny` (hand edits are fine). The key is the repo's folder
+name — the folder holding its git directory, so every worktree is the same
+project — and `root` its resolved path; a call from a repo whose path doesn't
+match `root` is refused. `send` and `root` are required to send; `web`
+(default `false`), `max_calls_per_day` (default `300`) and `keep_cases`
+(default `false`) are optional.
+
+```json
+{
+  "projects": {
+    "shop-api": { "send": true, "root": "/Users/you/code/shop-api", "web": false, "max_calls_per_day": 300, "keep_cases": false },
+    "payroll":  { "send": false }
+  }
+}
+```
+
+**`~/.local/state/jev/audit/<project>/<YYYY-MM>.jsonl`** — one line per call,
+including refusals and unchecked calls. Never the state text, never the key:
+only its hash, size and field names. A call refused before the repo could be
+identified goes to `audit/_unresolved/`.
+
+```json
+{"type":"call","ts":"2026-09-26T14:02:11.412Z","agent":"claude-code","run":null,"command":"judge",
+ "project":"shop-api","judge":{"id":"agent/task-completion","revision":1,"hash":"sha256:…"},
+ "model":"jev-1.13.0","decision":"PASS","action":"continue","confidence":0.94,
+ "unverified":false,"refused":false,"calibrated":false,"error_code":null,"warnings":[],
+ "reasons":["completion.complete 0.94 >= 0.85"],"answers":{"…":"…"},"jev_run_id":"…",
+ "billing":"tokens","input_tokens":612,"credits_charged":0,"latency_ms":704,
+ "evidence_provenance":{"tests":"attached"},
+ "attachments":[{"name":"tests","kind":"command","sha256":"…","bytes":1840,"exit":0,"truncated":false}],
+ "state_sha256":"…","state_bytes":2210,"state_fields":["objective","agent_claim","evidence"]}
+```
+
+`jev outcome` appends a second kind of line to the same file; `jev report`
+joins it to its call by `jev_run_id`:
+
+```json
+{"type":"outcome","ts":"…","jev_run_id":"…","label":"tests failed after merge","note":null}
+```
+
+**`~/.local/state/jev/cases/<project>/<YYYY-MM>.jsonl`** — only for repos
+allowed with `--keep-cases`. The one file that keeps the full state, for
+calibrating thresholds later; it never leaves your machine.
+
+```json
+{"ts":"…","jev_run_id":"…","judge":{"…":"…"},"state":{"…":"…"},"decision":"PASS","answers":{"…":"…"}}
+```
+
+**`~/.config/jev/.synced`** records when the hook last copied the key;
+**`~/.config/jev/linked`** exists only after `jev link`, and tells the hook to
+keep `~/.local/bin/jev` pointed at the current plugin version.
+
 Project judges go in `<repo>/.jev/judges/<name>.json` and run as
 `jev judge local/<name>`; [`references/recipes.md`](skills/jev/references/recipes.md)
 has the format and how to phrase questions. Design:
