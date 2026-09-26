@@ -44,9 +44,22 @@ Numbering continues from `jev-design.md`.
 | Q30 | Policy in the cloud | `projects.json` does not exist in the VM. `JEV_ALLOWED_PROJECTS` (an environment variable) lists the repositories `jev` accepts, as `owner/repo`. It guards against mistakes; it is not a lock (§8). |
 | Q31 | Audit in the cloud | The in-VM audit is thrown away with the VM. Decisions are recorded as **git commit trailers** (`Jev-Decision: …`), printed by `jev trailers`. Each trailer carries the Jev run id; whether jev-ai.pro lists API runs in its history, where the id could be looked up, is spike check 7. A trailer shows that a Jev call happened, not that `jev` made it with honest evidence. |
 | Q32 | Go/no-go | A spike (§9) confirms the credential works from Anthropic's network and from Node, that the key cannot be used to obtain another key, and how the VM is laid out, before anything is built. |
-| Q33 | Spending | The real limit is the **balance or spending limit on jev-ai.pro**. As researched, jev-ai.pro has one balance per account, shared by every key including local use, and keys carry no quota of their own; spike check 3 asks whether a per-key limit exists. `jev`'s per-session cap only slows one runaway session: every session is a fresh VM, so a routine gets a fresh cap each run. |
+| Q33 | Spending | The real limit is the **balance or spending limit on jev-ai.pro**. As researched, jev-ai.pro has one balance per account, shared by every key including local use, and keys carry no quota of their own; spike check 3 asks whether a per-key limit exists. `jev` sets no call cap of its own (Q36). |
 | Q34 | Identity in the cloud | `owner/repo` from the last two path segments of `git remote get-url origin` (without `.git`), never the clone folder, whose path Anthropic chooses and does not document. `JEV_ALLOWED_PROJECTS` is matched against `owner/repo`, so a fork or another owner's repo with the same name doesn't pass; the audit folder uses the repo name. |
 | Q35 | Transport fallback | If Node's `fetch` cannot use the session's proxy even with the spike's fixes, proxy mode sends through `curl` (which uses the system certificate store). Same request, same rules. |
+| Q36 | Call cap | **No default cap**, locally or in the cloud: a repository may make as many calls as it needs. A cap applies only when the user sets one (`jev allow --cap n` locally, `JEV_DAILY_CAP` in the cloud). This replaces the local default of 300 calls a day per repository. Spending is bounded on jev-ai.pro (Q33). |
+
+### 2.1 Where the jev-ai.pro key is stored
+
+| | Local (the plugin today) | Cloud (this design) |
+|---|---|---|
+| Entered | when the plugin is installed or enabled, or later with `/plugin configure busy-office` (or `jev setup` in a Terminal window) | once, on claude.ai: environment `jev` → **API credentials** |
+| Stored | Claude Code's secure storage, as the plugin's sensitive `api_key` setting; a SessionStart hook copies it to `~/.config/jev/secrets.env` (0600), the only place `jev` reads it | Anthropic's credential store for that environment; it cannot be viewed again after saving |
+| Reachable by the agent | **Yes** — anything running as the user can read the file (the local threat model, `jev-design.md` Q19) | **No** — not in the VM's files, variables, setup script or repo |
+| Which key | the user's main key | a dedicated `jev-cloud` key |
+| Revoke or replace | jev-ai.pro → API Keys, then `/plugin configure busy-office` | jev-ai.pro → API Keys, then delete and re-add the credential on claude.ai |
+
+Never in chat, a repository, a cloud environment variable or a setup script.
 
 ## 3. How cloud sessions work (facts this design relies on)
 
@@ -108,7 +121,8 @@ From the Claude Code documentation (`cloud-environments`, `network-config`,
    ```
 
    Entries are `owner/repo` (as in `origin`) separated by spaces; `:web` also
-   allows `jev web`. Optional `JEV_DAILY_CAP` (default 300 calls per session).
+   allows `jev web`. Optional `JEV_DAILY_CAP` (calls per session; unset means
+   no cap, Q36).
    Running sessions don't re-read variables: changes apply to new sessions.
    The Node setting the spike needed (§9 check 2), if any, goes into the `jev`
    wrapper that `setup.sh` writes, not into these variables, so it affects
@@ -181,8 +195,8 @@ Active when `JEV_AUTH=proxy`. Then:
   Retry and never-PASS rules are unchanged.
 - **Policy:** the project's `owner/repo` must be in `JEV_ALLOWED_PROJECTS`
   (`project_not_allowed`), `jev web` needs its `:web` suffix
-  (`web_not_allowed`), and the per-session cap is `JEV_DAILY_CAP`
-  (`daily_cap`). Each message ends "…in this environment's variables on
+  (`web_not_allowed`), and only if `JEV_DAILY_CAP` is set are calls beyond it
+  refused (`daily_cap`). Each message ends "…in this environment's variables on
   claude.ai, then start a new session", not `jev allow` or `/plugin configure`.
 - **Identity:** `owner/repo` from the last two path segments of
   `git remote get-url origin`, without `.git` (Q34); the repo name alone names
@@ -253,7 +267,7 @@ A short "Cloud sessions" section:
 | Agent in a repo that should not send | **Mostly prevented by setup.** Only sessions in the `jev` environment have the credential; the user chooses which repos run there. `JEV_ALLOWED_PROJECTS` catches a wrong repo by mistake. |
 | Agent bypasses `jev` and calls jev-ai.pro with curl | **Not prevented.** The proxy attaches the credential to any request to that host. The data reaches the user's own jev-ai.pro account (and, through `/v1/web-context`, also its search provider, skipping the `:web` gate), but it skips the secret scan, the allowlist, the cap and the trailers. The skill forbids it; this is an accepted risk. |
 | Agent overrides `JEV_AUTH`, `JEV_ALLOWED_PROJECTS` or `JEV_DAILY_CAP` for its own commands | **Not prevented** — they are guards against mistakes, not locks (Q30). |
-| Agent, or a routine run many times, burns the balance | **Not prevented; bounded** by the limit the user set on jev-ai.pro (Q33: the account balance, shared with local use, unless check 3 finds a per-key limit) and jev-ai.pro's per-account rate limit. `JEV_DAILY_CAP` stops only `jev`'s own loops, not a direct curl. Revoking the cloud key stops it at once. |
+| Agent, or a routine run many times, burns the balance | **Not prevented; bounded** by the limit the user set on jev-ai.pro (Q33: the account balance, shared with local use, unless check 3 finds a per-key limit) and jev-ai.pro's per-account rate limit. `jev` has no cap by default; an optional `JEV_DAILY_CAP` stops only `jev`'s own loops, not a direct curl. Revoking the cloud key stops it at once. |
 | Agent forges or drops trailers | **Not prevented.** A trailer's run id shows that a Jev call happened (findable in jev-ai.pro's history if check 7 confirms it), not that `jev` made it with honest evidence; a dropped trailer is not detectable. |
 | A malicious version of the CLI reaches the VM | **Limited** to the pinned commit hash, which cannot be moved to other code the way a tag can; the setup script verifies it. The skill on claude.ai is updated by hand to the same commit. |
 
@@ -349,7 +363,9 @@ Added to `skills/jev/test/` (no network):
 - identity from `origin` (https and ssh forms, with and without `.git`) as
   `owner/repo`; a same-named repo of another owner is refused; no `origin` →
   `no_identity`;
-- `JEV_ALLOWED_PROJECTS` parsing, `:web`, `JEV_DAILY_CAP`;
+- `JEV_ALLOWED_PROJECTS` parsing, `:web`; `JEV_DAILY_CAP` set (refuses past
+  it) and unset (no cap); locally, a project without `max_calls_per_day` is
+  never refused for volume;
 - cloud-specific messages for each refusal, each ending with the new-session
   note; local-only commands refuse; `doctor` shows only the cloud rows and
   exits 0 on a correct setup;
@@ -367,12 +383,12 @@ Added to `skills/jev/test/` (no network):
 
 | File | Change |
 |---|---|
-| `skills/jev/scripts/jev.mjs` | proxy mode, probe, `curl` transport, origin identity, cloud policy and messages, `trailers`, `outcome` trailer, cloud doctor |
+| `skills/jev/scripts/jev.mjs` | proxy mode, probe, `curl` transport, origin identity, cloud policy and messages, `trailers`, `outcome` trailer, cloud doctor; **remove `DEFAULT_CAP`** (Q36): no cap unless `max_calls_per_day` is set, and `jev allow` shows "Cap: none" by default |
 | `skills/jev/cloud/setup.sh`, `skills/jev/cloud/files.txt` | new (files.txt lists path and sha256) |
 | `skills/jev/SKILL.md` | "Cloud sessions" section (§7); add the new codes to the refusal table; note that in the cloud the audit lives in commit trailers |
 | `skills/jev/test/jev.test.mjs` | §10 |
-| `docs/jev-design.md` | Q24: cloud sessions supported as described here; drop "cloud" from out of scope; add the new codes (`proxy_mode_unavailable`, `key_in_environment`, `proxy_credential_missing`, `proxy_blocked`, `proxy_unreachable`) to the exit-code and message tables |
-| `README.md` | a short "Cloud sessions" setup section |
+| `docs/jev-design.md` | Q24: cloud sessions supported as described here; drop "cloud" from out of scope; add the new codes (`proxy_mode_unavailable`, `key_in_environment`, `proxy_credential_missing`, `proxy_blocked`, `proxy_unreachable`) to the exit-code and message tables; §8: `max_calls_per_day` has no default (Q36) |
+| `README.md` | a short "Cloud sessions" setup section; the key-storage table (§2.1); drop "(default 300)" from `--cap` and `max_calls_per_day` |
 | `.claude-plugin/plugin.json`, `marketplace.json` | version bump |
 
 ## 12. Out of scope
