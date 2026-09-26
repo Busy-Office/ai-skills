@@ -343,6 +343,26 @@ About twenty minutes in claude.ai, with nothing built yet:
 | check 3: any key or billing route answers 2xx | The key can mint or reveal keys, or spend | **Stop.** Revoke the `jev-cloud` key; wait for an evaluate-only key from jev-ai.pro. |
 | check 6: not listed | claude.ai skills don't reach this session | Fall back to linking the skill from the setup script, after check 5 shows the session's `HOME`. |
 
+### 9.1 Spike results — 2026-09-27
+
+Environment `jev` (Trusted, one Bearer credential for host `jev-ai.pro`, no
+variables, no setup script), session on `Busy-Office/ai-skills`.
+
+| Check | Result | Reading |
+|---|---|---|
+| 1 — curl | `200`, through `HTTP/1.1 200 Connection Established`, `server: cloudflare`, a `cf-ray` | The proxy attaches the credential; jev-ai.pro accepts Anthropic's network. |
+| 2 — Node `fetch` | plain: `403`; with `NODE_USE_ENV_PROXY=1`: `200` (Node v22.22.2) | Node ignores `HTTPS_PROXY` by default, so the direct connection is refused at the egress (not Cloudflare). With the flag it works; `NODE_EXTRA_CA_CERTS` is already set in the VM, so TLS needs nothing. **The `curl` fallback (Q35) is not needed**: the `jev` wrapper written by `setup.sh` sets `NODE_USE_ENV_PROXY=1`. |
+| 4 — key not in the VM | one variable mentions `jev-ai`: `CCR_AUTO_MODE_ALLOW` (the session's auto-mode allow configuration; name only, value not printed) | No credential-bearing variable. Proxy variables present: `HTTPS_PROXY`, `NO_PROXY`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`. |
+| 5 — layout | user `root`, `HOME=/root`, clone at `/home/user/ai-skills`, `origin` = `https://github.com/Busy-Office/ai-skills` (https, no `.git`) | Identity from `origin` (Q34) works as designed. |
+| 3 — key can't obtain another key | **not run yet** | Needs jev-ai.pro's route list. |
+| 6 — skill loads from claude.ai | **not run yet** | Needs the skill uploaded on claude.ai. |
+| 7 — runs in jev-ai.pro history | **not run yet** | Needs one real call. |
+
+A plain `fetch` refused at the egress answers `403` without Cloudflare's
+headers, which §6.1 reads as `proxy_credential_missing`. With the wrapper
+setting the flag this does not arise, but the message should also mention
+`NODE_USE_ENV_PROXY` for a `jev` run outside the wrapper.
+
 ## 10. Tests
 
 Added to `skills/jev/test/` (no network):
