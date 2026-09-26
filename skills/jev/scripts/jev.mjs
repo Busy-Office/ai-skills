@@ -60,6 +60,13 @@ const unverified = (code, message) => new JevError("unverified", code, message);
 
 const CONFIGURE = "/plugin configure busy-office";
 
+// The command a user can paste into a Terminal: plain `jev` once `jev link` has
+// put it in ~/.local/bin, otherwise the launcher's full path. The plugin only
+// puts `jev` on the PATH of Claude Code's own Bash tool.
+export function term(env) {
+  try { lstatSync(linkPath(env)); return "jev"; } catch { return `"${launcher()}"`; }
+}
+
 // --------------------------------------------------------------------- key --
 export function parseEnvFile(text) {
   const out = {};
@@ -77,7 +84,7 @@ export function readKey(env) {
   const f = join(cfgDir(env), "secrets.env");
   let st;
   try { st = statSync(f); } catch {
-    throw refuse("no_key", `jev: no API key. Run ${CONFIGURE} and enter a jev-ai.pro key, then start a new session (or in a Terminal window run: jev setup). Never paste the key into chat.`);
+    throw refuse("no_key", `jev: no API key. Run ${CONFIGURE} and enter a jev-ai.pro key, then start a new session (or in a Terminal window run: ${term(env)} setup). Never paste the key into chat.`);
   }
   if (st.mode & 0o077) throw refuse("key_file_mode", `jev: ${f} is readable by others. Run: chmod 600 ${f}`);
   const key = parseEnvFile(readFileSync(f, "utf8")).JEV_AI_API_KEY;
@@ -137,7 +144,7 @@ export function loadPolicy(env) {
     const p = JSON.parse(readFileSync(f, "utf8"));
     return { file: f, all: p.all && typeof p.all === "object" ? p.all : null, projects: p.projects || {} };
   } catch (e) {
-    throw refuse("policy_invalid", `jev: ${f} is not valid JSON (${e.message}). Fix it, or run jev allow in a Terminal window to rewrite this project's entry.`);
+    throw refuse("policy_invalid", `jev: ${f} is not valid JSON (${e.message}). Fix it, or run ${term(env)} allow in a Terminal window to rewrite this project's entry.`);
   }
 }
 
@@ -165,22 +172,23 @@ export function policyFor(pol, id) {
 export function checkPolicy(env, id, { web = false } = {}) {
   const pol = loadPolicy(env);
   const { entry, via } = policyFor(pol, id);
-  const allow = "To allow it, in a Terminal window in this repo run: jev allow (or jev allow --all for every repo)";
+  const T = term(env);
+  const allow = `To allow it, in a Terminal window in this repo run: ${T} allow (or ${T} allow --all for every repo)`;
   if (!entry || entry.send !== true) {
-    const denied = entry && pol.all?.send === true ? " It is denied even though all repos are allowed; jev allow in this repo lifts that." : "";
+    const denied = entry && pol.all?.send === true ? ` It is denied even though all repos are allowed; ${T} allow in this repo lifts that.` : "";
     throw refuse("project_not_allowed", `jev: project "${id.name}" may not send data.${denied} ${allow}`);
   }
   if (via === "project" && (!entry.root || realOr(entry.root) !== id.root)) {
-    throw refuse("root_mismatch", `jev: this repo is named "${id.name}" but is at ${id.root}, not ${entry.root ?? "(no root set)"}. Only the user can change this, with jev allow in a Terminal window at the right path.`);
+    throw refuse("root_mismatch", `jev: this repo is named "${id.name}" but is at ${id.root}, not ${entry.root ?? "(no root set)"}. Only the user can change this, with ${T} allow in a Terminal window at the right path.`);
   }
   if (web && entry.web !== true) {
-    throw refuse("web_not_allowed", `jev: project "${id.name}" may not use jev web (it also sends the question to a search provider). To allow it, in a Terminal window run: ${via === "all" ? "jev allow --all --web" : "jev allow --web (in this repo)"}`);
+    throw refuse("web_not_allowed", `jev: project "${id.name}" may not use jev web (it also sends the question to a search provider). To allow it, in a Terminal window run: ${via === "all" ? `${T} allow --all --web` : `${T} allow --web (in this repo)`}`);
   }
   // No cap unless the user set one (design Q36); spending is bounded on jev-ai.pro.
   const cap = Number.isInteger(entry.max_calls_per_day) ? entry.max_calls_per_day : null;
   const used = cap === null ? 0 : callsToday(env, id.name);
   if (cap !== null && used >= cap) {
-    throw refuse("daily_cap", `jev: project "${id.name}" has made ${used} calls today (cap ${cap}). If that is expected, in a Terminal window run: ${via === "all" ? "jev allow --all --cap <n>" : "jev allow --cap <n> (in this repo)"}`);
+    throw refuse("daily_cap", `jev: project "${id.name}" has made ${used} calls today (cap ${cap}). If that is expected, in a Terminal window run: ${via === "all" ? `${T} allow --all --cap <n>` : `${T} allow --cap <n> (in this repo)`}`);
   }
   return entry;
 }
@@ -271,7 +279,7 @@ export async function call(io, method, path, body, key, timeoutMs = DEFAULT_TIME
     clearTimeout(timer);
     const latency = Date.now() - t0;
     const s = res.status;
-    if (s === 401) throw refuse("key_rejected", `jev: key rejected (wrong or revoked). Create a new key at jev-ai.pro → API Keys and enter it with ${CONFIGURE} (or jev setup in a Terminal window).`);
+    if (s === 401) throw refuse("key_rejected", `jev: key rejected (wrong or revoked). Create a new key at jev-ai.pro → API Keys and enter it with ${CONFIGURE} (or ${term(io.env)} setup in a Terminal window).`);
     if (s === 402) throw refuse("balance", "jev: balance too low or spending paused. Check jev-ai.pro → Billing.");
     if (s === 429) {
       const wait = Number(res.headers.get("retry-after") || 1) * 1000;
@@ -831,7 +839,7 @@ function say(io, text) { io.out.write(text + "\n"); }
 // ------------------------------------------------------- local commands --
 function needTTY(io, what) {
   if (!io.isTTY || !io.stdinTTY) {
-    throw refuse("usage", `jev: ${what} must be run by you in a Terminal window (not through an agent or Claude Code's ! mode).`);
+    throw refuse("usage", `jev: ${what} must be run by you in a Terminal window (not through an agent or Claude Code's ! mode). In a Terminal: ${what.replace(/^jev/, term(io.env))}${term(io.env) === "jev" ? "" : `  — or run \`jev link\` once (an agent can do it) so plain \`jev\` works there.`}`);
   }
 }
 
@@ -908,7 +916,7 @@ async function cmdAllowAll(args, io) {
 }
 
 async function cmdAllow(args, io) {
-  needTTY(io, "jev allow");
+  needTTY(io, args.flags.all ? "jev allow --all" : "jev allow");
   const { flags } = args;
   if (flags.all) return cmdAllowAll(args, io);
   const id = identify(io.cwd);

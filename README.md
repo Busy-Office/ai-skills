@@ -734,7 +734,12 @@ against its own view. Jev recommends; the caller acts.
    `~/.config/jev/secrets.env`, because commands can't read plugin config.
    Without a key the rest of the plugin works; the session just says jev isn't
    set up. Outside plugin config, `jev setup` in a Terminal does the same.
-2. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in a
+2. **Put `jev` on your Terminal's PATH.** The plugin adds `jev` only inside
+   Claude Code sessions, and the next step runs in a Terminal. Run `jev link`
+   once — ask Claude to, or paste the full launcher path that jev's messages
+   print. It adds `~/.local/bin/jev` (on most shells' PATH), and the startup
+   hook keeps it pointed at the current plugin version after updates.
+3. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in a
    Terminal window there. It refuses to run from an agent, shows what will be
    sent where, and asks. `--web` also allows `jev web`; `--cap n` sets the daily
    call cap (no cap unless you set one); `--keep-cases` keeps sent states locally for later
@@ -744,10 +749,9 @@ against its own view. Jev recommends; the caller acts.
    Terminal-only confirmation). Repos you deny stay blocked, repos you allowed
    one by one keep their own settings, and `jev web` still needs
    `jev allow --all --web`. `jev deny --all` turns it off.
-3. **Check.** `jev doctor`.
+4. **Check.** `jev doctor`.
 
-`jev` is on the agent's PATH while the plugin is enabled; `jev link` adds
-`~/.local/bin/jev` for your own scripts and hooks. Needs Node 22+, macOS or
+`jev link` also makes `jev` available to your own scripts and hooks. Needs Node 22+, macOS or
 Linux, and Claude Code (claude.ai and Cowork don't install plugin commands).
 
 ### Usage

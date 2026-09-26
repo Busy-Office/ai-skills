@@ -293,7 +293,7 @@ test("unknown project is refused before anything is sent", async () => {
   const r = await run(sb, ["judge", "completion", "--state", "-"], { fetch: f, stdin: completionState });
   assert.equal(r.code, EXIT.REFUSED);
   assert.equal(r.json.error.code, "project_not_allowed");
-  assert.match(r.json.error.message, /jev allow/);
+  assert.match(r.json.error.message, /jev"? allow/);
   assert.equal(f.calls.length, 0);
 });
 
@@ -473,6 +473,17 @@ test("web: needs web permission; verdict from the with-evidence answer", async (
 });
 
 // ------------------------------------------------------- local commands --
+test("Terminal commands in messages work before and after jev link", async () => {
+  const sb = sandbox({ allow: false });
+  let r = await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass), stdin: completionState });
+  assert.match(r.json.error.message, /run: ".*\/bin\/jev" allow/, "full launcher path when not linked");
+  r = await run(sb, ["allow"]);
+  assert.match(r.err, /jev link/);
+  await run(sb, ["link"]);
+  r = await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass), stdin: completionState });
+  assert.match(r.json.error.message, /run: jev allow \(/, "plain jev once linked");
+});
+
 test("allow and setup refuse without a terminal", async () => {
   const sb = sandbox({ allow: false });
   assert.equal((await run(sb, ["allow"])).code, EXIT.REFUSED);
@@ -518,7 +529,7 @@ test("allow --all: any repo may send, denied repos stay blocked, web needs its o
   // web is off unless allow --all --web
   c = await call(other, ["web", "--question", "x"]);
   assert.equal(c.json.error.code, "web_not_allowed");
-  assert.match(c.json.error.message, /jev allow --all --web/);
+  assert.match(c.json.error.message, /jev"? allow --all --web/);
 
   // a denied repo stays blocked, and the message says why
   await run(sb, ["deny"]);

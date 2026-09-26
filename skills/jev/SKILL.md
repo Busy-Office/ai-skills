@@ -104,6 +104,11 @@ problem. The usual ones:
 | `daily_cap` | the project's daily cap is used up |
 | `key_rejected` / `balance` | the key is wrong or revoked / the account needs credit |
 
+The Terminal commands in these messages (`jev allow`, `jev setup`) only work
+as plain `jev` after `jev link`; until then the message prints the full
+launcher path. You may run `jev link` for the user — it only adds
+`~/.local/bin/jev` — but never `jev allow` or `jev setup`.
+
 Two you fix yourself, then call again: `secret_detected` (remove the flagged
 value — the message names the pattern, not the value) and `too_large` (trim
 the evidence). `missing_state_fields` lists what to add.
