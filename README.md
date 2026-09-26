@@ -726,6 +726,25 @@ turns its answers into **PASS / REVIEW / FAIL** and an action, from judges —
 JSON files of narrow questions and thresholds — and the agent weighs that
 against its own view. Jev recommends; the caller acts.
 
+### Setup
+
+1. **Key.** Installing or enabling the plugin asks for a jev-ai.pro API key
+   (stored in your system's credential store; change it with
+   `/plugin configure busy-office`). A startup hook copies it to
+   `~/.config/jev/secrets.env`, because commands can't read plugin config.
+   Without a key the rest of the plugin works; the session just says jev isn't
+   set up. Outside plugin config, `jev setup` in a Terminal does the same.
+2. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in a
+   Terminal window there. It refuses to run from an agent, shows what will be
+   sent where, and asks. `--web` also allows `jev web`; `--cap n` sets the daily
+   call cap (default 300); `--keep-cases` keeps sent states locally for later
+   calibration. `jev deny` takes it back.
+3. **Check.** `jev doctor`.
+
+`jev` is on the agent's PATH while the plugin is enabled; `jev link` adds
+`~/.local/bin/jev` for your own scripts and hooks. Needs Node 22+, macOS or
+Linux, and Claude Code (claude.ai and Cowork don't install plugin commands).
+
 ### Usage
 
 > check the CSV export is really done before you tell me
@@ -734,62 +753,71 @@ against its own view. Jev recommends; the caller acts.
 > second opinion before we deploy
 
 ```bash
-jev judges                                   # completion, router, research, groundedness, retry, release, tool-guard
 jev judge completion --attach-cmd tests="npm test" --state - <<'JSON'
 {"objective": "Add CSV export", "agent_claim": "Done"}
 JSON
-jev ask --questions q.json --pass "risky <= 0.3"   # one-off questions
-jev web --question "Node 22 is the current LTS"    # a claim checked against the web
-jev outcome <jev_run_id> "tests failed later"      # what really happened
-jev report                                          # calls per project and judge, joined to outcomes
-jev doctor                                          # check the setup
 ```
 
-### Setup
+| command | does |
+|---|---|
+| `jev judges` | list the judges; `jev judge <name> --help` shows one's state fields and an example |
+| `jev judge <name> --state <file\|->` | run a judge; `--attach name=file` / `--attach-cmd name="command"` add evidence jev reads itself |
+| `jev ask --questions <file> [--pass …] [--fail …]` | one-off questions, with or without thresholds |
+| `jev web --question "<claim>"` | a yes/no claim checked against web sources |
+| `jev outcome <jev_run_id> "<what happened>"` | record how it really turned out |
+| `jev report` | calls per project and judge, joined to outcomes |
+| `jev doctor` | check the setup |
+| `jev allow` · `jev deny` · `jev setup` | you, in a Terminal: allow a repo, stop it, save a key without plugin config |
+| `jev link` · `jev unlink` · `jev forget` | add / remove `~/.local/bin/jev`; delete the key file |
 
-1. **Key.** Installing or enabling the plugin asks for a jev-ai.pro API key
-   (stored in your system's credential store; change it with
-   `/plugin configure busy-office`). A startup hook copies it to
-   `~/.config/jev/secrets.env` (0600), because commands can't read plugin
-   config. Without a key the rest of the plugin works; the session just says
-   jev isn't set up. Outside plugin config, `jev setup` in a Terminal does the
-   same.
-2. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in
-   a Terminal window there. It refuses to run from an agent, shows what will be
-   sent where, and asks. `--web` also allows `jev web`; `--cap n` sets the
-   daily call cap (default 300); `--keep-cases` keeps sent states locally for
-   later calibration.
+Exit codes: `0` PASS · `3` REVIEW · `4` FAIL · `5` not checked · `64` refused
+(the message says how to fix it) · `1` internal error. Output is JSON when not
+at a terminal.
 
-`jev` is on the agent's PATH while the plugin is enabled. `jev link` adds
-`~/.local/bin/jev` for your own scripts and hooks. Needs Node 22+, macOS or
-Linux, and Claude Code (claude.ai and Cowork don't install plugin commands).
+### Judges
+
+| alias | asks | PASS needs attached evidence |
+|---|---|---|
+| `completion` | is the task actually done, judged from evidence not claims | yes |
+| `router` | which kind of model or agent should take this task (picks one) | — |
+| `research` | is the evidence enough to state the claim as established | — |
+| `groundedness` | is the answer supported by its sources, and on point | — |
+| `retry` | an attempt failed: retry, escalate or stop (never PASS) | — |
+| `release` | is this ready to release or deploy | yes |
+| `tool-guard` | should this consequential tool call go ahead | — |
+
+A project adds its own at `<repo>/.jev/judges/<name>.json` and runs it as
+`jev judge local/<name>`; it can't replace a shared one.
+[`references/recipes.md`](skills/jev/references/recipes.md) has the format, the
+rules the loader enforces, and how to phrase questions so the answers
+separate.
 
 ### What it does
 
-- **Evidence it collects itself.** `--attach name=file` and
-  `--attach-cmd name="command"` (no shell, 30 s, output capped) put real test
-  output or a real diff in front of the judge, marked `attached`; anything the
-  agent typed is `stated`. `completion` and `release` never PASS on stated
-  evidence alone.
-- **Failures never become a PASS.** A timeout, 5xx, bad answer or unexpected
-  model answer is `unverified` (exit 5) or capped at REVIEW; a 504 is never
-  retried, since it may already be billed.
+- **Evidence it collects itself.** `--attach` and `--attach-cmd` (no shell,
+  30 s, output capped) put real test output or a real diff in front of the
+  judge, marked `attached`; anything the agent typed is `stated`.
+  `completion` and `release` never PASS on stated evidence alone.
+- **Failures never become a PASS.** A timeout, 5xx or malformed answer is
+  `unverified` (exit 5); a different model than the judge was set up for caps a
+  PASS at REVIEW; a 504 is never retried, since it may already be billed.
 - **Refuses before sending** when the repo isn't allowed, a same-named repo
   sits at another path, the state holds something that looks like a secret,
   the request is too large, or the daily cap is used up — each with a message
   saying how to fix it.
-- **Audit.** One line per call in `~/.local/state/jev/audit/<project>/`, with
-  the judge revision and file hash, answers, run id, tokens and latency — never
-  the state, never the key.
+- **Audit.** One line per call — judge revision and file hash, answers, run
+  id, tokens, latency — never the state, never the key.
 - **Provisional thresholds.** Every result says `calibrated: false`. The
   thresholds are starting guesses; `jev outcome` records what really happened
   so they can be checked later.
 
-**What leaves your machine:** the state, evidence and questions for the calls
-you allow, to jev-ai.pro — an independent reseller of TypeSafe's Jev that may
-use OpenRouter as a fallback and keep run history. `jev web` also sends its
-question to a search provider. The guards stop mistakes, not a determined
-agent: anything running as you can read the key file.
+### What leaves your machine
+
+The state, evidence and questions for the calls you allow, to jev-ai.pro — an
+independent reseller of TypeSafe's Jev that may use OpenRouter as a fallback
+and keep run history. `jev web` also sends its question to a search provider.
+The guards stop mistakes, not a determined agent: anything running as you can
+read the key file.
 
 ### Files
 
@@ -797,22 +825,28 @@ Everything lives in your home folder, outside the plugin, so it survives
 plugin updates and uninstalls (`jev forget` removes the key file). Folders are
 0700, files 0600.
 
-**`~/.config/jev/secrets.env`** — the key, one dotenv line, written by the
-startup hook from plugin config (or by `jev setup`). A leading `export ` and
-quotes around the value are accepted. `JEV_AI_API_KEY` in the environment is
-not read.
+| file | holds | written by |
+|---|---|---|
+| `~/.config/jev/secrets.env` | the API key | the startup hook, or `jev setup` |
+| `~/.config/jev/projects.json` | which repos may send, and how | `jev allow` / `jev deny`, or by hand |
+| `~/.local/state/jev/audit/<project>/<YYYY-MM>.jsonl` | one line per call, and outcomes | every call; `jev outcome` |
+| `~/.local/state/jev/cases/<project>/<YYYY-MM>.jsonl` | full sent states, for calibration | calls from repos allowed with `--keep-cases` |
+| `~/.config/jev/.synced` | when the hook last copied the key | the startup hook |
+| `~/.config/jev/linked` | that you asked for `~/.local/bin/jev`, so the hook keeps it pointed at the current version | `jev link` |
+
+**`secrets.env`** — one dotenv line. A leading `export ` and quotes around the
+value are accepted. `JEV_AI_API_KEY` in the environment is not read.
 
 ```
 JEV_AI_API_KEY=<your key>
 ```
 
-**`~/.config/jev/projects.json`** — which repos may send, written by
-`jev allow` / `jev deny` (hand edits are fine). The key is the repo's folder
-name — the folder holding its git directory, so every worktree is the same
-project — and `root` its resolved path; a call from a repo whose path doesn't
-match `root` is refused. `send` and `root` are required to send; `web`
-(default `false`), `max_calls_per_day` (default `300`) and `keep_cases`
-(default `false`) are optional.
+**`projects.json`** — the key is the repo's folder name (the folder holding
+its git directory, so every worktree is the same project) and `root` its
+resolved path; a call from a repo whose path doesn't match `root` is refused.
+`send` and `root` are required to send; `web` (default `false`),
+`max_calls_per_day` (default `300`) and `keep_cases` (default `false`) are
+optional.
 
 ```json
 {
@@ -823,10 +857,10 @@ match `root` is refused. `send` and `root` are required to send; `web`
 }
 ```
 
-**`~/.local/state/jev/audit/<project>/<YYYY-MM>.jsonl`** — one line per call,
-including refusals and unchecked calls. Never the state text, never the key:
-only its hash, size and field names. A call refused before the repo could be
-identified goes to `audit/_unresolved/`.
+**`audit/…jsonl`** — one line per call, including refusals and unchecked
+calls. Never the state text, never the key: only its hash, size and field
+names. A call refused before the repo could be identified goes to
+`audit/_unresolved/`.
 
 ```json
 {"type":"call","ts":"2026-09-26T14:02:11.412Z","agent":"claude-code","run":null,"command":"judge",
@@ -847,23 +881,17 @@ joins it to its call by `jev_run_id`:
 {"type":"outcome","ts":"…","jev_run_id":"…","label":"tests failed after merge","note":null}
 ```
 
-**`~/.local/state/jev/cases/<project>/<YYYY-MM>.jsonl`** — only for repos
-allowed with `--keep-cases`. The one file that keeps the full state, for
-calibrating thresholds later; it never leaves your machine.
+**`cases/…jsonl`** — the one file that keeps the full state; it never leaves
+your machine.
 
 ```json
 {"ts":"…","jev_run_id":"…","judge":{"…":"…"},"state":{"…":"…"},"decision":"PASS","answers":{"…":"…"}}
 ```
 
-**`~/.config/jev/.synced`** records when the hook last copied the key;
-**`~/.config/jev/linked`** exists only after `jev link`, and tells the hook to
-keep `~/.local/bin/jev` pointed at the current plugin version.
+### Tests and design
 
-Project judges go in `<repo>/.jev/judges/<name>.json` and run as
-`jev judge local/<name>`; [`references/recipes.md`](skills/jev/references/recipes.md)
-has the format and how to phrase questions. Design:
-[`docs/jev-design.md`](docs/jev-design.md). Tests: `node --test skills/jev/test/`
-(no key or network needed).
+`node --test skills/jev/test/` (or `jev --self-test`) — no key or network
+needed. Design: [`docs/jev-design.md`](docs/jev-design.md).
 
 ---
 
