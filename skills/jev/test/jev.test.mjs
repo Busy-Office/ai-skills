@@ -6,12 +6,12 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, statSync, symlinkSync, writeFileSync, chmodSync, readlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   main, EXIT, SKILL_DIR, loadJudge, validateJudge, parseCondition, decide, readAnswers, scanSecrets,
   splitCommand, identify, webVerdict,
 } from "../scripts/jev.mjs";
-import { sync, relink, configKey } from "../scripts/sync-key.mjs";
+import { sync, syncLink, syncAllowAll, configKey, flag } from "../scripts/sync-key.mjs";
 
 const KEY = "jev_test_key_0123456789abcdefghij";
 
@@ -625,14 +625,72 @@ test("hook: run as a process it exits 0 and prints nothing when set up", () => {
   assert.ok(Date.now() - t0 < 2000);
 });
 
-test("hook: re-points a jev link only if the user made one", () => {
+test("hook: add_to_path creates, re-points and removes only its own link", () => {
   const sb = sandbox();
-  assert.equal(relink(sb.env, "/new/bin/jev"), "not_linked");
-  writeFileSync(join(sb.cfg, "linked"), "x");
-  mkdirSync(join(sb.home, ".local", "bin"), { recursive: true });
-  symlinkSync("/old/bin/jev", join(sb.home, ".local", "bin", "jev"));
-  assert.equal(relink(sb.env, "/new/bin/jev"), "relinked");
-  assert.equal(readlinkSync(join(sb.home, ".local", "bin", "jev")), "/new/bin/jev");
+  const lp = join(sb.home, ".local", "bin", "jev");
+  const on = { ...sb.env, CLAUDE_PLUGIN_OPTION_ADD_TO_PATH: "true" };
+  const off = { ...sb.env, CLAUDE_PLUGIN_OPTION_ADD_TO_PATH: "false" };
+  assert.equal(syncLink(off, "/v1/bin/jev"), "off", "off: nothing made");
+  assert.equal(existsSync(lp), false);
+  assert.equal(syncLink(sb.env, "/v1/bin/jev"), "linked", "default is on");
+  assert.equal(readlinkSync(lp), "/v1/bin/jev");
+  assert.equal(syncLink(on, "/v1/bin/jev"), "same");
+  assert.equal(syncLink(on, "/v2/bin/jev"), "relinked", "follows plugin updates");
+  assert.equal(readlinkSync(lp), "/v2/bin/jev");
+  assert.equal(syncLink(off, "/v2/bin/jev"), "removed", "turning it off removes the hook's own link");
+  assert.equal(existsSync(lp), false);
+});
+
+test("hook: never touches a file or link it didn't make; keeps the user's jev link", () => {
+  const sb = sandbox();
+  const lp = join(sb.home, ".local", "bin", "jev");
+  mkdirSync(dirname(lp), { recursive: true });
+  writeFileSync(lp, "#!/bin/sh\necho mine\n");
+  assert.equal(syncLink(sb.env, "/v1/bin/jev"), "not_a_link");
+  assert.equal(readFileSync(lp, "utf8"), "#!/bin/sh\necho mine\n");
+  const sb2 = sandbox();
+  const lp2 = join(sb2.home, ".local", "bin", "jev");
+  mkdirSync(dirname(lp2), { recursive: true });
+  symlinkSync("/someone/else/jev", lp2);
+  assert.equal(syncLink(sb2.env, "/v1/bin/jev"), "foreign_link");
+  assert.equal(readlinkSync(lp2), "/someone/else/jev");
+  const sb3 = sandbox();
+  const lp3 = join(sb3.home, ".local", "bin", "jev");
+  mkdirSync(dirname(lp3), { recursive: true });
+  symlinkSync("/old/bin/jev", lp3);
+  writeFileSync(join(sb3.cfg, "linked"), "user\n");
+  const off = { ...sb3.env, CLAUDE_PLUGIN_OPTION_ADD_TO_PATH: "false" };
+  assert.equal(syncLink(off, "/v2/bin/jev"), "relinked", "a jev link the user made is kept current even with the setting off");
+});
+
+test("hook: allow_all_repos sets and clears only its own allow-all", () => {
+  const sb = sandbox();
+  const read = () => JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8"));
+  const on = { ...sb.env, CLAUDE_PLUGIN_OPTION_ALLOW_ALL_REPOS: "true" };
+  const off = { ...sb.env, CLAUDE_PLUGIN_OPTION_ALLOW_ALL_REPOS: "false" };
+  assert.equal(syncAllowAll(sb.env), "same", "default is off");
+  assert.equal(syncAllowAll(on), "allowed_all");
+  assert.deepEqual(read().all, { send: true, by: "config" });
+  assert.equal(read().projects["shop-api"].send, true, "per-repo entries kept");
+  assert.equal(syncAllowAll(on), "same");
+  assert.equal(syncAllowAll(off), "removed_all");
+  assert.equal(read().all, undefined);
+  // an allow-all the user set by hand is not the setting's to remove
+  const pol = read(); pol.all = { send: true }; writeFileSync(join(sb.cfg, "projects.json"), JSON.stringify(pol));
+  assert.equal(syncAllowAll(off), "same");
+  assert.deepEqual(read().all, { send: true });
+  assert.equal(flag({ CLAUDE_PLUGIN_OPTION_allow_all_repos: "1" }, "ALLOW_ALL_REPOS", false), true, "option name matched in any case");
+});
+
+test("hook-set allow-all lets an unlisted repo send; jev allow --all takes ownership", async () => {
+  const sb = sandbox({ allow: false });
+  syncAllowAll({ ...sb.env, CLAUDE_PLUGIN_OPTION_ALLOW_ALL_REPOS: "true" });
+  const r = await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass), stdin: completionState });
+  assert.equal(r.json.unverified, false);
+  await run(sb, ["allow", "--all", "--web"], { isTTY: true, stdinTTY: true, prompt: async () => "y" });
+  const all = JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).all;
+  assert.deepEqual(all, { send: true, web: true });
+  assert.equal(syncAllowAll({ ...sb.env, CLAUDE_PLUGIN_OPTION_ALLOW_ALL_REPOS: "false" }), "same", "turning the setting off leaves a hand-set allow-all");
 });
 
 test("the launcher runs through a symlink", () => {

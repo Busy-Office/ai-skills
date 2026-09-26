@@ -728,31 +728,33 @@ against its own view. Jev recommends; the caller acts.
 
 ### Setup
 
-1. **Key.** Installing or enabling the plugin asks for a jev-ai.pro API key
-   (stored in your system's credential store; change it with
-   `/plugin configure busy-office`). A startup hook copies it to
-   `~/.config/jev/secrets.env`, because commands can't read plugin config.
-   Without a key the rest of the plugin works; the session just says jev isn't
-   set up. Outside plugin config, `jev setup` in a Terminal does the same.
-2. **Put `jev` on your Terminal's PATH.** The plugin adds `jev` only inside
-   Claude Code sessions, and the next step runs in a Terminal. Run `jev link`
-   once — ask Claude to, or paste the full launcher path that jev's messages
-   print. It adds `~/.local/bin/jev` (on most shells' PATH), and the startup
-   hook keeps it pointed at the current plugin version after updates.
-3. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in a
+Installing or enabling the plugin asks three questions; change any of them
+later with `/plugin configure busy-office`, then start a new session:
+
+| setting | default | what it does |
+|---|---|---|
+| **jev-ai.pro API key** | empty | Stored in your system's credential store. A startup hook copies it to `~/.config/jev/secrets.env`, because commands can't read plugin config. Left empty, the rest of the plugin works and the session says jev isn't set up. |
+| **Add jev to your Terminal** | on | Links `~/.local/bin/jev` to the plugin, so plain `jev` works in a Terminal and in your own scripts and hooks; the hook keeps it pointed at the current version after updates. It never replaces a file it didn't make. (The plugin itself puts `jev` only on Claude Code's own PATH.) |
+| **Allow all repos to send to Jev** | off | Every repo on this machine may send, except ones you block with `jev deny` — the same as `jev allow --all`. |
+
+Then, unless you allowed all repos:
+
+1. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in a
    Terminal window there. It refuses to run from an agent, shows what will be
-   sent where, and asks. `--web` also allows `jev web`; `--cap n` sets the daily
-   call cap (no cap unless you set one); `--keep-cases` keeps sent states locally for later
-   calibration. `jev deny` takes it back.
+   sent where, and asks. `--web` also allows `jev web`; `--cap n` sets a daily
+   call cap (none unless you set one); `--keep-cases` keeps sent states locally
+   for later calibration. `jev deny` takes it back.
 
-   **Or allow every repo at once:** `jev allow --all` (same flags, same
-   Terminal-only confirmation). Repos you deny stay blocked, repos you allowed
-   one by one keep their own settings, and `jev web` still needs
-   `jev allow --all --web`. `jev deny --all` turns it off.
-4. **Check.** `jev doctor`.
+   `jev allow --all` does the same for every repo from the Terminal (same
+   flags); `jev deny --all` turns it off. Either way, repos you deny stay
+   blocked, repos you allowed one by one keep their own settings, and
+   `jev web` still needs its own `--web`.
+2. **Check.** `jev doctor`.
 
-`jev link` also makes `jev` available to your own scripts and hooks. Needs Node 22+, macOS or
-Linux, and Claude Code (claude.ai and Cowork don't install plugin commands).
+Without the Terminal setting, `jev link` (or `jev unlink`) does the same by
+hand; until then jev's messages print the launcher's full path. Needs Node
+22+, macOS or Linux, and Claude Code (claude.ai and Cowork don't install
+plugin commands).
 
 ### Usage
 
@@ -841,7 +843,7 @@ plugin updates and uninstalls (`jev forget` removes the key file). Folders are
 | `~/.local/state/jev/audit/<project>/<YYYY-MM>.jsonl` | one line per call, and outcomes | every call; `jev outcome` |
 | `~/.local/state/jev/cases/<project>/<YYYY-MM>.jsonl` | full sent states, for calibration | calls from repos allowed with `--keep-cases` |
 | `~/.config/jev/.synced` | when the hook last copied the key | the startup hook |
-| `~/.config/jev/linked` | that you asked for `~/.local/bin/jev`, so the hook keeps it pointed at the current version | `jev link` |
+| `~/.config/jev/linked` | who made `~/.local/bin/jev` (`config` = the Terminal setting, otherwise `jev link`), so the hook keeps it current and removes only its own | the startup hook, or `jev link` |
 
 **`secrets.env`** — one dotenv line. A leading `export ` and quotes around the
 value are accepted. `JEV_AI_API_KEY` in the environment is not read.
@@ -855,7 +857,9 @@ folder holding its git directory, so every worktree is the same project) and
 `root` its resolved path; a call from a repo whose path doesn't match `root` is
 refused. `send` and `root` are required to send; `web` (default `false`),
 `max_calls_per_day` (no cap unless set) and `keep_cases` (default `false`) are
-optional. `all`, written by `jev allow --all`, applies to every repo **not**
+optional. `all`, written by `jev allow --all` or the "Allow all repos" setting
+(which marks it `"by": "config"` and removes only an entry it made), applies
+to every repo **not**
 listed under `projects` — so a listed `"send": false` stays denied — and takes
 the same settings without `root`.
 

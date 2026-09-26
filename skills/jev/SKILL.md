@@ -104,10 +104,11 @@ problem. The usual ones:
 | `daily_cap` | the project's daily cap is used up |
 | `key_rejected` / `balance` | the key is wrong or revoked / the account needs credit |
 
-The Terminal commands in these messages (`jev allow`, `jev setup`) only work
-as plain `jev` after `jev link`; until then the message prints the full
-launcher path. You may run `jev link` for the user — it only adds
-`~/.local/bin/jev` — but never `jev allow` or `jev setup`.
+The Terminal commands in these messages (`jev allow`, `jev setup`) work as
+plain `jev` once `~/.local/bin/jev` exists — the plugin's "Add jev to your
+Terminal" setting (on by default) makes it; otherwise the message prints the
+full launcher path. You may run `jev link` for the user — it only adds that
+link — but never `jev allow` or `jev setup`.
 
 Two you fix yourself, then call again: `secret_detected` (remove the flagged
 value — the message names the pattern, not the value) and `too_large` (trim
@@ -134,9 +135,11 @@ JSON
 
 ## 7. Setup (for the user, not the agent)
 
-- The key is asked for when the plugin is installed or enabled; change it
-  with `/plugin configure busy-office`. A startup hook copies it to
-  `~/.config/jev/secrets.env`, because commands can't read plugin config.
+- Installing or enabling the plugin asks for the key, whether to add `jev`
+  to the Terminal (on by default) and whether to allow all repos (off by
+  default); change them with `/plugin configure busy-office`. A startup hook
+  applies them — copying the key to `~/.config/jev/secrets.env`, because
+  commands can't read plugin config.
 - Each repo that may send is allowed once with `jev allow` in a Terminal
   window there (`--web` for `jev web`, `--cap n` for the daily cap,
   `--keep-cases` to keep sent states locally for calibration), or every repo

@@ -898,6 +898,7 @@ const SENDS = [
 async function cmdAllowAll(args, io) {
   const pol = loadPolicy(io.env);
   const next = applySettings({ ...(pol.all || {}), send: true }, args.flags);
+  delete next.by;   // set by hand now; the "Allow all repos" plugin setting no longer owns it
   const denied = Object.entries(pol.projects).filter(([, p]) => p.send !== true).map(([n]) => n);
   say(io, [
     `Scope:   every repo on this machine, except ones you deny (jev deny in that repo).`,
@@ -951,8 +952,9 @@ async function cmdAllow(args, io) {
 function cmdDeny(args, io) {
   const pol = loadPolicy(io.env);
   if (args.flags.all) {
+    const fromConfig = pol.all?.by === "config";
     pol.all = null;
-    say(io, `jev: allow-all is off; only repos allowed one by one may send. Saved to ${savePolicy(io.env, pol)}.`);
+    say(io, `jev: allow-all is off; only repos allowed one by one may send. Saved to ${savePolicy(io.env, pol)}.${fromConfig ? ` It was turned on by the plugin's "Allow all repos" setting: turn that off with ${CONFIGURE}, or it comes back next session.` : ""}`);
     return 0;
   }
   const id = identify(io.cwd);
@@ -974,7 +976,7 @@ function cmdLink(args, io) {
   } catch (e) { if (e instanceof JevError) throw e; }
   symlinkSync(launcher(), lp);
   mkdirSync(cfgDir(io.env), { recursive: true, mode: 0o700 });
-  writeFileSync(join(cfgDir(io.env), "linked"), lp + "\n", { mode: 0o600 });
+  writeFileSync(join(cfgDir(io.env), "linked"), "user\n", { mode: 0o600 });
   say(io, `jev: ${lp} → ${launcher()}. The plugin's startup hook keeps it pointed at the current version.`);
   return 0;
 }
@@ -983,7 +985,7 @@ function cmdUnlink(args, io) {
   const lp = linkPath(io.env);
   try { if (lstatSync(lp).isSymbolicLink()) unlinkSync(lp); } catch {}
   try { unlinkSync(join(cfgDir(io.env), "linked")); } catch {}
-  say(io, `jev: removed ${lp}.`);
+  say(io, `jev: removed ${lp}. If the plugin's "Add jev to your Terminal" setting is on, the next session adds it back; turn it off with ${CONFIGURE}.`);
   return 0;
 }
 
@@ -1070,7 +1072,7 @@ async function cmdDoctor(args, io) {
   try {
     const pol = loadPolicy(env);
     const names = Object.keys(pol.projects);
-    row(true, `projects.json: ${names.length} project(s)${pol.all?.send === true ? `; all repos allowed (web ${pol.all.web === true ? "on" : "off"}, cap ${pol.all.max_calls_per_day ? pol.all.max_calls_per_day + "/day" : "none"})` : ""}`);
+    row(true, `projects.json: ${names.length} project(s)${pol.all?.send === true ? `; all repos allowed${pol.all.by === "config" ? " by the plugin setting" : ""} (web ${pol.all.web === true ? "on" : "off"}, cap ${pol.all.max_calls_per_day ? pol.all.max_calls_per_day + "/day" : "none"})` : ""}`);
     for (const [n, p] of Object.entries(pol.projects)) {
       if (p.send === true && (!p.root || !existsSync(p.root))) row("warn", `project "${n}": root ${p.root ?? "(none)"} does not exist`);
     }
@@ -1082,6 +1084,12 @@ async function cmdDoctor(args, io) {
     writeFileSync(probe, ""); unlinkSync(probe);
     row(true, `audit directory ${dir}`);
   } catch (e) { row(false, `audit directory not writable: ${e.message}`); }
+  {
+    const lp = linkPath(env);
+    const onPath = (env.PATH || "").split(":").includes(dirname(lp));
+    if (!existsSync(join(cfgDir(env), "linked"))) row("warn", `${lp} not set up: plain \`jev\` won't work in a Terminal (turn on "Add jev to your Terminal" with ${CONFIGURE}, or run jev link)`);
+    else if (!onPath) row("warn", `${dirname(lp)} is not on PATH; add it in your shell profile so plain \`jev\` works in a Terminal`);
+  }
   if (existsSync(join(cfgDir(env), "linked"))) {
     const lp = linkPath(env);
     let target = null;

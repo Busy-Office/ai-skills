@@ -69,6 +69,18 @@
       "title": "jev-ai.pro API key",
       "description": "For the jev skill. Create one at jev-ai.pro → API Keys. Leave empty to skip; set it later with /plugin configure busy-office.",
       "sensitive": true
+    },
+    "add_to_path": {
+      "type": "boolean",
+      "title": "Add jev to your Terminal",
+      "description": "For the jev skill: link ~/.local/bin/jev to this plugin so plain `jev` works in a Terminal, kept pointing at the current version after updates. Never replaces a file it didn't make.",
+      "default": true
+    },
+    "allow_all_repos": {
+      "type": "boolean",
+      "title": "Allow all repos to send to Jev",
+      "description": "For the jev skill: let every repo on this machine send to jev-ai.pro, except repos you block with `jev deny` — the same as `jev allow --all`. Off: allow repos one by one with `jev allow` in a Terminal.",
+      "default": false
     }
   }
 }
