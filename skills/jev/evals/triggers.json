@@ -1,0 +1,23 @@
+{
+  "skill": "jev",
+  "note": "Description tuning target: at least 9 of the 10 should_trigger prompts load the skill, and none of the 5 should_not. While running, turn the installed copy off (skillOverrides) so it doesn't steal triggers from the copy under test.",
+  "should_trigger": [
+    "I think the CSV export is finished — check before I tell the user it's done",
+    "which of our agents should pick up this flaky-test ticket, the small model or the coding agent?",
+    "I've got three sources saying the library dropped Node 18 — is that enough to state it as fact?",
+    "does this answer actually follow from the policy docs I retrieved?",
+    "the fix failed twice with the same timeout, should I try again or escalate?",
+    "we're about to deploy v2.4 to production, get a second opinion first",
+    "before you run rm -rf on the build folders, sanity-check that command",
+    "get a quick yes/no second opinion on whether this migration drops data",
+    "is it true that Node 22 is the current LTS? check the web",
+    "use jev to judge whether the task is complete"
+  ],
+  "should_not_trigger": [
+    "write a README for this repo",
+    "rename the variable userId to accountId everywhere",
+    "explain what this regex does",
+    "summarise yesterday's standup notes",
+    "draft a friendly release announcement for v2.4"
+  ]
+}

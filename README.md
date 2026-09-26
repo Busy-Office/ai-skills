@@ -37,7 +37,9 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 ## Start here
 
 Everything is read-only: no skill writes to your repo, runs your build, or
-installs anything, so trying one costs nothing but tokens. The order that
+installs anything, so trying one costs nothing but tokens. The one exception is
+[`jev`](#jev), which sends what you allow to an outside service — it does
+nothing until you give it a key and allow a repo. The order that
 matters is whether your loop has **history yet**.
 
 **If a loop has been running for a couple of weeks** — start with the one that
@@ -107,7 +109,7 @@ Nothing degrades silently: each says which numbers it could not see.
 | [wake-weight](#wake-weight) | What every run pays before it does any work, and what to cut | "why is each run so expensive", "trim the context", "CLAUDE.md has got too big", "what loads at startup" |
 | [solo-flow](#solo-flow) | Trunk-based git branching and release model for a repo with exactly one writer | "what git workflow for our agent/loop", "should we use GitFlow", "write git rules into AGENTS.md", "does develop earn its keep" |
 | [graph-engineer](#graph-engineer) | Redraws a linear agent as an orchestration graph and reviews Workflow scripts — contracts, fan-out, barriers, verifiers, converging cycles, tiering, cost | "this agent does A then B then C, parallelise it", "review this workflow script", "parallel() or pipeline()?", "where does the verifier go", "how many agents will this cost" |
-| [kev-gate](#kev-gate) | Puts a small, fast typed-judgement model (KEV / TypeSafe Jev) in front of a loop's decisions — gate design, lint, calibration on tune + holdout, shadow before enforce | "use KEV for the first decision", "call localhost:8008 from the loop", "cheap pre-filter before Claude", "wake gate", "can a small model decide this" |
+| [jev](#jev) | A typed second opinion from jev-ai.pro — PASS / REVIEW / FAIL with probabilities — before claiming done, routing work, trusting research, releasing or a risky tool call | "check it's really done", "which agent should take this", "is this evidence enough", "sanity-check this command", "second opinion before we deploy" |
 
 ### The loop family
 
@@ -139,11 +141,10 @@ between ticks, gates, the crew). The economist hands off to it when its finding
 is the actor and the fix is the run's shape; nothing in the family draws that
 graph, and graph-engineer never judges the tick.
 
-**Nor is `kev-gate`.** It puts a sub-second classifier in front of decisions
-the family and graph-engineer both surface — whether a tick wakes
-(`wake-weight`), how deep a review goes (`solo-flow`), which tier a node runs
-on (`graph-engineer`) — and owns the evidence that the classifier can be
-trusted with each one.
+**Nor is `jev`.** It works inside any session, loop or not: at a decision
+point — about to say "done", pick an agent, release, run something
+destructive — it asks a fast outside model typed questions and hands back a
+verdict the agent weighs against its own. It advises; it never gates or acts.
 
 ---
 
@@ -716,91 +717,85 @@ with eight planted smells the lint must find).
 
 ---
 
-## kev-gate
+## jev
 
-**What it answers:** which of a loop's decisions a sub-second classifier can
-take off the expensive model's hands, and how you would know. KEV (a local
-0.5B model behind `POST /v1/systemone`, API-compatible with hosted TypeSafe
-Jev) answers `choice` / `score` / yes-no questions with probabilities in about
-half a second on a CPU. It is also confidently wrong in ways a reader never
-would be — asked whether a change should "merge automatically or get a
-deeper review", it answered *automatically* at 0.86 for a `DROP COLUMN`
-migration. kev-gate keeps the speed and measures the rest: a gate is
-narrow **questions**, **rules in code** that turn the answers into an action,
-and a **calibration record** from cases the thresholds never saw.
+**What it answers:** is this decision sound, according to a second, fast
+model that answers typed questions (yes/no, choice, score) with probabilities
+instead of writing text. [jev-ai.pro](https://jev-ai.pro) hosts it. `jev`
+turns its answers into **PASS / REVIEW / FAIL** and an action, from judges —
+JSON files of narrow questions and thresholds — and the agent weighs that
+against its own view. Jev recommends; the caller acts.
 
 ### Usage
 
-> we run KEV on localhost:8008 — where would it actually pay off in our loop?
-> write a gate that picks how deep the review of each change goes
-> this gate got 18/20 on its tune set, can I enforce it?
-> review fixtures/bad-gate/gate.json before I switch it on
+> check the CSV export is really done before you tell me
+> which agent should take this ticket?
+> is this evidence enough to say the library dropped Node 18?
+> second opinion before we deploy
 
 ```bash
-node skills/kev-gate/scripts/kev.mjs lint <gate.json>                      # K rows
-node skills/kev-gate/scripts/kev.mjs calibrate <gate.json> <cases.jsonl>   # missed / over / misroute + sweep
-node skills/kev-gate/scripts/kev.mjs ask <gate.json> --state - --log <file.jsonl>
-node skills/kev-gate/scripts/kev.mjs outcome <file.jsonl> <id> <actual>    # what really happened
-node skills/kev-gate/scripts/kev.mjs shadow <gate.json> <file.jsonl>       # promote, or stay in shadow
-node skills/kev-gate/scripts/kev.mjs --self-test                           # no KEV needed
-node skills/kev-gate/scripts/harvest.mjs <repo> --fit                      # FIRST: can this label be predicted at all? no model calls
-node skills/kev-gate/scripts/harvest.mjs <repo> --max 80 > cases.jsonl     # labelled cases from history, read-only
+jev judges                                   # completion, router, research, groundedness, retry, release, tool-guard
+jev judge completion --attach-cmd tests="npm test" --state - <<'JSON'
+{"objective": "Add CSV export", "agent_claim": "Done"}
+JSON
+jev ask --questions q.json --pass "risky <= 0.3"   # one-off questions
+jev web --question "Node 22 is the current LTS"    # a claim checked against the web
+jev outcome <jev_run_id> "tests failed later"      # what really happened
+jev report                                          # calls per project and judge, joined to outcomes
+jev doctor                                          # check the setup
 ```
 
-**Requires** a Kev endpoint. [kev-agent-kit](https://github.com/Busy-Office/kev-agent-kit)
-provides the local one (Docker API on 8008, playground on 8009) and, with its
-global install, the `kev` MCP server and the `kev-decision` skill; this plugin
-deliberately does not ship a second copy of either. `KEV_URL` defaults to
-`http://localhost:8008`; the path and auth header match the hosted API. `ask` fails open — KEV down, slow, over its state limit or
-answering in an unexpected shape returns the gate's highest-rank action, so
-the loop behaves as it did before the gate existed.
+### Setup
+
+1. **Key.** Installing or enabling the plugin asks for a jev-ai.pro API key
+   (stored in your system's credential store; change it with
+   `/plugin configure busy-office`). A startup hook copies it to
+   `~/.config/jev/secrets.env` (0600), because commands can't read plugin
+   config. Without a key the rest of the plugin works; the session just says
+   jev isn't set up. Outside plugin config, `jev setup` in a Terminal does the
+   same.
+2. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in
+   a Terminal window there. It refuses to run from an agent, shows what will be
+   sent where, and asks. `--web` also allows `jev web`; `--cap n` sets the
+   daily call cap (default 300); `--keep-cases` keeps sent states locally for
+   later calibration.
+
+`jev` is on the agent's PATH while the plugin is enabled. `jev link` adds
+`~/.local/bin/jev` for your own scripts and hooks. Needs Node 22+, macOS or
+Linux, and Claude Code (claude.ai and Cowork don't install plugin commands).
 
 ### What it does
 
-Five rules carry it. **A gate picks who looks next; it never approves** —
-every action is reversible, and the lint refuses merge, tag, deploy or delete
-at any confidence. **Misses and over-escalations are never added together** —
-admission needs zero misses, and a gate that escalates more than half of what
-could have stayed low is refused for saving nothing. **The holdout is run
-once.** **Shadow before enforce**, and only the owner flips the mode. **KEV
-runs before or instead of a model turn, never inside one** — so the gate
-lives in the driver script, a hook, or the code between graph nodes, not in
-an MCP tool.
+- **Evidence it collects itself.** `--attach name=file` and
+  `--attach-cmd name="command"` (no shell, 30 s, output capped) put real test
+  output or a real diff in front of the judge, marked `attached`; anything the
+  agent typed is `stated`. `completion` and `release` never PASS on stated
+  evidence alone.
+- **Failures never become a PASS.** A timeout, 5xx, bad answer or unexpected
+  model answer is `unverified` (exit 5) or capped at REVIEW; a 504 is never
+  retried, since it may already be billed.
+- **Refuses before sending** when the repo isn't allowed, a same-named repo
+  sits at another path, the state holds something that looks like a secret,
+  the request is too large, or the daily cap is used up — each with a message
+  saying how to fix it.
+- **Audit.** One line per call in `~/.local/state/jev/audit/<project>/`, with
+  the judge revision and file hash, answers, run id, tokens and latency — never
+  the state, never the key.
+- **Provisional thresholds.** Every result says `calibrated: false`. The
+  thresholds are starting guesses; `jev outcome` records what really happened
+  so they can be checked later.
 
-### Measured
+**What leaves your machine:** the state, evidence and questions for the calls
+you allow, to jev-ai.pro — an independent reseller of TypeSafe's Jev that may
+use OpenRouter as a fallback and keep run history. `jev web` also sends its
+question to a search provider. The guards stop mistakes, not a determined
+agent: anything running as you can read the key file.
 
-kev-0.5b on CPU, 2026-09-20, hand-written one-line cases:
-
-| gate | tune | holdout | verdict |
-|---|---|---|---|
-| [`merge-risk`](skills/kev-gate/gates/merge-risk.json) — review depth for a finished change | 20/20, 0 missed | 12/12, 0 missed, 0 over | admitted; ships in `shadow` |
-| [`queue-triage`](skills/kev-gate/fixtures/queue-triage) — can an item skip triage | 18/20, 0 missed | 7/12, **1 missed, 4 over** | **refused**, kept as the example |
-
-Then the test that matters: 80 cases harvested from a real loop repo's
-history (`scripts/harvest.mjs` — a UI library, 40 changes later blamed by a
-fix). `merge-risk` as shipped: **42 of 80, 35 missed — refused**; a second
-repo, 25 cases: 12 of 25, all 12 blamed changes missed. A
-repo-fitted question ranked the cases (AUC 0.77) but had no usable
-threshold, so it was refused on its tune half and the holdout left unspent.
-A gate does not travel between repos; its risk areas describe one codebase.
-
-What the formulation search found is in
-[`references/gate-design.md`](skills/kev-gate/references/gate-design.md): a
-ten-way category `choice` read as the *summed* probability of its risky
-options separated every merge case (AUC 1.00) where well-phrased yes/no
-questions scored 0.54; a catch-all worded "None of these" absorbed up to 0.98
-of the answer and the cases stopped separating, where "not enough evidence"
-did not; raw patches washed the signal out where subject + file
-stat did not; and it cannot compare two texts.
-
-Not the same job as the `kev-decision` skill and `kev` MCP server that
-[kev-agent-kit](https://github.com/Busy-Office/kev-agent-kit) installs: those give a running session an advisory second opinion; a gate runs
-so that the session need not start. Same endpoint, opposite position.
-
-Fixtures: [`merge-risk`](skills/kev-gate/fixtures/merge-risk),
-[`queue-triage`](skills/kev-gate/fixtures/queue-triage) (the refused gate) and
-[`bad-gate`](skills/kev-gate/fixtures/bad-gate) ("merge when KEV is
-confident"; its answer key lives in `evals/keys/`, away from the fixture).
+Project judges go in `<repo>/.jev/judges/<name>.json` and run as
+`jev judge local/<name>`; [`references/recipes.md`](skills/jev/references/recipes.md)
+has the format and how to phrase questions. Design:
+[`docs/jev-design.md`](docs/jev-design.md). Tests: `node --test skills/jev/test/`
+(no key or network needed).
 
 ---
 

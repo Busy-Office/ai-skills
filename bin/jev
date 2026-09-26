@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+// Launcher for the jev skill's CLI. On the Bash tool's PATH while the
+// busy-office plugin is enabled; `jev link` puts it in ~/.local/bin too.
+// __dirname is the real path even when run through a symlink.
+const major = Number(process.versions.node.split(".")[0]);
+if (major < 22) {
+  process.stderr.write(`jev: needs Node 22 or later; found ${process.versions.node}. Install a newer Node and put it first on PATH.\n`);
+  process.exit(64);
+}
+const { pathToFileURL } = require("node:url");
+const { join } = require("node:path");
+import(pathToFileURL(join(__dirname, "..", "skills", "jev", "scripts", "jev.mjs")).href)
+  .then((m) => m.main(process.argv.slice(2)))
+  .then((code) => { process.exitCode = code; });

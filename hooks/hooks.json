@@ -1,0 +1,17 @@
+{
+  "description": "jev: copy the API key entered at plugin install into ~/.config/jev/secrets.env, where the jev command reads it (Bash commands cannot see plugin config).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/jev/scripts/sync-key.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

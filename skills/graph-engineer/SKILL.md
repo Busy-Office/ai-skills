@@ -241,6 +241,4 @@ actor* and the fix is orchestration structure, it hands off here),
 `loop-atlas` (the flow and the crew, drawn), `wake-weight` (what a tick pays
 before it starts). `requeue` and `sharpen-intent` fix what the loop is fed
 and what it is for. None of them draws the graph inside a run; none of this
-skill judges the loop around it. When a routing node's classification is
-narrow enough for a sub-second classifier instead of an agent, `kev-gate`
-designs and calibrates that node; draw its two out-edges, act and escalate.
+skill judges the loop around it.
