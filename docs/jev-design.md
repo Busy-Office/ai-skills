@@ -52,7 +52,7 @@ holds the Jev key and writes no Jev code.
 | Q18 | Model drift | A pinned judge answered by a different model can never PASS: it becomes REVIEW with `model_unexpected`. |
 | Q19 | Threat model | The policy, secret scan and caps prevent accidents. They do not stop a determined agent running as the same user, which can read the key file. |
 | Q20 | Setup at install | `userConfig.api_key` is prompted at install/enable (`/plugin configure busy-office` later). Not `required`, so the rest of the plugin works without it. When it is empty and no key file exists, the SessionStart hook adds one line to the session saying how to set it up; otherwise the hook is silent. |
-| Q21 | Allowing a project | `jev allow` run by the user in a Terminal window (refused without a TTY, so an agent's Bash call cannot allow itself). Nothing is sent from a project until then. |
+| Q21 | Allowing a project | `jev allow` run by the user in a Terminal window (refused without a TTY, so an agent's Bash call cannot allow itself). Nothing is sent from a project until then. `jev allow --all` (same Terminal rule; added in 0.11.0 at the owner's request) allows every repo not listed under `projects`; a listed `"send": false` stays denied, listed repos keep their own settings and root check, and `web` still needs its own opt-in. `jev deny --all` turns it off. |
 | Q22 | State location | `~/.config/jev/` and `~/.local/state/jev/`, not the plugin data dir: `${CLAUDE_PLUGIN_DATA}` is not visible to commands run through the Bash tool. |
 | Q23 | Hook budget | The SessionStart hook runs in every session of every plugin user: no network, one small script, under 200 ms, never prints the key. |
 | Q24 | Platforms | macOS and Linux with Claude Code. claude.ai and Cowork do not install plugins with a top-level `bin/`, so `jev` is unavailable there; the skill says so instead of failing. |
@@ -536,7 +536,8 @@ answer came from prior knowledge, not the sources) and the sources used.
   differs is refused (`root_mismatch`) — a clone at `/tmp/shop-api` is
   not shop-api. `jev web` also needs `"web": true`, because it sends the
   question to a search provider too (`web_not_allowed`). `max_calls_per_day`
-  (default 300, counted from today's audit lines, refusals excluded) stops a
+  (no default since 0.11.0, Q36 of `jev-cloud-design.md`; when set, counted
+  from today's audit lines, refusals excluded) stops a
   runaway loop (`daily_cap`). `keep_cases: true` saves each sent state, with
   its result, to `~/.local/state/jev/cases/<project>/<YYYY-MM>.jsonl` (0600,
   never sent anywhere) for calibration (§14).

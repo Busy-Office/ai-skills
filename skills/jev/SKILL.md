@@ -83,7 +83,7 @@ jev outcome <jev_run_id> "tests failed after merge"
 
 - Paste the API key into chat, ask the user for it, or read
   `~/.config/jev/secrets.env`.
-- Run `jev allow`, edit `~/.config/jev/projects.json` or `.jev.json`, change
+- Run `jev allow` or `jev allow --all`, edit `~/.config/jev/projects.json` or `.jev.json`, change
   folder, or pass flags to get past a refusal. Allowing a project is the
   user's decision, made in their own Terminal.
 - Retry a call that came back `outcome_uncertain` — it may already have been
@@ -99,8 +99,8 @@ problem. The usual ones:
 | `error.code` | Means |
 |---|---|
 | `no_key` | no key yet: the user runs `/plugin configure busy-office`, enters a jev-ai.pro key and starts a new session |
-| `project_not_allowed` / `root_mismatch` | this repo may not send yet: the user runs `jev allow` in a Terminal window in the repo |
-| `web_not_allowed` | the user runs `jev allow --web` |
+| `project_not_allowed` / `root_mismatch` | this repo may not send: the user runs `jev allow` in a Terminal window in the repo, or `jev allow --all` for every repo; a repo the user denied stays denied |
+| `web_not_allowed` | the user runs `jev allow --web` (or `jev allow --all --web`) |
 | `daily_cap` | the project's daily cap is used up |
 | `key_rejected` / `balance` | the key is wrong or revoked / the account needs credit |
 
@@ -134,7 +134,8 @@ JSON
   `~/.config/jev/secrets.env`, because commands can't read plugin config.
 - Each repo that may send is allowed once with `jev allow` in a Terminal
   window there (`--web` for `jev web`, `--cap n` for the daily cap,
-  `--keep-cases` to keep sent states locally for calibration).
+  `--keep-cases` to keep sent states locally for calibration), or every repo
+  at once with `jev allow --all`; `jev deny` blocks one repo either way.
 - `jev doctor` checks all of it. `jev report` summarises calls per project and
   judge, joined to recorded outcomes.
 - Every call is logged to `~/.local/state/jev/audit/<project>/` — never the

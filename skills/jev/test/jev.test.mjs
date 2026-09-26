@@ -351,6 +351,15 @@ test("daily cap counts today's sent calls", async () => {
   assert.equal(r.json.error.code, "daily_cap");
 });
 
+test("no cap unless one is set", async () => {
+  const sb = sandbox();
+  mkdirSync(join(sb.state, "audit", "shop-api"), { recursive: true });
+  const line = JSON.stringify({ type: "call", ts: new Date().toISOString(), refused: false }) + "\n";
+  writeFileSync(join(sb.state, "audit", "shop-api", `${new Date().toISOString().slice(0, 7)}.jsonl`), line.repeat(1000));
+  const r = await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass), stdin: completionState });
+  assert.equal(r.json.unverified, false, "1000 calls today and still not refused");
+});
+
 test("keep_cases saves the state locally", async () => {
   const sb = sandbox({ keepCases: true });
   await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass), stdin: completionState });
@@ -480,6 +489,64 @@ test("allow writes this repo's root after a yes; no means nothing changes", asyn
   assert.deepEqual(p, { send: true, root: sb.repo, web: true, max_calls_per_day: 50 });
   await run(sb, ["deny"]);
   assert.equal(JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).projects["shop-api"].send, false);
+});
+
+test("allow --all: any repo may send, denied repos stay blocked, web needs its own opt-in", async () => {
+  const sb = sandbox({ allow: false });
+  const tty = { isTTY: true, stdinTTY: true };
+  assert.equal((await run(sb, ["allow", "--all"])).code, EXIT.REFUSED, "needs a terminal");
+  await run(sb, ["allow", "--all"], { ...tty, prompt: async () => "n" });
+  assert.equal(existsSync(join(sb.cfg, "projects.json")), false, "no means nothing changes");
+  const r = await run(sb, ["allow", "--all", "--cap", "40"], { ...tty, prompt: async () => "y" });
+  assert.equal(r.code, 0, r.err);
+  assert.deepEqual(JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).all, { send: true, max_calls_per_day: 40 });
+
+  // a repo never allowed one by one now sends
+  const other = join(sb.base, "elsewhere", "docs-site");
+  mkdirSync(other, { recursive: true });
+  spawnSync("git", ["init", "-q", other]);
+  const call = async (cwd, argv = ["judge", "completion", "--state", "-"]) => {
+    let out = "";
+    const f = jev(completionPass);
+    const code = await main(argv, { env: sb.env, cwd, fetch: f, stdinText: completionState, isTTY: false, out: { write: (s) => { out += s; } }, err: { write() {} } });
+    return { code, json: JSON.parse(out), calls: f.calls.length };
+  };
+  let c = await call(other);
+  assert.equal(c.calls, 1, "sent under allow-all");
+  assert.equal(c.json.unverified, false);
+
+  // web is off unless allow --all --web
+  c = await call(other, ["web", "--question", "x"]);
+  assert.equal(c.json.error.code, "web_not_allowed");
+  assert.match(c.json.error.message, /jev allow --all --web/);
+
+  // a denied repo stays blocked, and the message says why
+  await run(sb, ["deny"]);
+  c = await call(sb.repo);
+  assert.equal(c.json.error.code, "project_not_allowed");
+  assert.match(c.json.error.message, /denied even though all repos are allowed/);
+  assert.equal(c.calls, 0);
+
+  // deny --all turns it off; per-repo entries survive
+  await run(sb, ["deny", "--all"]);
+  const pol = JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8"));
+  assert.equal(pol.all, undefined);
+  assert.equal(pol.projects["shop-api"].send, false);
+  c = await call(other);
+  assert.equal(c.json.error.code, "project_not_allowed");
+});
+
+test("a repo allowed one by one keeps its own root check under allow-all", async () => {
+  const sb = sandbox();
+  const pol = JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8"));
+  pol.all = { send: true };
+  writeFileSync(join(sb.cfg, "projects.json"), JSON.stringify(pol));
+  const clone = join(sb.base, "elsewhere", "shop-api");
+  mkdirSync(clone, { recursive: true });
+  spawnSync("git", ["init", "-q", clone]);
+  let out = "";
+  await main(["judge", "completion", "--state", "-"], { env: sb.env, cwd: clone, fetch: jev(completionPass), stdinText: completionState, isTTY: false, out: { write: (s) => { out += s; } }, err: { write() {} } });
+  assert.equal(JSON.parse(out).error.code, "root_mismatch");
 });
 
 test("setup checks the key before writing it", async () => {

@@ -34,7 +34,6 @@ export const EXIT = { PASS: 0, NONE: 0, REVIEW: 3, FAIL: 4, UNVERIFIED: 5, REFUS
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const COND_RE = /^([A-Za-z0-9_-]{1,64})(?:\.([A-Za-z0-9_-]{1,64}))?\s*(>=|<=|>|<)\s*(-?\d+(?:\.\d+)?)$/;
-const DEFAULT_CAP = 300;
 const MAX_BODY = 250_000;
 const MAX_STATE_TOKENS = 30_000;
 const ATTACH_CHARS = 8_000;
@@ -128,45 +127,60 @@ export function identify(cwd) {
 }
 
 // ------------------------------------------------------------------ policy --
+// projects.json: {"all": {...}, "projects": {name: {...}}}. "all" (from
+// `jev allow --all`) lets any repo send with its settings; a repo listed in
+// "projects" always uses its own entry, so `jev deny` still blocks it.
 export function loadPolicy(env) {
   const f = join(cfgDir(env), "projects.json");
-  if (!existsSync(f)) return { file: f, projects: {} };
+  if (!existsSync(f)) return { file: f, all: null, projects: {} };
   try {
     const p = JSON.parse(readFileSync(f, "utf8"));
-    return { file: f, projects: p.projects || {} };
+    return { file: f, all: p.all && typeof p.all === "object" ? p.all : null, projects: p.projects || {} };
   } catch (e) {
     throw refuse("policy_invalid", `jev: ${f} is not valid JSON (${e.message}). Fix it, or run jev allow in a Terminal window to rewrite this project's entry.`);
   }
 }
 
-function savePolicy(env, projects) {
+function savePolicy(env, pol) {
   const dir = cfgDir(env);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const f = join(dir, "projects.json");
   const tmp = `${f}.${process.pid}.tmp`;
-  writeFileSync(tmp, JSON.stringify({ projects }, null, 2) + "\n", { mode: 0o600 });
+  const out = pol.all ? { all: pol.all, projects: pol.projects } : { projects: pol.projects };
+  writeFileSync(tmp, JSON.stringify(out, null, 2) + "\n", { mode: 0o600 });
   renameSync(tmp, f);
   return f;
 }
 
 function realOr(p) { try { return realpathSync(p); } catch { return resolve(p); } }
 
+// The entry that governs this repo: its own, else the allow-all one, else none.
+export function policyFor(pol, id) {
+  const own = pol.projects[id.name];
+  if (own) return { entry: own, via: "project" };
+  if (pol.all?.send === true) return { entry: { ...pol.all, root: id.root }, via: "all" };
+  return { entry: null, via: null };
+}
+
 export function checkPolicy(env, id, { web = false } = {}) {
-  const entry = loadPolicy(env).projects[id.name];
-  const allow = "To allow it, in a Terminal window in this repo run: jev allow";
+  const pol = loadPolicy(env);
+  const { entry, via } = policyFor(pol, id);
+  const allow = "To allow it, in a Terminal window in this repo run: jev allow (or jev allow --all for every repo)";
   if (!entry || entry.send !== true) {
-    throw refuse("project_not_allowed", `jev: project "${id.name}" may not send data. ${allow}`);
+    const denied = entry && pol.all?.send === true ? " It is denied even though all repos are allowed; jev allow in this repo lifts that." : "";
+    throw refuse("project_not_allowed", `jev: project "${id.name}" may not send data.${denied} ${allow}`);
   }
-  if (!entry.root || realOr(entry.root) !== id.root) {
+  if (via === "project" && (!entry.root || realOr(entry.root) !== id.root)) {
     throw refuse("root_mismatch", `jev: this repo is named "${id.name}" but is at ${id.root}, not ${entry.root ?? "(no root set)"}. Only the user can change this, with jev allow in a Terminal window at the right path.`);
   }
   if (web && entry.web !== true) {
-    throw refuse("web_not_allowed", `jev: project "${id.name}" may not use jev web (it also sends the question to a search provider). To allow it, in a Terminal window in this repo run: jev allow --web`);
+    throw refuse("web_not_allowed", `jev: project "${id.name}" may not use jev web (it also sends the question to a search provider). To allow it, in a Terminal window run: ${via === "all" ? "jev allow --all --web" : "jev allow --web (in this repo)"}`);
   }
-  const cap = Number.isInteger(entry.max_calls_per_day) ? entry.max_calls_per_day : DEFAULT_CAP;
-  const used = callsToday(env, id.name);
-  if (used >= cap) {
-    throw refuse("daily_cap", `jev: project "${id.name}" has made ${used} calls today (cap ${cap}). If that is expected, in a Terminal window run: jev allow --cap <n>`);
+  // No cap unless the user set one (design Q36); spending is bounded on jev-ai.pro.
+  const cap = Number.isInteger(entry.max_calls_per_day) ? entry.max_calls_per_day : null;
+  const used = cap === null ? 0 : callsToday(env, id.name);
+  if (cap !== null && used >= cap) {
+    throw refuse("daily_cap", `jev: project "${id.name}" has made ${used} calls today (cap ${cap}). If that is expected, in a Terminal window run: ${via === "all" ? "jev allow --all --cap <n>" : "jev allow --cap <n> (in this repo)"}`);
   }
   return entry;
 }
@@ -558,7 +572,7 @@ function keepCase(env, project, rec) {
 }
 
 // ------------------------------------------------------------------- flags --
-const BOOLEAN = new Set(["json", "help", "web", "no-web", "keep-cases", "no-keep-cases"]);
+const BOOLEAN = new Set(["json", "help", "all", "web", "no-web", "keep-cases", "no-keep-cases"]);
 const REPEAT = new Set(["pass", "fail", "attach", "attach-cmd"]);
 
 export function parseArgs(argv) {
@@ -856,9 +870,47 @@ async function cmdSetup(args, io) {
   return 0;
 }
 
+function applySettings(next, flags) {
+  if (flags.web) next.web = true;
+  if (flags["no-web"]) next.web = false;
+  if (flags.cap !== undefined) {
+    const n = Number(flags.cap);
+    if (!Number.isInteger(n) || n < 1) throw refuse("usage", "jev: --cap takes a whole number ≥ 1.");
+    next.max_calls_per_day = n;
+  }
+  if (flags["keep-cases"]) next.keep_cases = true;
+  if (flags["no-keep-cases"]) next.keep_cases = false;
+  return next;
+}
+
+const SENDS = [
+  `         (an independent reseller of TypeSafe's Jev; it may use OpenRouter as a fallback and keep run history).`,
+];
+
+async function cmdAllowAll(args, io) {
+  const pol = loadPolicy(io.env);
+  const next = applySettings({ ...(pol.all || {}), send: true }, args.flags);
+  const denied = Object.entries(pol.projects).filter(([, p]) => p.send !== true).map(([n]) => n);
+  say(io, [
+    `Scope:   every repo on this machine, except ones you deny (jev deny in that repo).`,
+    `Sends:   the state, evidence and questions agents pass to jev, from any of those repos, to jev-ai.pro`,
+    ...SENDS,
+    next.web ? `Web:     jev web also sends its question to a search provider, from any repo.` : `Web:     not allowed (jev allow --all --web to allow).`,
+    `Cap:     ${next.max_calls_per_day ? `${next.max_calls_per_day} calls a day per repo` : "none (--cap n to set one)"}.${next.keep_cases ? " Sent states are also kept locally for calibration." : ""}`,
+    denied.length ? `Denied:  ${denied.join(", ")} (stay denied)` : `Denied:  none`,
+    `Repos you allowed one by one keep their own settings.`,
+  ].join("\n"));
+  const a = (await ask(io, "Allow all repos? [y/N] ")).trim().toLowerCase();
+  if (a !== "y" && a !== "yes") { say(io, "jev: nothing changed."); return 0; }
+  pol.all = next;
+  say(io, `jev: all repos allowed. Saved to ${savePolicy(io.env, pol)}. Undo with: jev deny --all`);
+  return 0;
+}
+
 async function cmdAllow(args, io) {
   needTTY(io, "jev allow");
   const { flags } = args;
+  if (flags.all) return cmdAllowAll(args, io);
   const id = identify(io.cwd);
   const pol = loadPolicy(io.env);
   const cur = pol.projects[id.name] || {};
@@ -879,20 +931,25 @@ async function cmdAllow(args, io) {
     `Sends:   the state, evidence and questions agents pass to jev, from this repo, to jev-ai.pro`,
     `         (an independent reseller of TypeSafe's Jev; it may use OpenRouter as a fallback and keep run history).`,
     next.web ? `Web:     jev web also sends its question to a search provider.` : `Web:     not allowed (jev allow --web to allow).`,
-    `Cap:     ${next.max_calls_per_day ?? DEFAULT_CAP} calls a day.${next.keep_cases ? " Sent states are also kept locally for calibration." : ""}`,
+    `Cap:     ${next.max_calls_per_day ? `${next.max_calls_per_day} calls a day` : "none (--cap n to set one)"}.${next.keep_cases ? " Sent states are also kept locally for calibration." : ""}`,
   ].join("\n"));
   const a = (await ask(io, "Allow? [y/N] ")).trim().toLowerCase();
   if (a !== "y" && a !== "yes") { say(io, "jev: nothing changed."); return 0; }
   pol.projects[id.name] = next;
-  say(io, `jev: allowed. Saved to ${savePolicy(io.env, pol.projects)}.`);
+  say(io, `jev: allowed. Saved to ${savePolicy(io.env, pol)}.`);
   return 0;
 }
 
 function cmdDeny(args, io) {
-  const id = identify(io.cwd);
   const pol = loadPolicy(io.env);
+  if (args.flags.all) {
+    pol.all = null;
+    say(io, `jev: allow-all is off; only repos allowed one by one may send. Saved to ${savePolicy(io.env, pol)}.`);
+    return 0;
+  }
+  const id = identify(io.cwd);
   pol.projects[id.name] = { ...(pol.projects[id.name] || {}), send: false };
-  say(io, `jev: "${id.name}" may no longer send. Saved to ${savePolicy(io.env, pol.projects)}.`);
+  say(io, `jev: "${id.name}" may no longer send${pol.all?.send === true ? ", even with all repos allowed" : ""}. Saved to ${savePolicy(io.env, pol)}.`);
   return 0;
 }
 
@@ -1005,7 +1062,7 @@ async function cmdDoctor(args, io) {
   try {
     const pol = loadPolicy(env);
     const names = Object.keys(pol.projects);
-    row(true, `projects.json: ${names.length} project(s)`);
+    row(true, `projects.json: ${names.length} project(s)${pol.all?.send === true ? `; all repos allowed (web ${pol.all.web === true ? "on" : "off"}, cap ${pol.all.max_calls_per_day ? pol.all.max_calls_per_day + "/day" : "none"})` : ""}`);
     for (const [n, p] of Object.entries(pol.projects)) {
       if (p.send === true && (!p.root || !existsSync(p.root))) row("warn", `project "${n}": root ${p.root ?? "(none)"} does not exist`);
     }
@@ -1025,9 +1082,10 @@ async function cmdDoctor(args, io) {
   }
   try {
     const id = identify(io.cwd);
-    const entry = loadPolicy(env).projects[id.name];
-    row(entry?.send === true && realOr(entry.root || "") === id.root ? true : "warn",
-      `this repo: ${id.name} at ${id.root} — ${entry?.send === true ? (realOr(entry.root || "") === id.root ? "allowed" : "allowed at another path") : "not allowed (jev allow in a Terminal window)"}`);
+    const { entry, via } = policyFor(loadPolicy(env), id);
+    const ok = entry?.send === true && realOr(entry.root || "") === id.root;
+    row(ok ? true : "warn",
+      `this repo: ${id.name} at ${id.root} — ${entry?.send === true ? (ok ? (via === "all" ? "allowed (all repos)" : "allowed") : "allowed at another path") : entry ? "denied (jev allow in this repo lifts it)" : "not allowed (jev allow, or jev allow --all, in a Terminal window)"}`);
     if (key) {
       const places = [join(env.HOME || homedir(), ".zshrc"), join(env.HOME || homedir(), ".bashrc"), join(env.HOME || homedir(), ".profile")];
       try { for (const f of readdirSync(id.top)) if (f.startsWith(".env")) places.push(join(id.top, f)); } catch {}
@@ -1094,7 +1152,8 @@ const HELP = `jev — typed second opinions from jev-ai.pro. Jev recommends; you
   jev report [--project p] [--since YYYY-MM-DD]
   jev doctor                              check setup
   jev allow [--web] [--cap n] [--keep-cases]   (you, in a Terminal) let this repo send
-  jev deny                                stop this repo sending
+  jev allow --all [--web] [--cap n]       (you, in a Terminal) let every repo send, except denied ones
+  jev deny | deny --all                   stop this repo sending | turn allow-all off
   jev setup                               (you, in a Terminal) save a key without plugin config
   jev link | unlink                       add/remove ~/.local/bin/jev for scripts and hooks
   jev forget                              remove the saved key file

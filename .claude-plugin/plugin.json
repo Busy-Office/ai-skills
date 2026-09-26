@@ -1,6 +1,6 @@
 {
   "name": "busy-office",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Busy Office skills for Claude Code: progress-dashboard (one-page stakeholder status), loop-doctor (design of a scheduled autonomous loop), loop-economist (what the loop's actual runs cost and produced) requeue (reprioritise and sharpen the queue the loop is fed) sharpen-intent (make the purpose document steer) loop-atlas (the loop as one picture, the crew as a card deck) wake-weight (what every run pays before it starts) solo-flow (trunk-based git workflow for a repo with exactly one writer) graph-engineer (redraw a linear agent as an orchestration graph, review and lint Workflow scripts, estimate the bill) jev (a typed second opinion from jev-ai.pro — PASS / REVIEW / FAIL before claiming done, routing, trusting research, releasing or a risky tool call; the API key is asked for at install). Shape-detecting, read-only collectors with fixtures and a cross-collector drift check; reports graded by a blind critic against a written bar, with a mechanical pre-check that settles word budgets, headline figures against a fresh collection, and every citation.",
   "author": {
     "name": "Busy Office",

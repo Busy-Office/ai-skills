@@ -737,8 +737,13 @@ against its own view. Jev recommends; the caller acts.
 2. **Allow a repo.** Nothing is sent from a repo until you run `jev allow` in a
    Terminal window there. It refuses to run from an agent, shows what will be
    sent where, and asks. `--web` also allows `jev web`; `--cap n` sets the daily
-   call cap (default 300); `--keep-cases` keeps sent states locally for later
+   call cap (no cap unless you set one); `--keep-cases` keeps sent states locally for later
    calibration. `jev deny` takes it back.
+
+   **Or allow every repo at once:** `jev allow --all` (same flags, same
+   Terminal-only confirmation). Repos you deny stay blocked, repos you allowed
+   one by one keep their own settings, and `jev web` still needs
+   `jev allow --all --web`. `jev deny --all` turns it off.
 3. **Check.** `jev doctor`.
 
 `jev` is on the agent's PATH while the plugin is enabled; `jev link` adds
@@ -767,7 +772,7 @@ JSON
 | `jev outcome <jev_run_id> "<what happened>"` | record how it really turned out |
 | `jev report` | calls per project and judge, joined to outcomes |
 | `jev doctor` | check the setup |
-| `jev allow` · `jev deny` · `jev setup` | you, in a Terminal: allow a repo, stop it, save a key without plugin config |
+| `jev allow [--all]` · `jev deny [--all]` · `jev setup` | you, in a Terminal: allow this repo (or every repo), stop it (or turn allow-all off), save a key without plugin config |
 | `jev link` · `jev unlink` · `jev forget` | add / remove `~/.local/bin/jev`; delete the key file |
 
 Exit codes: `0` PASS · `3` REVIEW · `4` FAIL · `5` not checked · `64` refused
@@ -828,7 +833,7 @@ plugin updates and uninstalls (`jev forget` removes the key file). Folders are
 | file | holds | written by |
 |---|---|---|
 | `~/.config/jev/secrets.env` | the API key | the startup hook, or `jev setup` |
-| `~/.config/jev/projects.json` | which repos may send, and how | `jev allow` / `jev deny`, or by hand |
+| `~/.config/jev/projects.json` | which repos may send, and how | `jev allow [--all]` / `jev deny [--all]`, or by hand |
 | `~/.local/state/jev/audit/<project>/<YYYY-MM>.jsonl` | one line per call, and outcomes | every call; `jev outcome` |
 | `~/.local/state/jev/cases/<project>/<YYYY-MM>.jsonl` | full sent states, for calibration | calls from repos allowed with `--keep-cases` |
 | `~/.config/jev/.synced` | when the hook last copied the key | the startup hook |
@@ -841,17 +846,20 @@ value are accepted. `JEV_AI_API_KEY` in the environment is not read.
 JEV_AI_API_KEY=<your key>
 ```
 
-**`projects.json`** — the key is the repo's folder name (the folder holding
-its git directory, so every worktree is the same project) and `root` its
-resolved path; a call from a repo whose path doesn't match `root` is refused.
-`send` and `root` are required to send; `web` (default `false`),
-`max_calls_per_day` (default `300`) and `keep_cases` (default `false`) are
-optional.
+**`projects.json`** — under `projects`, the key is the repo's folder name (the
+folder holding its git directory, so every worktree is the same project) and
+`root` its resolved path; a call from a repo whose path doesn't match `root` is
+refused. `send` and `root` are required to send; `web` (default `false`),
+`max_calls_per_day` (no cap unless set) and `keep_cases` (default `false`) are
+optional. `all`, written by `jev allow --all`, applies to every repo **not**
+listed under `projects` — so a listed `"send": false` stays denied — and takes
+the same settings without `root`.
 
 ```json
 {
+  "all": { "send": true, "web": false },
   "projects": {
-    "shop-api": { "send": true, "root": "/Users/you/code/shop-api", "web": false, "max_calls_per_day": 300, "keep_cases": false },
+    "shop-api": { "send": true, "root": "/Users/you/code/shop-api", "web": false, "max_calls_per_day": 500, "keep_cases": false },
     "payroll":  { "send": false }
   }
 }
