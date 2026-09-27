@@ -498,6 +498,9 @@ test("allow writes this repo's root after a yes; no means nothing changes", asyn
   assert.equal(r.code, 0, r.err);
   const p = JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).projects["shop-api"];
   assert.deepEqual(p, { send: true, root: sb.repo, web: true, max_calls_per_day: 50 });
+  await run(sb, ["allow", "--keep-cases"], { isTTY: true, stdinTTY: true, prompt: async () => "y" });
+  assert.equal(JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).projects["shop-api"].keep_cases, true, "--keep-cases is saved, other settings kept");
+  assert.equal(JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).projects["shop-api"].web, true);
   await run(sb, ["deny"]);
   assert.equal(JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8")).projects["shop-api"].send, false);
 });
