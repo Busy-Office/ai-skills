@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "overall": 1.4,
+  "phases": [
+    { "id": "phase1", "number": 1, "title": "Offline notes", "status": "done", "rows": [], "manual": [] },
+    {
+      "id": "phase2",
+      "number": 2,
+      "title": "Sync between devices",
+      "status": "current",
+      "rows": [
+        { "id": "S1", "title": "Two devices converge after edits", "level": 1, "target": 3, "atTarget": "no", "note": "" }
+      ],
+      "manual": []
+    }
+  ]
+}

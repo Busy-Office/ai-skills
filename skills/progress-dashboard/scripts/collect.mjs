@@ -7,6 +7,10 @@
 // (.claude/progress.json), shape-detection second. Never runs a command the
 // manifest did not declare.
 //
+// With "audience": "stakeholder" in the manifest it adds one block, `stakeholder`, joined for the
+// plain-language page (phases, the current phase's steps, exit checks, milestones, key decisions,
+// the activity word, blockers, wording pending). Without it the output is unchanged.
+//
 // Usage:
 //   node collect.mjs [repoPath] [--no-gh] [--fast] [--profile] [--json-only]
 //   node collect.mjs --self-test          # run fixtures/*/expect.json
@@ -17,10 +21,11 @@
 //
 // See ../references/manifest.md for the manifest keys and vocabulary.
 
-import { readFileSync, existsSync, readdirSync, statSync, realpathSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync, realpathSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join, relative, dirname, basename } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "__archived", "graphify-out", ".next", "coverage", "vendor", "worktrees"]);
@@ -66,6 +71,109 @@ const globToRe = (g) => {
   return new RegExp("^" + src + "$");
 };
 
+// ---------------------------------------------------------------- stakeholder helpers (pure; exported for the self-test)
+const STEP_STATUS = ["done", "in progress", "not started"];
+const EC_STATUS = { met: "done", current: "now", not_met: "next" };
+const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+// The engineer note for a roadmap with no phase markers; the stakeholder view withdraws it when it finds the current phase another way.
+const noMarkersNote = (file) => `${file} carries no phase status markers — current phase cannot be determined from it.`;
+// "Phase 3", "phase-3", "phase3": every phase number a line of text names.
+const phaseNumbersIn = (s) => [...String(s ?? "").matchAll(/\bphase[\s-]*(\d+)(?!\d)/gi)].map((m) => Number(m[1]));
+
+// "Moving" under quietDays, "Quiet" up to and including stalledDays, "Stalled" beyond. Days since the latest milestone, not commit.
+export function activityWord(days, t) {
+  if (days == null) return null;
+  return days < t.quietDays ? "Moving" : days <= t.stalledDays ? "Quiet" : "Stalled";
+}
+
+// Format B, version 1. Returns a list of problems; empty means valid.
+export function validateExitCriteria(x) {
+  if (!isObj(x)) return ["the top level is not an object"];
+  if (x.version !== 1) return [`version is ${JSON.stringify(x.version)}, expected 1`];
+  const errs = [];
+  const str = (v) => typeof v === "string", num = (v) => typeof v === "number" && Number.isFinite(v), bool = (v) => typeof v === "boolean";
+  if (!num(x.overall)) errs.push("overall is not a number");
+  if (!Array.isArray(x.phases) || !x.phases.length) return [...errs, "phases is not a non-empty list"];
+  x.phases.forEach((p, i) => {
+    const at = `phases[${i}]`;
+    if (!isObj(p)) { errs.push(`${at} is not an object`); return; }
+    if (!str(p.id) || !p.id) errs.push(`${at}.id is not text`);
+    if (!Number.isInteger(p.number)) errs.push(`${at}.number is not a whole number`);
+    if (!str(p.title)) errs.push(`${at}.title is not text`);
+    if (!Object.hasOwn(EC_STATUS, String(p.status))) errs.push(`${at}.status is ${JSON.stringify(p.status)}, expected met, current or not_met`);
+    if (!Array.isArray(p.rows)) errs.push(`${at}.rows is not a list`);
+    else p.rows.forEach((r, j) => {
+      const a = `${at}.rows[${j}]`;
+      if (!isObj(r)) { errs.push(`${a} is not an object`); return; }
+      if (!str(r.id) || !r.id) errs.push(`${a}.id is not text`);
+      if (!str(r.title)) errs.push(`${a}.title is not text`);
+      if (!num(r.level)) errs.push(`${a}.level is not a number`);
+      if (!num(r.target)) errs.push(`${a}.target is not a number`);
+      if (!bool(r.atTarget)) errs.push(`${a}.atTarget is not true or false`);
+      if (!str(r.note)) errs.push(`${a}.note is not text`);
+    });
+    if (!Array.isArray(p.manual)) errs.push(`${at}.manual is not a list`);
+    else p.manual.forEach((m, j) => {
+      const a = `${at}.manual[${j}]`;
+      if (!isObj(m) || !str(m.title) || !bool(m.done)) errs.push(`${a} needs a text title and a true/false done`);
+    });
+  });
+  if (x.phases.filter((p) => p?.status === "current").length > 1) errs.push("more than one phase is current");
+  return errs;
+}
+
+// CHANGELOG entries with a date: "## 2026-09-27 — heading", "## [1.2.0] — 2026-08-27 (summary)", "## 1.2.0 (2026-08-01)". Newest first.
+export function parseMilestones(text) {
+  const out = [];
+  for (const m of (text ?? "").matchAll(/^##\s+(.+?)\s*$/gm)) {
+    const h = m[1].replace(/\[([^\]]*)\]\([^)]*\)/g, "[$1]"); // "[1.2.0](compare-url)" → "[1.2.0]"
+    const s = h.match(/^(?:\[?v?(\d+\.\d+\.\d+[\w.-]*)\]?\s*(?:—|–|-|:)?\s*)?\(?(\d{4}-\d{2}-\d{2})\)?\s*(?:—|–|-|:)?\s*(.*)$/);
+    const date = s?.[2] ?? h.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+    if (!date) continue; // "Unreleased" and undated headings are not milestones
+    let heading = s ? s[3].trim() : h.trim();
+    const paren = heading.match(/^\((.*)\)$/); if (paren) heading = paren[1].trim();
+    out.push({ date, heading: stripMd(heading) || null, version: s?.[1] ?? null });
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date)); // stable: same-day entries keep file order
+}
+
+// The section of a roadmap under "## Phase <n> …" (or ###), up to the next heading of the same or higher level.
+export function phaseSection(text, number) {
+  const lines = (text ?? "").split("\n");
+  const re = new RegExp(`^(#{2,3})\\s+(?:[^\\w\\s#\`]+\\s*)?(?:Phase|Stage|Milestone)[\\s-]*${number}(?![\\w.])`, "i");
+  const i = lines.findIndex((l) => re.test(l));
+  if (i < 0) return null;
+  const end = new RegExp(`^#{1,${lines[i].match(/^#+/)[0].length}}\\s`);
+  let j = i + 1;
+  while (j < lines.length && !end.test(lines[j])) j++;
+  return lines.slice(i + 1, j).join("\n");
+}
+
+// The numbered work-items table in a phase section: first cell a step number, a "Status" column of done / in progress / not started.
+export function parseStepTable(section) {
+  const tables = []; let cur = null;
+  for (const line of (section ?? "").split("\n")) {
+    if (!/^\s*\|/.test(line)) { cur = null; continue; }
+    if (/^\s*\|[\s:|-]+$/.test(line)) continue; // separator row
+    const cells = line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).map((c) => c.trim());
+    if (!cur) { cur = { header: cells.map((c) => stripMd(c).toLowerCase()), rows: [] }; tables.push(cur); continue; }
+    cur.rows.push(cells);
+  }
+  const numbered = tables.filter((t) => t.rows.some((r) => /^\d+$/.test(stripMd(r[0]))));
+  if (!numbered.length) return { steps: [], problem: "no numbered work-items table" };
+  const t = numbered.find((x) => x.header.includes("status")) ?? numbered[0];
+  const si = t.header.indexOf("status");
+  if (si < 0) return { steps: [], problem: "the work-items table has no Status column" };
+  const ni = t.header.findIndex((h) => /^(item|step|work item|name|title|what)$/.test(h));
+  const steps = t.rows.filter((r) => /^\d+$/.test(stripMd(r[0]))).map((r) => {
+    const raw = stripMd(r[si] ?? "");
+    const norm = raw.toLowerCase().replace(/\s+/g, " ");
+    return { number: stripMd(r[0]), name: stripMd(r[ni > 0 ? ni : 1] ?? "").slice(0, 200), status: STEP_STATUS.includes(norm) ? norm : null, statusRaw: raw };
+  });
+  return { steps, problem: null };
+}
+
 function walk(root, maxDepth = 6) {
   const out = [];
   const rec = (dir, depth) => {
@@ -96,6 +204,8 @@ export function collect(repoPath, opts = {}) {
     return out;
   };
   const sh = (cmd, cwd = repoPath) => execSync(cmd, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  // git with an argument list, no shell: a file name such as "ADR-1-$(cmd).md" stays a file name.
+  const gitOut = (args) => execFileSync("git", args, { cwd: repoPath, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 
   const manifest = (() => { try { return JSON.parse(read(".claude/progress.json") ?? "null") ?? {}; } catch (e) { return { __error: String(e) }; } })();
   const vocab = { ...MAP, ...Object.fromEntries(Object.entries(manifest.vocabulary ?? {}).map(([k, v]) => [k.toLowerCase(), v])) };
@@ -111,7 +221,7 @@ export function collect(repoPath, opts = {}) {
     return null;
   };
 
-  const now = new Date();
+  const now = opts.now ? new Date(opts.now) : new Date(); // opts.now pins the clock for fixtures
   const out = {
     project: manifest.project ?? basename(repoPath),
     repoPath,
@@ -143,7 +253,7 @@ export function collect(repoPath, opts = {}) {
   if (manifest.__error) out.warnings.push(`.claude/progress.json is not valid JSON: ${manifest.__error}`);
 
   const lastChanged = (p) => {
-    if (git && !fast) { try { const iso = sh(`git log -1 --format=%cI -- "${p}"`); if (iso) return iso; } catch { /* fall through */ } }
+    if (git && !fast) { try { const iso = gitOut(["log", "-1", "--format=%cI", "--", p]); if (iso) return iso; } catch { /* fall through */ } }
     try { return statSync(join(repoPath, p)).mtime.toISOString(); } catch { return null; }
   };
   const source = (axis, path, how, shape, extra = {}) => {
@@ -442,7 +552,7 @@ export function collect(repoPath, opts = {}) {
       delete p.items;
     }
     const hasAnyStatus = out.phases.some((p) => p.status);
-    if (out.phases.length && !hasAnyStatus) out.notes.dataQuality.push(`${roadmapFile} carries no phase status markers — current phase cannot be determined from it.`);
+    if (out.phases.length && !hasAnyStatus) out.notes.dataQuality.push(noMarkersNote(roadmapFile));
     let currentSet = false;
     for (const p of out.phases) {
       if (p.status === "current" && !currentSet) { p.current = true; currentSet = true; }
@@ -612,6 +722,15 @@ export function collect(repoPath, opts = {}) {
   if (!out.decisions.length && !out.roadmap && !out.openQuestions.length && !out.gates.length) out.warnings.push("No decision or roadmap records found — this project records only git/GitHub state. Publish a thin page and say so.");
   if (!existsSync(join(repoPath, ".claude/progress.json"))) out.notes.config.push("No .claude/progress.json — everything above was shape-detected. See references/manifest.md.");
 
+  // ------------------------------------------------------------ stakeholder view (opt-in; absent → the engineer output is unchanged)
+  const audience = manifest.audience ?? "engineer";
+  if (audience === "stakeholder") out.stakeholder = stakeholderView({ manifest, out, read, gitOut, source, now, git, fast, roadmapFile, changelogFile: cl.files[0] ?? null });
+  else {
+    if (audience !== "engineer") out.notes.config.push(`"audience": ${JSON.stringify(audience)} is neither "engineer" nor "stakeholder" — the engineer page is used.`);
+    const only = ["exitCriteria", "plain", "activity"].filter((k) => manifest[k] !== undefined);
+    if (only.length) out.notes.config.push(`${only.map((k) => `"${k}"`).join(", ")} ${only.length > 1 ? "are" : "is"} read only when "audience" is "stakeholder".`);
+  }
+
   mark("derive");
   out.mode = fast ? "fast" : "full";
   out.timings = { ...timings, totalMs: Date.now() - t0, filesScanned: allFiles.length };
@@ -627,27 +746,206 @@ function summarizeChecks(rollup) {
   return "unknown";
 }
 
+// ---------------------------------------------------------------- stakeholder view
+// What the stakeholder page needs, already joined. The page shows no ids, codes or file names, so every
+// item carries its raw text and the owner's plain wording from the manifest's "plain" glossary (or null,
+// in which case it is also listed in wordingPending for the terminal summary).
+function stakeholderView({ manifest, out, read, gitOut, source, now, git, fast, roadmapFile, changelogFile }) {
+  const dq = (s) => out.notes.dataQuality.push(s);
+  const plainCfg = isObj(manifest.plain) ? manifest.plain : {};
+  if (manifest.plain !== undefined && !isObj(manifest.plain)) out.notes.config.push(`"plain" is not an object — no plain wording used.`);
+  for (const g of ["phases", "steps", "criteria"]) if (plainCfg[g] !== undefined && !isObj(plainCfg[g])) out.notes.config.push(`"plain.${g}" is not an object — ignored.`);
+  const say = (group, keys) => { const m = isObj(plainCfg[group]) ? plainCfg[group] : {}; for (const k of keys) { const v = m[k]; if (typeof v === "string" && v.trim()) return v.trim(); } return null; };
+  const wordingPending = [];
+  const need = (kind, key, text, plain) => { if (!plain) wordingPending.push({ kind, key, text }); return plain; };
+
+  // exit criteria (format B) — a missing or invalid file is a data-quality note, never a crash
+  const ecPath = typeof manifest.exitCriteria === "string" && manifest.exitCriteria ? manifest.exitCriteria : null;
+  const exitCriteria = { file: ecPath, loaded: false, error: null, overall: null };
+  let ec = null;
+  if (ecPath) {
+    let raw = null, problem = null, parsed = null;
+    try { raw = read(ecPath); } catch (e) { problem = `it cannot be read (${e.code ?? e.message})`; } // a directory, no permission
+    if (!problem && raw == null) problem = "the file does not exist";
+    if (!problem) { try { parsed = JSON.parse(raw); } catch (e) { problem = `it is not valid JSON (${e.message})`; } }
+    if (!problem) { const errs = validateExitCriteria(parsed); if (errs.length) problem = errs.slice(0, 3).join("; ") + (errs.length > 3 ? `; and ${errs.length - 3} more` : ""); }
+    if (problem) { exitCriteria.error = problem; dq(`exitCriteria ${ecPath}: ${problem} — exit checks not shown; phases come from the roadmap.`); }
+    else { ec = parsed; exitCriteria.loaded = true; exitCriteria.overall = ec.overall; }
+    if (raw != null) source("delivery", ecPath, "manifest", ec ? "exit-criteria json v1" : "exit-criteria json (invalid)");
+  } else if (manifest.exitCriteria !== undefined) out.notes.config.push(`"exitCriteria" is not a repo-relative path — ignored; the stakeholder page shows steps but no exit checks.`);
+  else out.notes.config.push(`No "exitCriteria" in .claude/progress.json — the stakeholder page shows steps but no exit checks.`);
+
+  // phases: from the exit criteria when loaded, else from the roadmap (whose headings may end "— met" / "— current")
+  const TAIL = /\s+(?:—|–|-)\s+(met|not met|done|closed|complete|current|active|in progress|next|planned)\s*$/i;
+  const tailState = (w) => (/^(met|done|closed|complete)$/i.test(w) ? "done" : /^(current|active|in progress)$/i.test(w) ? "now" : "next");
+  const phases = ec
+    ? [...ec.phases].sort((a, b) => a.number - b.number).map((p) => ({ id: p.id, number: p.number, title: p.title, state: EC_STATUS[p.status], ec: p }))
+    : out.phases.map((p) => {
+      const tail = p.title.match(TAIL), n = p.id.match(/\d+/)?.[0];
+      const state = p.current ? "now" : p.status === "closed" ? "done" : p.status ? "next" : tail ? tailState(tail[1]) : null;
+      return { id: p.id, number: n != null ? Number(n) : null, title: tail ? p.title.slice(0, tail.index) : p.title, state };
+    });
+  let ci = phases.findIndex((p) => p.state === "now");
+  if (ci < 0 && phases.some((p) => p.state)) {
+    ci = phases.findIndex((p) => p.state !== "done");
+    if (ci >= 0) { phases[ci].state = "now"; if (ec) dq(`exitCriteria ${ecPath} marks no phase current — the first unmet one is shown as now.`); }
+  }
+  phases.forEach((p, i) => { if (i !== ci && p.state === "now") p.state = "next"; if (!p.state && ci >= 0) p.state = i < ci ? "done" : "next"; });
+  const cur = ci >= 0 ? phases[ci] : null;
+  // The engineer note says the roadmap cannot give the current phase; here it was found (exit criteria or a "— current" tail), so the note would contradict the page.
+  if (cur && roadmapFile) { const i = out.notes.dataQuality.indexOf(noMarkersNote(roadmapFile)); if (i >= 0) out.notes.dataQuality.splice(i, 1); }
+  if (!cur) dq(!phases.length ? "No phases found — the stakeholder page has no journey." : phases.every((p) => p.state === "done") ? "Every phase is done — there is no current phase." : "The current phase cannot be determined — the stakeholder headline has no phase.");
+  const numbers = phases.map((p) => p.number).filter((n) => n != null);
+  const phaseKeys = (p) => [...new Set([p.id, String(p.id).toLowerCase(), p.number != null ? `phase${p.number}` : null, p.number != null ? String(p.number) : null].filter(Boolean))];
+  const journey = phases.map((p) => ({ id: p.id, number: p.number, title: p.title, state: p.state, plain: need("phase", ec || p.number == null ? p.id : `phase${p.number}`, p.title, say("phases", phaseKeys(p))) }));
+
+  // steps: the current phase's work-items table in the roadmap, with its Status column
+  let steps = [], stepsProblem = null;
+  if (cur) {
+    if (!roadmapFile) stepsProblem = "no roadmap";
+    else if (cur.number == null) stepsProblem = "the current phase has no number";
+    else { const sec = phaseSection(read(roadmapFile), cur.number); if (sec == null) stepsProblem = `no "Phase ${cur.number}" heading`; else ({ steps, problem: stepsProblem } = parseStepTable(sec)); }
+    if (stepsProblem) dq(`${roadmapFile ?? "Roadmap"}: ${stepsProblem} for the current phase — steps not shown.`);
+  }
+  for (const s of steps) if (!s.status) dq(`${roadmapFile} Phase ${cur.number} step ${s.number}: status "${s.statusRaw}" is not done, in progress or not started — counted as unknown.`);
+  const stepList = steps.map((s) => { const key = `${cur.number}.${s.number}`; return { key, number: s.number, name: s.name, status: s.status, statusRaw: s.statusRaw, plain: need("step", key, s.name, say("steps", [key])) }; });
+  const stepCounts = { done: 0, "in progress": 0, "not started": 0, unknown: 0 };
+  for (const s of stepList) stepCounts[s.status ?? "unknown"]++;
+
+  // exit checks for the current phase: rows at target (never a percentage), manual checks apart
+  let exitChecks = null;
+  if (cur?.ec) {
+    const { rows, manual } = cur.ec;
+    exitChecks = {
+      atTarget: rows.filter((r) => r.atTarget).length, total: rows.length,
+      manualDone: manual.filter((m) => m.done).length, manualTotal: manual.length,
+      notAtTarget: rows.filter((r) => !r.atTarget).map((r) => ({ id: r.id, title: r.title, level: r.level, target: r.target, note: r.note, plain: need("criterion", r.id, r.title, say("criteria", [r.id])) })),
+      manualOpen: manual.filter((m) => !m.done).map((m) => m.title),
+    };
+  }
+
+  // milestones and the activity word: dated CHANGELOG entries, not commits
+  const ms = changelogFile ? parseMilestones(read(changelogFile)) : [];
+  if (!changelogFile) dq("No CHANGELOG — the stakeholder page has no recent milestones and no activity word.");
+  else if (!ms.length) dq(`${changelogFile} has no dated entries — no recent milestones and no activity word.`);
+  const act = isObj(manifest.activity) ? manifest.activity : {};
+  const thresholds = { quietDays: Number.isFinite(act.quietDays) ? act.quietDays : 14, stalledDays: Number.isFinite(act.stalledDays) ? act.stalledDays : 30 };
+  const today = ymd(now), last = ms[0]?.date ?? null;
+  const days = last ? Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${last}T00:00:00Z`)) / 864e5) : null;
+  const activity = { word: activityWord(days, thresholds), lastMilestone: last, daysSinceMilestone: days, thresholds };
+
+  // key decisions: the latest accepted ones, dated from the record, else from git (one decision per file only)
+  const idNum = (id) => Number(id.match(/(\d+)$/)?.[1] ?? -1);
+  const accepted = out.decisions.filter((d) => d.canonical === "accepted").map((d) => {
+    let date = /^\d{4}-\d{2}-\d{2}/.test(d.since ?? "") ? d.since.slice(0, 10) : null, dateFrom = date ? "record" : null;
+    if (!date && git && !fast && d.source && basename(d.source).toUpperCase().startsWith(d.id.toUpperCase())) {
+      try { const first = gitOut(["log", "--diff-filter=A", "--format=%cs", "--", d.source]).split("\n").filter(Boolean).at(-1); if (first) { date = first; dateFrom = "git"; } } catch { /* no history */ }
+    }
+    return { id: d.id, title: d.title, date, dateFrom };
+  });
+  accepted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || idNum(b.id) - idNum(a.id));
+
+  // blockers: waiting on people and blocking the current phase — open gates, owner calls, needs-human nodes, or anything naming the phase.
+  // An item whose title or "blocks" names only other phases ("Phase 3: the regulator signs off the launch") waits for a later phase, not this one.
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ref = cur ? new RegExp([cur.number != null ? `\\bphase[\\s-]*${cur.number}(?!\\d)` : null, `\\b${esc(cur.id)}\\b`].filter(Boolean).join("|"), "i") : null;
+  const otherPhaseOnly = (h) => { if (cur.number == null) return false; const n = [...phaseNumbersIn(h.title), ...phaseNumbersIn(h.blocks)]; return n.length > 0 && !n.includes(cur.number); };
+  const blockers = cur ? out.humanItems.filter((h) => (["gate", "owner-call", "node"].includes(h.kind) || ref.test(h.blocks ?? "")) && !otherPhaseOnly(h)).map((h) => ({ kind: h.kind, title: h.title, owner: h.owner, blocks: h.blocks, ageDays: h.ageDays })) : [];
+
+  return {
+    title: typeof manifest.title === "string" && manifest.title.trim() ? manifest.title.trim() : out.project,
+    headline: {
+      phase: cur ? { number: cur.number, of: numbers.length ? Math.max(...numbers) : null, title: cur.title, plain: journey[ci].plain } : null,
+      steps: { done: stepCounts.done, total: stepList.length },
+      activity: activity.word,
+      updated: today,
+    },
+    journey,
+    thisPhase: cur ? { id: cur.id, number: cur.number, title: cur.title, plain: journey[ci].plain, steps: stepList, stepCounts, exitChecks } : null,
+    milestones: ms.slice(0, 5),
+    decisions: accepted.slice(0, 5),
+    activity,
+    blockers,
+    exitCriteria,
+    wordingPending,
+  };
+}
+
 // ---------------------------------------------------------------- self-test
 function selfTest() {
   const root = join(HERE, "..", "fixtures");
   let failed = 0, total = 0;
   const get = (obj, path) => path.split(".").reduce((o, k) => (o == null ? undefined : o[/^\d+$/.test(k) ? Number(k) : k]), obj);
+  const check = (name, dir, expect) => {
+    let state, bad = 0;
+    // "$now" in expect.json pins the clock (the stakeholder activity word counts days); "$" keys are options, not assertions
+    try { state = collect(dir, { noGh: true, git: false, selfTest: true, ...(expect.$now ? { now: expect.$now } : {}) }); } catch (e) { console.log(`✗ ${name}: collector threw ${e.stack}`); failed++; total++; return; }
+    for (const [path, want] of Object.entries(expect)) {
+      if (path.startsWith("$")) continue;
+      total++;
+      const got = get(state, path);
+      const ok = typeof want === "object" && want !== null ? JSON.stringify(got) === JSON.stringify(want) : got === want;
+      if (!ok) { failed++; bad++; console.log(`✗ ${name}: ${path}\n    want ${JSON.stringify(want)}\n    got  ${JSON.stringify(got)}`); }
+    }
+    console.log(`${bad ? "·" : "✓"} ${name}`);
+  };
+  const pinned = [];
   for (const name of readdirSync(root).sort()) {
     const dir = join(root, name);
     if (!statSync(dir).isDirectory()) continue;
     const expectFile = join(dir, "expect.json");
     if (!existsSync(expectFile)) { console.log(`~ ${name}: no expect.json`); continue; }
     const expect = JSON.parse(readFileSync(expectFile, "utf8"));
-    let state;
-    try { state = collect(dir, { noGh: true, git: false, selfTest: true }); } catch (e) { console.log(`✗ ${name}: collector threw ${e.stack}`); failed++; total++; continue; }
-    for (const [path, want] of Object.entries(expect)) {
-      total++;
-      const got = get(state, path);
-      const ok = typeof want === "object" && want !== null ? JSON.stringify(got) === JSON.stringify(want) : got === want;
-      if (!ok) { failed++; console.log(`✗ ${name}: ${path}\n    want ${JSON.stringify(want)}\n    got  ${JSON.stringify(got)}`); }
-    }
-    console.log(`${failed ? "·" : "✓"} ${name}`);
+    check(name, dir, expect);
+    if (expect.$now) pinned.push([name, dir, expect]);
   }
+  // A pinned clock must give the same answers in every time zone: rerun those fixtures at both ends of the clock (UTC+14, UTC−12).
+  const tz0 = process.env.TZ;
+  for (const tz of ["Pacific/Kiritimati", "Etc/GMT+12"]) {
+    process.env.TZ = tz;
+    for (const [name, dir, expect] of pinned) check(`${name} @ ${tz}`, dir, expect);
+  }
+  if (tz0 === undefined) delete process.env.TZ; else process.env.TZ = tz0;
+
+  // No shell: a decision file and an exit-criteria file whose names hold "$(touch …)" in a real git repo, full mode.
+  const shellCase = (() => {
+    if (process.platform === "win32") return null; // "$(…)" is not a valid Windows file name
+    const dir = mkdtempSync(join(tmpdir(), "progress-dashboard-"));
+    try {
+      mkdirSync(join(dir, ".claude")); mkdirSync(join(dir, "bench")); mkdirSync(join(dir, "docs", "decisions"), { recursive: true });
+      writeFileSync(join(dir, ".claude", "progress.json"), JSON.stringify({ audience: "stakeholder", exitCriteria: "bench/$(touch PWNED-2).json" }));
+      writeFileSync(join(dir, "bench", "$(touch PWNED-2).json"), "{}");
+      writeFileSync(join(dir, "docs", "decisions", "ADR-0001-$(touch PWNED-1).md"), "# ADR-0001 One repo\n\n## Status\n\nAccepted\n");
+      const g = (...a) => execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture@example.com", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", ...a], { cwd: dir, stdio: "ignore" });
+      try { g("init", "-q"); g("add", "-A"); g("commit", "-q", "--no-verify", "-m", "fixture"); } catch { return null; }
+      const s = collect(dir, { noGh: true, selfTest: true });
+      return [
+        ["no shell: a decision file named with $(…)", existsSync(join(dir, "PWNED-1")), false],
+        ["no shell: an exit-criteria path with $(…)", existsSync(join(dir, "PWNED-2")), false],
+        ["decision dated from the commit that added it", s.stakeholder?.decisions?.[0]?.dateFrom, "git"],
+      ];
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  })();
+  if (!shellCase) console.log("~ no-shell check skipped (no git, or Windows)");
+
+  // boundaries no single fixture can hold at once
+  const t = { quietDays: 14, stalledDays: 30 };
+  const units = [
+    ["activity: 13 days is Moving", activityWord(13, t), "Moving"],
+    ["activity: 14 days is Quiet", activityWord(14, t), "Quiet"],
+    ["activity: 30 days is Quiet", activityWord(30, t), "Quiet"],
+    ["activity: 31 days is Stalled", activityWord(31, t), "Stalled"],
+    ["activity: no milestone, no word", activityWord(null, t), null],
+    ["exitCriteria: version 2 refused", validateExitCriteria({ version: 2, overall: 1, phases: [] })[0], "version is 2, expected 1"],
+    ["exitCriteria: minimal valid", validateExitCriteria({ version: 1, overall: 0, phases: [{ id: "p0", number: 0, title: "t", status: "current", rows: [], manual: [] }] }).length, 0],
+    ["milestones: undated skipped, versions read", JSON.stringify(parseMilestones("## [Unreleased]\n## [1.2.0] — 2026-08-27 (summary)\n## 1.1.0 (2026-08-01)\n## [1.0.0](https://example.com/v1) - 2026-07-01\n")), JSON.stringify([{ date: "2026-08-27", heading: "summary", version: "1.2.0" }, { date: "2026-08-01", heading: null, version: "1.1.0" }, { date: "2026-07-01", heading: null, version: "1.0.0" }])],
+    ["exitCriteria: inherited status name refused", validateExitCriteria({ version: 1, overall: 0, phases: [{ id: "p0", number: 0, title: "t", status: "toString", rows: [], manual: [] }] }).length, 1],
+    ["phase numbers: every form read", JSON.stringify(phaseNumbersIn("Phase 3: sign-off; phase-1 and phase12, not phase exit")), JSON.stringify([3, 1, 12])],
+    ...(shellCase ?? []),
+  ];
+  let unitFailed = 0;
+  for (const [label, got, want] of units) { total++; if (got !== want) { failed++; unitFailed++; console.log(`✗ ${label}\n    want ${JSON.stringify(want)}\n    got  ${JSON.stringify(got)}`); } }
+  console.log(`${unitFailed ? "·" : "✓"} stakeholder helpers`);
   console.log(`\n${total - failed}/${total} assertions passed`);
   process.exit(failed ? 1 : 0);
 }

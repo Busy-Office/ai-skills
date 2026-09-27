@@ -1,0 +1,29 @@
+{
+  "project": "Harbour Bookings",
+  "audience": "stakeholder",
+  "title": "Harbour Bookings — Project Status",
+  "roadmap": "ROADMAP.md",
+  "changelog": "CHANGELOG.md",
+  "decisions": ["docs/decisions/ADR-*.md"],
+  "gates": ["docs/HUMAN-GATES-LOG.md"],
+  "exitCriteria": "bench/scorecard.json",
+  "activity": { "quietDays": 5, "stalledDays": 10 },
+  "plain": {
+    "phases": {
+      "phase0": "Set up the groundwork the booking service is built on.",
+      "phase1": "Let people hold a seat on a sailing and keep it until they pay.",
+      "phase2": "Take card payments and give refunds.",
+      "phase3": "Open the service to the public."
+    },
+    "steps": {
+      "1.1": "Hold and release a seat",
+      "1.2": "Let unpaid holds lapse on their own",
+      "1.4": "A screen for staff to see each sailing"
+    },
+    "criteria": {
+      "R1": "Holding a seat",
+      "R2": "Holds lapsing on time",
+      "R4": "Staff can see each sailing"
+    }
+  }
+}

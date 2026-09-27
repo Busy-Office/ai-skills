@@ -1,0 +1,35 @@
+{
+  "$now": "2026-09-20T12:00:00",
+  "stakeholder.title": "Lantern Notes",
+  "stakeholder.exitCriteria": {
+    "file": "bench/scorecard.json",
+    "loaded": false,
+    "error": "phases[0].status is \"done\", expected met, current or not_met; phases[1].rows[0].atTarget is not true or false",
+    "overall": null
+  },
+  "notes.dataQuality": [
+    "exitCriteria bench/scorecard.json: phases[0].status is \"done\", expected met, current or not_met; phases[1].rows[0].atTarget is not true or false — exit checks not shown; phases come from the roadmap.",
+    "ROADMAP.md Phase 2 step 2: status \"blocked\" is not done, in progress or not started — counted as unknown."
+  ],
+  "stakeholder.headline": {
+    "phase": { "number": 2, "of": 3, "title": "Sync between devices", "plain": null },
+    "steps": { "done": 1, "total": 3 },
+    "activity": "Stalled",
+    "updated": "2026-09-20"
+  },
+  "stakeholder.journey.0": { "id": "PHASE-1", "number": 1, "title": "Offline notes", "state": "done", "plain": null },
+  "stakeholder.journey.2.state": "next",
+  "stakeholder.thisPhase.exitChecks": null,
+  "stakeholder.thisPhase.steps.1.status": null,
+  "stakeholder.thisPhase.steps.1.statusRaw": "blocked",
+  "stakeholder.thisPhase.steps.2.status": "not started",
+  "stakeholder.thisPhase.stepCounts": { "done": 1, "in progress": 0, "not started": 1, "unknown": 1 },
+  "stakeholder.activity": { "word": "Stalled", "lastMilestone": "2026-08-01", "daysSinceMilestone": 50, "thresholds": { "quietDays": 14, "stalledDays": 30 } },
+  "stakeholder.decisions": [],
+  "humanItems.length": 2,
+  "stakeholder.blockers.length": 1,
+  "stakeholder.blockers.0.blocks": "Phase 2",
+  "stakeholder.wordingPending.length": 6,
+  "stakeholder.wordingPending.0": { "kind": "phase", "key": "phase1", "text": "Offline notes" },
+  "stakeholder.wordingPending.5": { "kind": "step", "key": "2.3", "text": "Sync screen" }
+}

@@ -1,0 +1,17 @@
+{
+  "$now": "2026-09-20T12:00:00",
+  "stakeholder.exitCriteria": { "file": "bench/", "loaded": false, "error": "it cannot be read (EISDIR)", "overall": null },
+  "notes.dataQuality": ["exitCriteria bench/: it cannot be read (EISDIR) — exit checks not shown; phases come from the roadmap."],
+  "sources.length": 3,
+  "stakeholder.headline": {
+    "phase": { "number": 1, "of": 3, "title": "Core", "plain": null },
+    "steps": { "done": 1, "total": 2 },
+    "activity": "Moving",
+    "updated": "2026-09-20"
+  },
+  "stakeholder.journey.1.state": "next",
+  "humanItems.length": 2,
+  "stakeholder.blockers.length": 1,
+  "stakeholder.blockers.0.title": "Phase 1: the studio owner approves the old-bookings import",
+  "stakeholder.blockers.0.owner": "Studio owner"
+}

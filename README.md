@@ -203,6 +203,20 @@ pin a source, opt into capabilities, set staleness thresholds, add
 vocabulary, name a Notion page to mirror into. See
 [`references/manifest.md`](skills/progress-dashboard/references/manifest.md).
 
+**Stakeholder mode (0.13.0).** Set `"audience": "stakeholder"` and the page
+is for someone who does not read code: one short static page with the
+current phase and steps done, the journey through the phases, this phase's
+steps and exit checks ("2 of 4 at target", never a percentage), recent
+milestones, key decisions, and blockers only when something blocks. It
+reads the phase exit criteria from a JSON file the project writes, step
+status from a `Status` column in the roadmap's work-items table, and the
+owner's plain wording from a `plain` glossary in the manifest. Nothing on
+the page is a code, an id or a file name; anything without plain wording is
+listed for the owner as *wording pending*. The activity word (Moving, Quiet,
+Stalled) counts days since the latest changelog milestone, not the latest
+commit. Without the key, the engineer page and the collector's output are
+unchanged.
+
 ### Performance and safety
 
 The collector is **read-only and out-of-process**: it never touches the

@@ -43,6 +43,11 @@ record yet.
 
 ### 2. Judge
 
+If the JSON has a `stakeholder` block, the manifest asked for the
+plain-language page: follow **Stakeholder mode** below instead of the rest
+of this step, **The page** and the "Thin data, short page" call. In that
+mode no data-quality note and no source goes on the page.
+
 The collector is deterministic; the judgement is yours. From the JSON, form:
 
 - **Headline** — a fixed skeleton, worded by you:
@@ -79,7 +84,8 @@ then `notion-update-page`) and write only the first screen: the headline,
 both stamps, "Waiting on humans" grouped by owner, and the phase list, each
 as plain Notion blocks, followed by a link to the artifact for the full
 page. Replace the previous mirror's content rather than appending, so the
-Notion page always reads as the current state. If no `notion` key exists
+Notion page always reads as the current state. In stakeholder mode the page
+is short: mirror all six sections, under the same plain-language rules. If no `notion` key exists
 and the person asks, create the page as a private draft, put its URL in the
 manifest, and say where it lives.
 
@@ -111,6 +117,87 @@ Collapsed under their heading with a count (native `<details>`, no script):
 An empty section is omitted, not collapsed. Semantic colour is for state
 (good / warning / critical), separate from the accent.
 
+## Stakeholder mode
+
+When `.claude/progress.json` sets `"audience": "stakeholder"`, the page is
+for someone who does not read code. The collector adds a `stakeholder`
+block with everything already joined; build the page from it. Without that
+key, nothing in this section applies and the page above is unchanged.
+
+### The page, top to bottom
+
+One short static page with nothing folded (no `<details>`) and no script.
+Light and dark mode; it must read well on a phone. Title:
+`stakeholder.title`.
+
+1. **Headline** — from `stakeholder.headline`: "Phase 1 of 4: <plain phase
+   sentence>" (`phase.number`, `phase.of`, `phase.plain`); "3 of 10 steps
+   done" (`steps`); the activity word (`activity`); "updated <date>"
+   (`updated`). Leave out any part that is `null` or has a total of 0:
+   never "0 of 0 steps done". If `phase` is `null` and every journey state
+   is `done`, say the project has finished its phases instead.
+2. **The journey** — `stakeholder.journey`: every phase in order, marked
+   done, now or next, each with its plain sentence. A state of `null` (the
+   records do not say) reads "not recorded".
+3. **This phase** — `thisPhase.steps`, each with its status (done, in
+   progress, not started; a step whose status is `null` reads "status not
+   recorded"). Then "exit checks: N of M at target" from
+   `thisPhase.exitChecks` (`atTarget` of `total`) and one plain line on what
+   that means: which checks are left, by their plain names, and any manual
+   check not yet done (`manualOpen`). If `exitChecks` is `null`, leave the
+   line out.
+4. **Recent milestones** — `stakeholder.milestones` (up to five): the date
+   and the heading rewritten in plain words.
+5. **Key decisions** — `stakeholder.decisions` (up to five, latest
+   accepted): the date and one plain sentence each on what was decided.
+6. **Blockers** — only when `stakeholder.blockers` holds something waiting
+   on a person that blocks the current phase. The collector has already
+   dropped items that name only another phase; the rest are candidates, so
+   judge each by its title and what it blocks. Otherwise leave the section
+   out; never show an empty one.
+
+### Plain-language rules
+
+- **The glossary is used verbatim.** An item with `plain` is printed
+  exactly as the owner wrote it.
+- **No codes, ids or file names.** No commit ids, file names, ticket
+  numbers, or codes like "D2", "ADR-0025" or "#113" anywhere on the page,
+  including the milestone and decision lines you rewrite. The raw titles
+  carry them; your wording drops them.
+- **No entry, no code.** An item with `plain: null` gets a short plain
+  rewording of its raw text on the page, and it goes on the *wording
+  pending* list in the terminal summary to the owner:
+  `stakeholder.wordingPending` (kind, key, raw text), plus anything else you
+  had to reword. The key is what the owner adds under `plain` in the
+  manifest.
+- **Numbers need a sentence.** "2 of 4 exit checks at target: holds lapsing
+  on time and the checkout contract are left" is the page; "2/4" is not.
+- **Never invent a percentage.** No progress bar from step counts, no score
+  out of 100. `exitCriteria.overall` is an engineering score and stays off
+  this page.
+- **Notes go to the terminal.** `notes.dataQuality` and `notes.config` (an
+  invalid exit-criteria file, a step status the collector could not read,
+  no dated changelog entry) are for the owner, not the stakeholder.
+- **Thin data, short page.** A section with nothing in it is left out.
+  There is no sources section: it would be file names.
+
+### The activity word
+
+`stakeholder.activity.word` counts days since the latest dated CHANGELOG
+entry (a milestone), not the latest commit: **Moving** under `quietDays`
+(default 14), **Quiet** up to and including `stalledDays` (default 30),
+**Stalled** beyond. A project that commits every day but has shipped
+nothing for five weeks is stalled to a stakeholder. With no dated entry
+there is no word: leave it off the headline and say why in the terminal.
+The engineer page keeps its `staleness` verdict.
+
+### Publishing and the terminal summary
+
+The same-URL rule holds: the stable path, and if a page for this project
+already exists, find it with `action: "list"`, read it, and publish with its
+`url` so the stakeholder's link keeps working. The terminal summary to the
+owner gives the link, then wording pending, then the notes.
+
 ## Judgement calls
 
 - **Closed is closed.** Struck-through nodes, `Status: CLOSED`, checked
@@ -133,5 +220,10 @@ An empty section is omitted, not collapsed. Semantic colour is for state
 `fixtures/` holds one small repo per format family the detectors support
 (prose ADR, frontmatter decision note, line-per-node design graph, markdown
 table graph, phase headings with exit criteria, milestone table, generated
-requirement roadmap, checkbox backlog, per-file sessions). `--self-test`
-runs them all and fails loudly. Add a fixture before adding a detector.
+requirement roadmap, checkbox backlog, per-file sessions), plus stakeholder
+mode with a valid exit-criteria file, an invalid one, and a folder named in
+its place. `"$now"` in an `expect.json` pins the clock in local time, and
+those fixtures run again at UTC+14 and UTC−12. `--self-test` runs them all,
+checks in a scratch git repo that no file name reaches a shell, and fails
+loudly.
+Add a fixture before adding a detector.

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "overall": 2.1,
+  "phases": [
+    {
+      "id": "phase0",
+      "number": 0,
+      "title": "Groundwork",
+      "status": "met",
+      "rows": [
+        { "id": "G1", "title": "The repository builds from a clean checkout", "level": 3, "target": 3, "atTarget": true, "note": "" }
+      ],
+      "manual": []
+    },
+    {
+      "id": "phase1",
+      "number": 1,
+      "title": "Booking core",
+      "status": "current",
+      "rows": [
+        { "id": "R1", "title": "A seat can be held and released", "level": 3, "target": 3, "atTarget": true, "note": "" },
+        { "id": "R2", "title": "An unpaid hold expires on time", "level": 2, "target": 3, "atTarget": false, "note": "expiry job runs; clock-skew test missing" },
+        { "id": "R3", "title": "Checkout calls payments only through its contract", "level": 1, "target": 2, "atTarget": false, "note": "" },
+        { "id": "R4", "title": "The operator screen lists every sailing", "level": 3, "target": 3, "atTarget": true, "note": "" }
+      ],
+      "manual": [
+        { "title": "An operator walked through a booking end to end", "done": true },
+        { "title": "The harbour master signed the capacity rules", "done": false }
+      ]
+    },
+    {
+      "id": "phase2",
+      "number": 2,
+      "title": "Payments",
+      "status": "not_met",
+      "rows": [
+        { "id": "P1", "title": "A card payment settles a hold", "level": 0, "target": 3, "atTarget": false, "note": "" }
+      ],
+      "manual": []
+    },
+    {
+      "id": "phase3",
+      "number": 3,
+      "title": "Launch",
+      "status": "not_met",
+      "rows": [],
+      "manual": []
+    }
+  ]
+}

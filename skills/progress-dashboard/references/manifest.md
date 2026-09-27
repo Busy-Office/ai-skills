@@ -42,6 +42,15 @@ is optional. Paths are relative to the repo root and may be globs.
 | `notion` | Notion page URL to mirror the first screen into after each publish | no mirror |
 | `staleness` | day thresholds for the headline verdict | quiet 7, stalled 14 |
 | `vocabulary` | extra status → canonical mappings | built-in map only |
+| `audience` | `"engineer"` or `"stakeholder"`: which page to build (see below) | `"engineer"`: the page and output above, unchanged |
+| `title` | page title, e.g. `"Harbour Bookings — Project Status"` | the project name |
+| `exitCriteria` | stakeholder mode: repo-relative path to the phase exit-criteria JSON (format B below). Not `gates`, which means human sign-off logs | no exit checks on the page |
+| `activity` | stakeholder mode: `{ "quietDays": 14, "stalledDays": 30 }`, days since the latest milestone | quiet 14, stalled 30 |
+| `plain` | stakeholder mode: the owner's plain wording, used verbatim (see below) | every item listed as wording pending |
+
+`exitCriteria`, `activity` and `plain` are read only when `audience` is
+`"stakeholder"`; set in engineer mode, they earn a config note and nothing
+else.
 
 ## Canonical vocabulary
 
@@ -66,3 +75,117 @@ Computed from the last commit date and whether anything is waiting on a human:
 | quietDays … stalledDays | any | **quiet** |
 | > stalledDays | yes | **stalled** |
 | > stalledDays | no | **dormant** |
+
+## Stakeholder mode
+
+```json
+{
+  "project": "Harbour Bookings",
+  "audience": "stakeholder",
+  "title": "Harbour Bookings — Project Status",
+  "exitCriteria": "bench/scorecard.json",
+  "activity": { "quietDays": 14, "stalledDays": 30 },
+  "plain": {
+    "phases":   { "phase1": "Let people hold a seat on a sailing and keep it until they pay." },
+    "steps":    { "1.2": "Let unpaid holds lapse on their own" },
+    "criteria": { "R2": "Holds lapsing on time" }
+  }
+}
+```
+
+The collector then adds a `stakeholder` block to its output: `title`,
+`headline`, `journey`, `thisPhase` (steps, step counts, exit checks),
+`milestones`, `decisions`, `activity`, `blockers`, `exitCriteria` (file,
+loaded, error) and `wordingPending`. Every other key is as in engineer
+mode, apart from two: `sources` gains the exit-criteria file, and `notes`
+gains the stakeholder notes. When the stakeholder view finds the current
+phase (from the exit criteria or a heading's state), it withdraws the
+roadmap's "no phase status markers" note, which would contradict the page.
+
+### `plain` — the glossary
+
+| group | key | example |
+|---|---|---|
+| `phases` | the phase id from the exit-criteria file; `phase<number>` or the number alone also match | `"phase1"` |
+| `steps` | `<phase number>.<step number>` | `"1.2"` |
+| `criteria` | the exit-criteria row id | `"R2"` |
+
+Values are one plain sentence (phases) or a plain name (steps, criteria),
+printed verbatim. Every phase, every step of the current phase and every
+exit-criteria row of the current phase not yet at target that has no entry
+is listed in `stakeholder.wordingPending` for the terminal summary.
+
+### Format B — the exit-criteria file
+
+Written by the project's own tooling; version 1. It should be deterministic
+(no timestamps, stable key order) so a `--check` can compare it.
+
+```json
+{
+  "version": 1,
+  "overall": 2.1,
+  "phases": [
+    {
+      "id": "phase1", "number": 1, "title": "Booking core", "status": "current",
+      "rows": [
+        { "id": "R2", "title": "An unpaid hold expires on time", "level": 2, "target": 3, "atTarget": false, "note": "" }
+      ],
+      "manual": [ { "title": "The harbour master signed the capacity rules", "done": false } ]
+    }
+  ]
+}
+```
+
+`status` is `met`, `current` or `not_met` (shown as done, now and next);
+`note` is text, empty when there is none; `rows` and `manual` may be empty
+lists. `overall` is read but not shown to stakeholders. A missing file, a
+path that is a folder or cannot be read, invalid JSON, another version or
+a wrong shape is a data-quality note
+naming the first problems; the page then takes its phases from the roadmap
+and shows no exit checks.
+
+### Steps — the roadmap's work-items table
+
+The current phase's section of the roadmap (`## Phase <n> — …`, up to the
+next heading of the same level) holds a table whose first column is the
+step number and which has a `Status` column. Each status is exactly one of
+`done`, `in progress` or `not started` (any case). `done` means the step's
+acceptance is met on main; a landed step whose acceptance is not yet met is
+`in progress`. The step name comes from the `Item` (or `Step`, `Name`,
+`Title`) column. Any other status is reported and counted as unknown.
+
+```markdown
+| # | Item | Acceptance | Status |
+|---|---|---|---|
+| 1 | Seat model and holds | R1 at 3 | done |
+| 2 | Hold expiry job | R2 at 3 | in progress |
+```
+
+Without an exit-criteria file, phases come from the roadmap headings; a
+heading may end with its state: `## Phase 1 — Booking core — current`
+(`met`, `done`, `current`, `next`, `planned` and similar).
+
+### Milestones, decisions, activity
+
+- **Milestones** are the latest five dated `##` headings of the changelog:
+  `## 2026-09-13 — heading`, `## [1.2.0] — 2026-09-02 (summary)`,
+  `## 1.2.0 (2026-09-02)`. Undated headings (`Unreleased`) are skipped.
+- **Decisions** are the latest five accepted ones, dated from their record
+  (frontmatter `date`, `- Session:`), else, in full mode, from the commit
+  that added the file.
+- **Activity** counts days since the latest milestone, not the latest
+  commit:
+
+| days since the latest milestone | word |
+|---|---|
+| < quietDays | **Moving** |
+| quietDays … stalledDays | **Quiet** |
+| > stalledDays | **Stalled** |
+| no dated changelog entry | none; a data-quality note says why |
+
+- **Blockers** are candidates for items waiting on people that block the
+  current phase: open gates, `BLOCKED ON OWNER` lines, needs-human graph
+  nodes, and any open question whose "blocks" names the current phase. An
+  item whose title or "blocks" names other phases but not the current one
+  ("Phase 3: the regulator signs off the launch") is left out. The page
+  shows the rest only where they block the current phase.
