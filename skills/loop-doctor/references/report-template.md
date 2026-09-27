@@ -40,7 +40,7 @@ flowchart LR
 
 ## Score
 
-**Health: <fit | watch | treat | stop>** · mean <x.x> / 5
+**Health: <fit | watch | treat | stop>** · mean <x.x> / 5 · scale: ten dimensions (loop-doctor 0.3)<; if the project gates on a loop-doctor score: first-eight mean <y.y> — the gate at <file:line> was set on the eight-dimension scale>
 **Built vs declared:** <one sentence.>
 
 | dimension | score | why (one line: a file:line or a number, then the finding ids) |
@@ -116,7 +116,7 @@ When no roadmap item is unblocked:
 3.
 
 ---
-<footer, one line:> reviewed <date> at <sha> · files read <n> · state files sampled, none read whole (or: read whole, all under 40 lines) · target repo untouched
+<footer, one line:> reviewed <date> at <sha> · files read <n> (long ones by section: <file §§>) · state files sampled, none read whole (or: read whole, all under 40 lines) · earlier reviews not opened · target repo untouched
 ```
 
 Rules of thumb while filling it in:

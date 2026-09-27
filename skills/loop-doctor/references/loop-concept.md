@@ -257,12 +257,21 @@ When no roadmap item is unblocked:
 Review mode reports each slot below as **present** (file:line), **partial**
 (what's there and what isn't), **missing** (the file:line where it should
 live), **contradicted** (both answers, with their lines) or **not
-applicable** (why). Present slots show in the scores; the review lists every
+applicable** (why) — including **not applicable — owner decision**, with
+the file:line where the owner decided. The concept never overrides a
+recorded owner decision; the review notes the difference once and moves on. Present slots show in the scores; the review lists every
 other one, one row each. The first six matter most.
 
 **The config file wins for numbers.** Tries, stops, levels, caps, share,
 lenses and models live in the config; the rules file says what happens and
 points to the config for how many. A number in both is *Redundant*.
+
+**The config is the owner's, like intent.** The loop reads it and never
+writes it. A config that lives in a file the loop writes (a field block in
+the roadmap, say), and that sets the loop's own caps or gates, is the
+self-approval case (c4) — *Invalid* if the loop has written it, *Risk* if it
+could. A config that is only read in some states (only while a milestone is
+ACTIVE) is **partial**: say when it's read and when it isn't.
 
 | # | slot | from |
 |---|---|---|

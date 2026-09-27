@@ -10,7 +10,7 @@
   "concept.verifierAgents.0.name": "verifier",
   "concept.verifierAgents.0.readOnly": true,
   "concept.killSwitch.length": 2,
-  "concept.caps.length": 1,
+  "concept.caps.length": 2,
   "concept.innerLoop.length": 1,
   "concept.challenge.length": 2,
   "concept.milestoneTags": 1,

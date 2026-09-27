@@ -260,13 +260,23 @@ absent dimension reads as an unexamined one.
   → *Invalid* on mismatch.
 - **References resolve.** Every path, script, command and agent named
   in the governing files exists. → *Invalid* per dead reference (unless
-  documented as generated at runtime).
+  documented as generated at runtime). An agent missing from the repo's
+  `.claude/agents/` may live at user level (`~/.claude/agents/`) or in an
+  installed plugin: look there by name first. Found only in an unrelated
+  plugin, or ambiguous between several → *Risk* (the loop depends on
+  whatever happens to be installed), not a dead reference.
 - **Superseded designs are gone or marked.** A router, driver or rule
   the playbook says was replaced must not still be described as current
   elsewhere. → *Invalid*.
 - **Drivers don't swallow failure.** `|| true`, `2>/dev/null` on setup
   steps means a tick can start on a broken toolchain silently.
   → *Risk*.
+- **Owner decisions are respected.** Where the rules record that the owner
+  refused, closed or deliberately limited something, the review doesn't
+  re-propose it and doesn't count its absence against the loop — it marks
+  the slot *not applicable — owner decision* (file:line). This one is a rule
+  for the review itself: a review that pastes a rule against a recorded
+  owner decision is wrong, however good the rule.
 - **Built vs declared is stated.** A contract "normative from Phase 1"
   that is only simulated must say so where it's declared normative.
   → *Invalid* if a reader would believe it is enforced.

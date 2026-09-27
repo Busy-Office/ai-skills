@@ -42,10 +42,16 @@ So:
 - **Run nothing of the project's.** No install, no build, no tests, no
   `refresh` command. Only `git log`/`git show`/`git status` and the
   inventory script.
-- **Read bounded.** Governing files fully; state files by header, first
-  screen and last screen — the inventory gives their line counts, and
+- **Read bounded.** Governing files fully when under ~600 lines; a longer
+  one (a 2,000-line playbook) by the sections the loaded rules and the tick
+  actually use — the inventory lists every file's headings — and the
+  receipt names which sections. State files by header, first screen and
+  last screen — the inventory gives their line counts, and
   the count *is* the finding. Never read a queue or log end to end,
   unless it is under about 40 lines; say so in the receipt.
+- **Stay blind to earlier reviews.** Don't open the files the inventory
+  lists under `priorReviews`; a previous score anchors the new one. The
+  footer says they were skipped.
 - **No subagents by default.** One context, one pass. The inventory
   already did the mechanical work.
 - **Leave a receipt.** The review's footer says how many files were read,
@@ -212,6 +218,19 @@ line to pass will, eventually. Rank it with self-approval.
 **Jev advises; code decides.** A Jev call that lives only in a skill is a
 wish; one that replaces the verifier is a hole. Look for it in the driver
 or a hook, with a fallback, and with its outcomes recorded.
+
+**The owner's decisions stand.** A slot the owner deliberately left out
+(Jev at two points only, a rule they refused) is *not applicable — owner
+decision* with the file:line, not a gap to argue with. Before pasting or
+prescribing anything, look for a recorded "refused", "do not re-raise" or
+"decided" on the same subject; if there is one, don't paste against it —
+one row saying the concept differs and the owner decided, nothing more.
+
+**Say which scale.** The score block names the scale (ten dimensions,
+loop-doctor 0.3). If the inventory's `concept.scoreGates` shows the
+project gates on a loop-doctor score, give the mean of the first eight
+dimensions too, and say the gate's threshold was set on the eight-dimension
+scale — a silent scale change moves someone's gate.
 
 **Explain before you judge.** If the diagram was hard to draw from the
 files, say so once — that difficulty is itself a finding.

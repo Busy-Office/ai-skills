@@ -20,6 +20,10 @@ Where a dimension's checks cannot be assessed from the files (no
 instrument), score it and mark the reason `NOT MEASURED — <why>`; don't
 guess upward.
 
+A gap the loop **documents itself and the owner accepted** — both cited,
+file:line — counts as a *Risk*, not an *Invalid*: it's known, not hidden.
+The same gap undocumented, or documented but never accepted, stays Invalid.
+
 A *Redundant* finding counts as a *Risk* for the anchors — two copies of a
 rule are a disagreement waiting to happen.
 

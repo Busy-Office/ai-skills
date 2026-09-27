@@ -1,0 +1,18 @@
+{
+  "drivers.length": 0,
+  "instructedScripts.length": 3,
+  "triggers.0.kind": "claude-scheduled-tasks-lock",
+  "triggers.length": 1,
+  "priorReviews": ["notes/loop-doctor-rescore-2026-09-20.md"],
+  "intent.file": "ROADMAP.md#Objective",
+  "sharpness.openItems": 2,
+  "sharpness.withAcceptance": 1,
+  "sharpness.ambiguous": 1,
+  "sharpness.ambiguousItems.0.id": "P-8",
+  "concept.scoreGates.length": 1,
+  "concept.killSwitch.length": 2,
+  "concept.caps.length": 3,
+  "stateFiles.0.file": "notes/RESUME.md",
+  "stateFiles.0.readFirst": true,
+  "stateFiles.1.readFirst": true
+}

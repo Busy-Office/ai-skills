@@ -14,6 +14,9 @@ import { execSync } from "node:child_process";
 import { homedir } from "node:os";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Records of what happened — logs, archives, dated notes, earlier reviews —
+// mention old cadences and old paths; they are not the loop's current design.
+const HISTORY_RE = /(^|\/)(\.roundtable\/|[^/]*archive[^/]*|[^/]*loop-log[^/]*|CHANGELOG[^/]*|history\/)|-\d{4}-\d{2}-\d{2}[^/]*\.md$/i;
 const IGNORE = new Set(["node_modules", ".git", "dist", "build", "__archived", "graphify-out", ".next", "coverage", "vendor", "worktrees"]);
 
 function walk(root, maxDepth = 6) {
@@ -64,10 +67,15 @@ export function inventory(repoPath, opts = {}) {
     for (const m of t.matchAll(/\/loop\s+(\d+[smh])/g)) out.triggers.push({ kind: "claude-loop-interval", file: f, cadence: m[1] });
     // Cloud routines / scheduled agents are declared outside the repo; the governing docs usually name them.
     // Only governing files count — grill notes and research files mention "routine" constantly.
-    if (/(^|\/)(CLAUDE|AGENTS|LOOPS?[-_A-Z]*|LOOP-[A-Z-]+|ORCHESTRATOR[-_A-Z]*|RESUME|README)\.md$/i.test(f))
+    if (!HISTORY_RE.test(f) && /(^|\/)(CLAUDE|AGENTS|LOOPS?[-_A-Z]*|LOOP-[A-Z-]+|ORCHESTRATOR[-_A-Z]*|RESUME|README)\.md$/i.test(f))
       for (const m of t.matchAll(/(?:\/schedule(?![\/\w-])|scheduled (?:agent|routine)|cloud routine|routine (?:fires|wakes|runs)|ScheduleWakeup)[^\n]{0,120}/gi)) out.triggers.push({ kind: "cloud-routine-mention", file: f, line: lineOf(t, m.index), text: m[0].slice(0, 140) });
-    for (const m of t.matchAll(/(?:tick|wake|cadence)[^\n.]{0,40}?(\d+)\s*(?:-|\s)?(min(?:ute)?s?|hours?|h\b)/gi)) out.triggers.push({ kind: "documented-cadence", file: f, cadence: `${m[1]} ${m[2]}`, line: lineOf(t, m.index) });
+    if (!HISTORY_RE.test(f) && /(^|\/)(CLAUDE|AGENTS|LOOPS?[-_A-Z]*|LOOP-[A-Z-]+|ORCHESTRATOR[-_A-Z]*|RESUME|README)\.md$/i.test(f))
+      for (const m of t.matchAll(/(?:tick|wake|cadence)[^\n.]{0,40}?(\d+)\s*(?:-|\s)?(min(?:ute)?s?|hours?|h\b)/gi)) out.triggers.push({ kind: "documented-cadence", file: f, cadence: `${m[1]} ${m[2]}`, line: lineOf(t, m.index) });
   }
+
+  // Claude Code's /loop and scheduled tasks leave a lock file; some loops keep a dispatcher marker.
+  if (files.includes(".claude/scheduled_tasks.lock")) out.triggers.push({ kind: "claude-scheduled-tasks-lock", file: ".claude/scheduled_tasks.lock" });
+  for (const f of files.filter((f) => /(^|\/)DISPATCHER(\.\w+)?$/.test(f))) out.triggers.push({ kind: "dispatcher-file", file: f });
 
   // ------------------------------------------------------------ drivers
   for (const f of files.filter((f) => /\.(sh|ps1|py|mjs|js|ts)$/.test(f) && !/test|spec|node_modules/.test(f))) {
@@ -89,6 +97,7 @@ export function inventory(repoPath, opts = {}) {
   }
 
   // ------------------------------------------------------------ docs, skills, agents
+  // (instructed scripts are collected after the governing docs are known, below)
   const docRe = /(^|\/)(LOOPS?([-_][A-Z-]+)?|LOOP-[A-Z-]+|ORCHESTRATOR[-_A-Z]*|DEFINITION-OF-DONE|HUMAN-GATES-LOG|RESUME|DoD)\.md$/i;
   for (const f of files) {
     if (docRe.test(f)) out.docs.push(docEntry(f, read(f)));
@@ -117,9 +126,40 @@ export function inventory(repoPath, opts = {}) {
     for (const g of govNames) { if (intentFile && g === intentFile.split("#")[0]) continue; const t = read(g) ?? ""; const m = t.match(new RegExp(needle, "i")); if (m) refs.push({ file: g, line: lineOf(t, m.index) }); }
     const objectiveStep = govNames.some((g) => /objective (loop|review)|re-?plan|empty queue|queue (is|runs|becomes) (empty|dry)|no unblocked|nothing (left|to do)|steady state/i.test(read(g) ?? ""));
     let agentWrites = null;
-    if (git && intentFile) { try { const authors = sh(`git log --format=%an -- "${intentFile}"`).split("\n").filter(Boolean); agentWrites = { commits: authors.length, authors: [...new Set(authors)].slice(0, 5) }; } catch { /* none */ } }
+    if (git && intentFile) {
+      try {
+        const [file, section] = intentFile.split("#");
+        // A section's history, not the whole file's: git log -L over the heading's next 40 lines.
+        const cmd = section ? `git log -s --format=%an -L "/^##* *${section.replace(/["\\/]/g, "")}/,+40:${file}"` : `git log --format=%an -- "${file}"`;
+        const authors = sh(cmd).split("\n").filter((x) => x && !/^(diff|---|\+\+\+|@@)/.test(x));
+        agentWrites = { commits: authors.length, authors: [...new Set(authors)].slice(0, 5) };
+      } catch { /* none */ }
+    }
     out.intent = { file: intentFile, referencedBy: refs, emptyQueueOrObjectiveRule: objectiveStep, history: agentWrites };
   }
+
+  // Scripts the governing rules tell the agent to run each tick — the driver of
+  // a loop that has no driver file of its own.
+  out.instructedScripts = [];
+  {
+    const seen = new Map();
+    for (const d of [...out.docs, ...out.skills]) {
+      const t = read(d.file) ?? "";
+      for (const m of t.matchAll(/(?<![\w/])((?:[\w.-]+\/)*[\w.-]+\.(?:py|mjs|js|sh|ts|ps1))(?![\w])/g)) {
+        const ref = m[1].replace(/^\.\//, "");
+        const hit = files.find((f) => f === ref || f.endsWith("/" + ref));
+        if (!hit || /test|spec/.test(hit)) continue;
+        if (!seen.has(hit)) seen.set(hit, []);
+        if (seen.get(hit).length < 3) seen.get(hit).push({ file: d.file, line: lineOf(t, m.index) });
+      }
+    }
+    for (const f of files.filter((f) => /(^|\/)(loops?|tick|wake)\/[^/]+\.(py|mjs|js|sh|ts)$/.test(f) && !/test|spec/.test(f))) if (!seen.has(f)) seen.set(f, []);
+    for (const [f, namedIn] of seen) if (!out.drivers.some((d) => d.file === f)) out.instructedScripts.push({ file: f, lines: lineCount(read(f) ?? ""), namedIn });
+    out.instructedScripts = out.instructedScripts.slice(0, 40);
+  }
+
+  // Earlier loop reviews in the target: listed so the reviewer can stay blind to them.
+  out.priorReviews = files.filter((f) => /loop-doctor|LOOP-REVIEW/i.test(basename(f)) && /\.md$/.test(f));
 
   // what a tick actually loads: CLAUDE.md, @-imports, loop skills
   const claude = read("CLAUDE.md");
@@ -129,15 +169,20 @@ export function inventory(repoPath, opts = {}) {
   // ------------------------------------------------------------ state files
   const govText = [...out.docs, ...out.skills].map((d) => read(d.file) ?? "").join("\n") + out.drivers.map((d) => read(d.file) ?? "").join("\n");
   const stateCandidates = new Set();
-  for (const m of govText.matchAll(/([\w./-]*(?:STATUS|QUEUE|STATE|LOG|RESUME|BACKLOG|journal|loop-log|metrics)[\w.-]*\.(?:md|jsonl?|db|yaml))/gi)) stateCandidates.add(m[1].replace(/^\.\//, ""));
+  for (const m of govText.matchAll(/([\w./-]*(?:STATUS|QUEUE|STATE|LOG|RESUME|BACKLOG|ROADMAP|journal|loop-log|metrics)[\w.-]*\.(?:md|jsonl?|db|yaml))/gi)) stateCandidates.add(m[1].replace(/^\.\//, ""));
+  // Whatever the wake is told to read, whatever it's called — these are read first.
+  const readOrder = new Set();
+  // Each cue starts its own 300-character window, so one window can't swallow the next cue.
+  for (const cue of govText.matchAll(/read(?:s)?\s+first|read first|read the handover|step 0\b|at (?:each )?wake|each wake|on wake/gi))
+    for (const m of govText.slice(cue.index, cue.index + 300).matchAll(/([\w./-]+\.(?:md|jsonl?|yaml))/g)) if (!/^(CLAUDE|AGENTS)\.md$/i.test(basename(m[1])) && !HISTORY_RE.test(m[1])) { const c = m[1].replace(/^\.\//, ""); stateCandidates.add(c); readOrder.add(basename(c)); }
   const seenState = new Set();
   for (const c of stateCandidates) {
     const p = files.find((f) => f === c || f.endsWith("/" + c) || basename(f) === basename(c));
     if (!p || seenState.has(p)) continue; seenState.add(p);
     const t = read(p); if (t == null) continue;
     const lines = lineCount(t);
-    const entry = { file: p, lines, bytes: Buffer.byteLength(t), readFirst: /read(s)?\s+(this|it|[`'"]?[\w./-]*\/?[\w.-]*[`'"]?)\s+first|read first/i.test(govText) && new RegExp(escapeRe(basename(p)) + "[^\\n]{0,80}first|first[^\\n]{0,80}\\n?[^\\n]{0,80}" + escapeRe(basename(p)), "i").test(govText), growth: null, sentinels: [] };
-    if (git) { try { const shas = sh(`git log --format=%h -n 8 -- "${p}"`).split("\n").filter(Boolean); const pts = []; for (const s of shas.reverse()) { try { pts.push({ sha: s, lines: sh(`git show ${s}:"${p}"`).split("\n").length }); } catch { /* skip */ } } if (pts.length > 1) entry.growth = { first: pts[0], last: pts.at(-1), delta: pts.at(-1).lines - pts[0].lines, points: pts.length }; } catch { /* no history */ } }
+    const entry = { file: p, lines, bytes: Buffer.byteLength(t), readFirst: readOrder.has(basename(p)) || /read(s)?\s+(this|it|[`'"]?[\w./-]*\/?[\w.-]*[`'"]?)\s+first|read first/i.test(govText) && new RegExp(escapeRe(basename(p)) + "[^\\n]{0,80}first|first[^\\n]{0,80}\\n?[^\\n]{0,80}" + escapeRe(basename(p)), "i").test(govText), growth: null, sentinels: [] };
+    if (git && !HISTORY_RE.test(p)) { try { const shas = sh(`git log --format=%h -n 8 -- "${p}"`).split("\n").filter(Boolean); const pts = []; for (const s of shas.reverse()) { try { pts.push({ sha: s, lines: sh(`git show ${s}:"${p}"`).split("\n").length }); } catch { /* skip */ } } if (pts.length > 1) entry.growth = { first: pts[0], last: pts.at(-1), delta: pts.at(-1).lines - pts[0].lines, points: pts.length }; } catch { /* no history */ } }
     // sentinels: terminal markers followed by more content
     const sent = [...t.matchAll(/^(?:#+\s*)?(?:\*\*)?STATUS:\s*([A-Z][A-Z-]+)/gm)].map((m) => ({ line: lineOf(t, m.index), value: m[1] }));
     if (sent.length) {
@@ -165,7 +210,7 @@ export function inventory(repoPath, opts = {}) {
   out.checks.repeatedSentences = out.checks.repeatedSentences.slice(0, 40);
 
   // ------------------------------------------------------------ dangling references
-  for (const f of govFiles) {
+  for (const f of govFiles.filter((f) => !HISTORY_RE.test(f) && !/(^|\/)[^/]*(LOG|STATUS)[^/]*\.md$/i.test(f))) {
     const t = read(f) ?? "";
     for (const m of t.matchAll(/(?<![\w@/])((?:\.{1,2}\/)?(?:[\w.-]+\/)+[\w.-]+\.(?:md|sh|ps1|py|mjs|js|ts|ya?ml|json|sql|db))(?![\w/])/g)) {
       const ref = m[1].replace(/^\.\//, "");
@@ -212,7 +257,7 @@ export function inventory(repoPath, opts = {}) {
       lines.forEach((l, i) => {
         if (/^\s*\|/.test(l) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] ?? "")) { header = cellsOf(l).map((h) => h.toLowerCase()); return; }
         if (!/^\s*\|/.test(l)) header = null;   // any non-table line ends the table
-        const box = l.match(/^\s*- \[ \]\s*(.+)$/);
+        const box = l.match(/^\s*(?:-|\d+\.)\s+\[ \]\s*(.+)$/);
         const row = l.match(/^\|\s*([A-Z]{1,8}-?\d+[\w.-]*)\s*\|(.*)$/);
         let text = null, id = null, acceptCell = null;
         if (box) { text = box[1]; id = text.match(/^\**([A-Z]{1,8}-?\d+[\w.-]*)/)?.[1] ?? null; }
@@ -228,7 +273,15 @@ export function inventory(repoPath, opts = {}) {
         if (!text) return;
         const plain = stripMd(text).slice(0, 160);
         // continuation lines belong to the item only while they are indented and not a new bullet/row
-        const cont = [lines[i + 1], lines[i + 2]].filter((x) => x && /^\s{2,}/.test(x) && !/^\s*- \[|^\s*\|/.test(x)).join(" ");
+        // The item's body: indented lines up to the next item (acceptance often sits several lines down).
+        const body = [];
+        for (let k = i + 1; k < Math.min(lines.length, i + 25); k++) {
+          const x = lines[k];
+          if (!x.trim()) continue;
+          if (!/^\s{2,}/.test(x) || /^\s*(?:-|\d+\.)\s+\[[ x]\]|^\s*\|/.test(x)) break;
+          body.push(x);
+        }
+        const cont = body.join(" ");
         const hasAcceptance = acceptCell !== null ? acceptCell.replace(/[-—–]/g, "").trim().length > 0
           : /\b(accept(ance)?|exit|done when|until|criteri|test:|assert|verify|measure|≥|<=|>=|\d+\s*%)\b/i.test(l + " " + cont);
         const ambiguous = /\b(improve|look (at|into)|consider|explore|clean ?up|review|investigate|tidy|refactor|better|enhance|polish)\b/i.test(plain) && !/\b(so that|until|to \d|by \d|≥|<=|>=|\d+\s*%)\b/i.test(plain);
@@ -254,8 +307,8 @@ export function inventory(repoPath, opts = {}) {
     for (const [f, t] of texts) for (const m of t.matchAll(re)) { hits.push({ file: f, line: lineOf(t, m.index), text: m[0].slice(0, 120).trim() }); if (hits.length >= cap) return hits; }
     return hits;
   };
-  const governing = [...new Set([...out.docs, ...out.skills].map((d) => d.file))].map((f) => [f, read(f) ?? ""]);
-  const driverTexts = out.drivers.map((d) => [d.file, read(d.file) ?? ""]);
+  const governing = [...new Set([...out.docs, ...out.skills].map((d) => d.file))].filter((f) => !HISTORY_RE.test(f)).map((f) => [f, read(f) ?? ""]);
+  const driverTexts = [...out.drivers, ...out.instructedScripts].map((d) => [d.file, read(d.file) ?? ""]);
   const settingsTexts = files.filter((f) => /^\.claude\/settings(\.local)?\.json$/.test(f)).map((f) => [f, read(f) ?? ""]);
   const loopConfig = files.find((f) => /(^|\/)(loop\.config\.json|\.claude\/loop\.json)$/.test(f)) ?? null;
   let configKeys = null;
@@ -274,14 +327,16 @@ export function inventory(repoPath, opts = {}) {
     },
     verifierAgents: out.agents.filter((a) => /verif|review|critic|judge|falsif|evaluat|\bqa\b/i.test(a.name)).map((a) => ({ name: a.name, file: a.file, readOnly: a.readOnly })),
     killSwitch: mention(/\b(HALT|halt[- ]file|kill[- ]switch)\b[^\n]{0,60}/g, [...governing, ...driverTexts]),
-    caps: mention(/\b(tokens?|budget|spend|cost)\b[^\n]{0,30}?\b(per|\/|a)\s*(item|tick|day|week|month)\b[^\n]{0,40}/gi, [...governing, ...(loopConfig ? [[loopConfig, read(loopConfig) ?? ""]] : [])]),
+    caps: mention(/\b(tokens?|budget|spend|cost)\b[^\n]{0,30}?\b(per|\/)\s*(item|tick|wake|day|week|month)\b[^\n]{0,40}|^\s*Budget:[^\n]{0,100}|--cap\b[^\n]{0,40}|\b(?:max(?:imum)?|at most|≤|cap(?:ped)? at)\s*\d+\s*(?:wakes?|ticks?|rounds?|tries|attempts|agents?)\b[^\n]{0,40}/gim, [...governing, ...driverTexts, ...queueTexts, ...(loopConfig ? [[loopConfig, read(loopConfig) ?? ""]] : [])], 8),
     innerLoop: mention(/\b(hypothesis|plateau|max(?:imum)?\s+(?:tries|attempts)|attempts?\s+per\s+item|tries\s+per\s+item)\b[^\n]{0,60}/gi, governing),
     challenge: mention(/\b(milestone review|design review|critique|challenge|lens(?:es)?|devil'?s advocate)\b[^\n]{0,60}/gi, governing),
     milestoneTags: queueTexts.reduce((n, [, t]) => n + (t.match(/\bmilestone\b/gi)?.length ?? 0), 0),
+    // A project that gates on a loop-doctor score must be told when the scale changes.
+    scoreGates: mention(/loop-doctor[^\n]{0,120}\b(mean|score|dimension)s?\b[^\n]{0,80}/gi, [...governing, ...queueTexts].filter(([f]) => !out.priorReviews.includes(f))),
   };
 
   // ------------------------------------------------------------ verdict on presence
-  if (!out.triggers.length && !out.drivers.length && !out.docs.length && !out.skills.length) out.warnings.push("No scheduled-loop trigger, driver or loop documents found — this project may not have an autonomous loop.");
+  if (!out.triggers.length && !out.drivers.length && !out.instructedScripts.length && !out.docs.length && !out.skills.length) out.warnings.push("No scheduled-loop trigger, driver or loop documents found — this project may not have an autonomous loop.");
   if (!out.triggers.length && (out.drivers.length || out.docs.length)) out.warnings.push("Loop documents/drivers exist but no scheduler entry was found on this machine (no cron, launchd, or workflow schedule) — the cadence may be manual or live elsewhere.");
   if (out.drivers.length > 1) out.warnings.push(`${out.drivers.length} driver-like scripts found — check whether more than one is live.`);
   out.receipt = { filesScanned: files.length, governingFilesRead: [...new Set([...out.docs, ...out.skills, ...out.drivers].map((d) => d.file))].length, stateFilesReadWhole: 0, runtimeMs: Date.now() - t0 };

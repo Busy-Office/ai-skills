@@ -51,7 +51,10 @@ not seen the build must be able to grade it.
     `<PLACEHOLDER>` replaced by a real name (roadmap, intent, gate-log,
     resume and rules files, `HALT` path, config file, a concrete escalation
     channel), and no pasted line contradicting a rule already in the file
-    it goes into. A
+    it goes into or against a recorded owner decision; a slot marked *not
+    applicable — owner decision* cites where the owner decided. If the
+    project gates on a loop-doctor score, the score block names the scale
+    and gives the first-eight mean. A
     plan that would let the loop edit intent, let the doer change an
     acceptance line, start one-way-door work without a gate entry, or let a
     Jev answer replace the verifier is a FAIL.
