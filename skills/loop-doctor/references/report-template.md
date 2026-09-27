@@ -99,7 +99,8 @@ contradicted, one row each (present ones are in the scores):
 | | file:line | |
 
 Paste-ready, worded for this project's files (goes in <the loaded rules
-file>) — only the parts of the concept's rules this loop lacks. Every name
+file>; where a line must replace an existing one to avoid a contradiction,
+say *replaces <file:line>*) — only the parts of the concept's rules this loop lacks. Every name
 is real: files, the config file, the `HALT` path, the escalation channel
 (a command or a file, never "a notification"). Before writing it, check
 each line against the rules already in that file; a pasted rule that

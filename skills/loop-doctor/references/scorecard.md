@@ -24,8 +24,9 @@ A gap the loop **documents itself and the owner accepted** — both cited,
 file:line — counts as a *Risk*, not an *Invalid*: it's known, not hidden.
 The same gap undocumented, or documented but never accepted, stays Invalid.
 
-When **more than half** of a dimension's checks are missing, it scores at
-most **2** even if every miss is only a Risk — counting Risks alone would
+When **more than half** of a dimension's checks are missing — a *partial*
+check counts as half missing — it scores at most **2** even if every miss is
+only a Risk — counting Risks alone would
 give a dimension that barely exists a passing 3.
 
 A *Redundant* finding counts as a *Risk* for the anchors — two copies of a

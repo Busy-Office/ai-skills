@@ -48,7 +48,9 @@ So:
   loaded rules point) are the reading. Open a file only to confirm a
   finding's citation or to read a `used` section the digest can't settle —
   and batch those reads, several ranges in one command. **Budget: ~1,500
-  lines of governing text opened in all**; the receipt reports the number.
+  lines of governing text opened in all** — the rules files, the sections a
+  tick uses, the scripts the rules run, and the intent and config sections;
+  the skill's own files don't count. The receipt reports the number.
   Cost is context × turns: ten batched reads beat fifty single ones. State
   files by header, first screen and last screen — the inventory gives their line counts, and
   the count *is* the finding. Never read a queue or log end to end,

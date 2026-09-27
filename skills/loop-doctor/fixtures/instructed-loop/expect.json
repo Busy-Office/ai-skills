@@ -21,5 +21,7 @@
     "claude-scheduled-tasks-lock .claude/scheduled_tasks.lock"
   ],
   "digestTruncated": false,
-  "rulesDigest.0.used": true
+  "rulesDigest.0.used": true,
+  "runway.staleHandover.0.id": "P-6",
+  "runway.staleHandover.length": 1
 }

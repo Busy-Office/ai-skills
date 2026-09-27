@@ -4,6 +4,7 @@
 
 M1 activates when the loop-doctor mean is at least 3.0 with no dimension at 1.
 
+0. [x] **P-6 — part detail page.** Landed 2026-09-25.
 1. [ ] **P-7 — search by part number prefix.**
        - Why. Mechanics type the first digits only.
        - Accept — the property. Typing "4A" lists every part starting 4A.

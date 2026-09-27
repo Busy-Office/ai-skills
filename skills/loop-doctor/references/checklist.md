@@ -68,7 +68,17 @@ absent dimension reads as an unexamined one.
   recent record commits (`runway.recentTicks`, `git show <sha>:<state file>`)
   with what the selection rule would have chosen at each. → *Invalid* if the
   loop skipped its rule without recording why; the files say one thing and
-  the runs do another.
+  the runs do another. If the pick can only be computed by running one of
+  the loop's scripts (which review mode never does), report what the
+  records show as a *Risk* and say the rule's own output wasn't computed.
+- **The handover is current.** Items the resume file names as next or in
+  progress aren't closed in the roadmap (`runway.staleHandover`). → *Invalid*
+  per stale item: every wake starts from a wrong picture.
+- **The loop's commits can be told apart from the owner's.** If every commit
+  has the same author (`runway.sharedIdentity`), git can't show whether the
+  loop edited intent, config or a gate — say those checks are undecidable,
+  don't report them clean. → *Risk*; a commit trailer (`Loop-Tick: <n>`) or a
+  separate author settles it.
 - **Empty-queue ladder.** What happens when nothing is unblocked, in
   order: steady state declared → re-plan from intent as gated proposals
   → bounded explore. → *Risk* if unstated (the loop will invent work);

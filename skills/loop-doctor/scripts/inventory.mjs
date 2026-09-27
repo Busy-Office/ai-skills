@@ -70,7 +70,7 @@ export function inventory(repoPath, opts = {}) {
     if (!HISTORY_RE.test(f) && /(^|\/)(CLAUDE|AGENTS|LOOPS?[-_A-Z]*|LOOP-[A-Z-]+|ORCHESTRATOR[-_A-Z]*|RESUME|README)\.md$/i.test(f))
       for (const m of t.matchAll(/(?:\/schedule(?![\/\w-])|scheduled (?:agent|routine)|cloud routine|routine (?:fires|wakes|runs)|ScheduleWakeup)[^\n]{0,120}/gi)) out.triggers.push({ kind: "cloud-routine-mention", file: f, line: lineOf(t, m.index), text: m[0].slice(0, 140) });
     if (!HISTORY_RE.test(f) && /(^|\/)(CLAUDE|AGENTS|LOOPS?[-_A-Z]*|LOOP-[A-Z-]+|ORCHESTRATOR[-_A-Z]*|RESUME|README)\.md$/i.test(f))
-      for (const m of t.matchAll(/(?:tick|wake|cadence)[^\n.]{0,40}?(\d+)\s*(?:-|\s)?(min(?:ute)?s?|hours?|h\b)/gi)) out.triggers.push({ kind: "documented-cadence", file: f, cadence: `${m[1]} ${m[2]}`, line: lineOf(t, m.index) });
+      for (const m of t.matchAll(/(?:tick|wake|cadence|interval)[^\n.]{0,40}?\b(?:every|each|per)\s+(\d+)\s*(?:-|\s)?(min(?:ute)?s?|hours?|h\b)/gi)) out.triggers.push({ kind: "documented-cadence", file: f, cadence: `${m[1]} ${m[2]}`, line: lineOf(t, m.index) });
   }
 
   // Claude Code's /loop and scheduled tasks leave a lock file; some loops keep a dispatcher marker.
@@ -253,7 +253,9 @@ export function inventory(repoPath, opts = {}) {
       h.lines = h.end - h.start + 1;
       const step = h.title.match(/^(step\s+\d+[a-z]?)\b/i)?.[1];
       // A file's own title (the H1) says nothing about which part a tick uses.
-      h.referenced = h.level === 1 ? false
+      // The start of every tick is used whether or not the rules name it.
+      const tickStart = /^(step\s*0\w*\b|wake\b|.*\bwake prompt\b|.*\bread the handover\b|.*\bbefore any other\b|.*\bfirst,)/i.test(h.title);
+      h.referenced = tickStart ? true : h.level === 1 ? false
         : f !== "CLAUDE.md" && !out.checks.loadedFiles.includes(f)
           ? new RegExp(escapeRe(step ?? h.title.split(/\s+[—–-]\s+/)[0]), "i").test(loadedText)
           : true;
@@ -391,7 +393,8 @@ export function inventory(repoPath, opts = {}) {
     const texts = [...governing, ...driverTexts];
     // A tick lock, not a package lockfile or "lock in a decision".
     const lockMentions = mention(/\b(flock|lock dir(?:ectory)?|mkdir\s+[^\s;]*lock|[\w.-]*\.lock\b(?<!(?:package-lock|yarn|pnpm-lock|Cargo|Gemfile|poetry|composer|bun)\.lock)|(?:tick|loop|wake|run) lock\b)[^\n]{0,80}/gi, texts, 10).filter((m) => !/package-lock|lock\.json|lockb\b/.test(m.text));
-    const staleRule = mention(/\b(stale|older than|age|mtime|expire[sd]?|timeout)\b[^\n]{0,40}\block\b|\block\b[^\n]{0,60}\b(stale|older than|age|mtime|expire[sd]?|timeout)\b/gi, texts, 3);
+    lockMentions.push(...mention(/\b(in-?flight|hold)\b[^\n]{0,60}\b(cap|lock|exit)\b[^\n]{0,40}/gi, texts, 3));
+    const staleRule = mention(/\b(past cap|over cap|cap(?:ped)? at \d+|--cap\s+\d+)\b[^\n]{0,40}/gi, texts, 2).concat(mention(/\b(stale|older than|age|mtime|expire[sd]?|timeout)\b[^\n]{0,40}\block\b|\block\b[^\n]{0,60}\b(stale|older than|age|mtime|expire[sd]?|timeout)\b/gi, texts, 3));
     const gateFiles = files.filter((f) => /(^|\/)[^/]*(GATES?|HUMAN-GATES|gate[-_]?log|decisions?)[^/]*\.md$/i.test(f) && !HISTORY_RE.test(f)).slice(0, 4);
     const today = Date.now();
     const gateEntries = [];
@@ -412,6 +415,23 @@ export function inventory(repoPath, opts = {}) {
         recentTicks = sh(`git log -n 20 --format=%h%x09%cI%x09%s -- ${paths}`).split("\n").filter(Boolean).map((l) => { const [sha, date, subject] = l.split("\t"); return { sha, date, subject: subject.slice(0, 120) }; });
       } catch { /* no history */ }
     }
+    // A handover that still points at work the roadmap has closed: the next wake starts from a lie.
+    const staleHandover = [];
+    const handovers = out.stateFiles.filter((x) => /RESUME|HANDOVER/i.test(basename(x.file)) && !/history|archive|log/i.test(basename(x.file)));
+    const resume = handovers.find((x) => x.readFirst) ?? handovers[0];
+    const roadmapFile = out.stateFiles.find((x) => /ROADMAP|BACKLOG/i.test(basename(x.file)))?.file;
+    if (resume && roadmapFile) {
+      const rt = read(resume.file) ?? "", rm = (read(roadmapFile) ?? "").split("\n");
+      const ids = [...new Set([...rt.matchAll(/\b(\d{2,4}\.\d{1,2}|[A-Z]{1,8}-\d{1,4})\b/g)].map((m) => m[1]))].slice(0, 40);
+      for (const id of ids) {
+        const re = new RegExp(`\\[x\\][^\\n]*\\b${escapeRe(id)}\\b|\\b${escapeRe(id)}\\b[^\\n]*\\|\\s*(done|closed|landed)\\s*\\|`, "i");
+        const li = rm.findIndex((l) => re.test(l));
+        if (li >= 0) {
+          const rli = rt.split("\n").findIndex((l) => new RegExp(`\\b${escapeRe(id)}\\b`).test(l) && /\b(next|started|in progress|working on|not landed|current)\b/i.test(l));
+          if (rli >= 0) staleHandover.push({ id, resume: `${resume.file}:${rli + 1}`, closedAt: `${roadmapFile}:${li + 1}` });
+        }
+      }
+    }
     out.runway = {
       rearm: [...new Set(out.triggers.filter((t) => t.kind !== "documented-cadence").map((t) => t.kind + (t.file ? ` ${t.file}` : "")))],
       cadence: out.triggers.filter((t) => /cadence|interval/.test(t.kind)).map((t) => ({ file: t.file, line: t.line ?? null, cadence: t.cadence })).slice(0, 3),
@@ -419,6 +439,8 @@ export function inventory(repoPath, opts = {}) {
       lock: { mentions: lockMentions.length, staleRule: staleRule.length > 0, where: lockMentions.slice(0, 2) },
       oldestOpenGates: gateEntries.slice(0, 5),
       openItems: out.sharpness?.openItems ?? null,
+      staleHandover,
+      sharedIdentity: (() => { try { return git ? new Set(sh("git log -n 50 --format=%ae").split("\n").filter(Boolean)).size === 1 : null; } catch { return null; } })(),
       recentTicks,
     };
   }
