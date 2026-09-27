@@ -773,6 +773,8 @@ JSON
 |---|---|
 | `jev judges` | list the judges; `jev judge <name> --help` shows one's state fields and an example |
 | `jev judge <name> --state <file\|->` | run a judge; `--attach name=file` / `--attach-cmd name="command"` add evidence jev reads itself |
+| `jev rules-check --attach-cmd diff="git diff HEAD"` | does the diff follow each rule in CLAUDE.md / AGENTS.md |
+| `jev hook pre-tool-use` | Claude Code hook: screen consequential Bash commands |
 | `jev ask --questions <file> [--pass …] [--fail …]` | one-off questions, with or without thresholds |
 | `jev web --question "<claim>"` | a yes/no claim checked against web sources |
 | `jev outcome <jev_run_id> "<what happened>"` | record how it really turned out |
@@ -796,6 +798,27 @@ at a terminal.
 | `retry` | an attempt failed: retry, escalate or stop (never PASS) | — |
 | `release` | is this ready to release or deploy | yes |
 | `tool-guard` | should this consequential tool call go ahead | — |
+| `pick` | which roadmap item next — options come from `state.candidates` (picks one) | — |
+| `item-check` | before starting an item: clear? light or standard? a one-way door? | — |
+| `progress` | after a try: improved, plateau (stop) or worse (go back) | — |
+| `slice-check` | roadmap empty: next step intent implies, a new direction (gated), or unrelated (dropped) | — |
+| `critique-check` | does a review comment cite intent, a standard or a measurement — or is it opinion | — |
+| `injection` | is untrusted text (an issue, a web page, tool output) safe to hand to an agent | — |
+
+`jev rules-check` builds a judge on the fly from the project's rules file —
+one question per rule (list items outside code blocks; `--section` narrows
+it) — and asks each about the attached diff: complies, violates, not
+applicable, or not enough evidence.
+
+`jev hook pre-tool-use` is a Claude Code `PreToolUse` hook: consequential
+Bash commands (force-push, `rm -rf`, deploys, publishes, destructive SQL,
+migrations) go to `tool-guard` first. It can only tighten the normal
+permission flow — deny → deny, confirm/review → ask; allow, an unchecked call
+or an unallowed repo → no effect. Add it to `.claude/settings.json`:
+
+```json
+{ "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "jev hook pre-tool-use", "timeout": 20 } ] } ] } }
+```
 
 A project adds its own at `<repo>/.jev/judges/<name>.json` and runs it as
 `jev judge local/<name>`; it can't replace a shared one.

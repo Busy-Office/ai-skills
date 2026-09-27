@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   main, EXIT, SKILL_DIR, loadJudge, validateJudge, parseCondition, decide, readAnswers, scanSecrets,
-  splitCommand, identify, webVerdict,
+  splitCommand, identify, webVerdict, materialize, extractRules, rulesJudge,
 } from "../scripts/jev.mjs";
 import { sync, syncLink, syncAllowAll, configKey, flag } from "../scripts/sync-key.mjs";
 
@@ -75,7 +75,7 @@ const completionState = JSON.stringify({ objective: "Add CSV export", agent_clai
 // ------------------------------------------------------------------ judges --
 test("every shared judge loads and validates", () => {
   const files = readdirSync(join(SKILL_DIR, "judges", "agent"));
-  assert.equal(files.length, 7);
+  assert.equal(files.length, 13);
   for (const f of files) {
     const { judge } = loadJudge(`agent/${f.replace(/\.json$/, "")}`, null);
     assert.ok(judge.example, `${f} has an example`);
@@ -85,7 +85,7 @@ test("every shared judge loads and validates", () => {
 });
 
 test("aliases resolve", () => {
-  for (const a of ["completion", "router", "research", "groundedness", "retry", "release", "tool-guard"]) loadJudge(a, null);
+  for (const a of ["completion", "router", "research", "groundedness", "retry", "release", "tool-guard", "pick", "item-check", "progress", "slice-check", "critique-check", "injection"]) loadJudge(a, null);
 });
 
 test("loader rejects bad judges with file and field", () => {
@@ -132,7 +132,7 @@ test("gate: fail beats pass, pass needs all, else review", () => {
 });
 
 test("every gate judge: threshold edges from its own conditions", () => {
-  for (const name of ["research", "groundedness", "release", "tool-guard"]) {
+  for (const name of ["research", "groundedness", "release", "tool-guard", "item-check", "injection"]) {
     const j = loadJudge(name, null).judge;
     // Build answers exactly at each pass threshold → PASS; then one step past a fail threshold → FAIL.
     const raw = {};
@@ -701,4 +701,88 @@ test("the launcher runs through a symlink", () => {
   const r = spawnSync(link, ["help"], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /typed second opinions/);
+});
+
+// ------------------------------------------------------------ loop judges --
+test("criteria_from: options come from the state; conditions can't name them", async () => {
+  const q = { next: { type: "choice", instructions: "x", criteria_from: "candidates" } };
+  const m = materialize(q, { candidates: { "UI-12": "date picker", "API-4": "pagination" } });
+  assert.deepEqual(Object.keys(m.next.criteria), ["UI-12", "API-4"]);
+  assert.equal(m.next.criteria_from, undefined);
+  assert.deepEqual(Object.keys(materialize(q, { candidates: [{ id: "a1", text: "x" }, { id: "b2", title: "y" }] }).next.criteria), ["a1", "b2"]);
+  assert.throws(() => materialize(q, { candidates: { only: "one" } }), (e) => e.code === "missing_state_fields");
+  assert.throws(() => materialize(q, { candidates: { "bad id!": "x", ok: "y" } }), (e) => e.code === "usage");
+  assert.throws(() => validateJudge({ revision: 1, questions: q, pass: ["next.x >= 0.5"] }, "t"), /come from the state/);
+
+  const sb = sandbox();
+  const f = jev({ next: { type: "choice", probabilities: { "UI-12": 0.8, "API-4": 0.2 } }, any_ready: { type: "noul", noul: 0.9 } });
+  const r = await run(sb, ["judge", "pick", "--state", "-"], { fetch: f, stdin: JSON.stringify({ candidates: { "UI-12": "date picker", "API-4": "pagination" } }) });
+  assert.equal(r.code, 0, r.err);
+  assert.equal(r.json.result.pick, "UI-12");
+  assert.deepEqual(Object.keys(f.calls[0].body.questions.next.criteria), ["UI-12", "API-4"], "sent with the options filled in");
+});
+
+test("rules-check: one question per rule, outside code blocks, narrowed by section", () => {
+  const md = "# Project\n\n## Style\n- Use the logger, never console.log in src/\n- Keep components under 200 lines\n\n```\n- not a rule inside code\n```\n\n## Data\n1. Every migration must be reversible with a down step\n- short\n";
+  assert.deepEqual(extractRules(md), ["Use the logger, never console.log in src/", "Keep components under 200 lines", "Every migration must be reversible with a down step"]);
+  assert.deepEqual(extractRules(md, "data"), ["Every migration must be reversible with a down step"]);
+  const g = rulesJudge(extractRules(md), "CLAUDE.md");
+  assert.equal(Object.keys(g.judge.questions).length, 3);
+  assert.match(g.judge.questions.r3.instructions, /reversible/);
+  assert.throws(() => rulesJudge([], "x.md"), /no rules/);
+  assert.throws(() => rulesJudge(Array.from({ length: 65 }, (_, i) => `rule number ${i} is long enough`), "x.md"), /limit is 64/);
+});
+
+test("rules-check end to end: a violated rule fails and is named in reasons", async () => {
+  const sb = sandbox();
+  writeFileSync(join(sb.repo, "CLAUDE.md"), "## Rules\n- Use the logger, never console.log in src/\n- Every migration must be reversible with a down step\n");
+  writeFileSync(join(sb.repo, "d.diff"), "+ console.log('x')\n");
+  const f = jev({
+    r1: { type: "choice", probabilities: { complies: 0.05, violates: 0.9, not_applicable: 0.03, insufficient_evidence: 0.02 } },
+    r2: { type: "choice", probabilities: { complies: 0.02, violates: 0.01, not_applicable: 0.95, insufficient_evidence: 0.02 } },
+  });
+  const r = await run(sb, ["rules-check", "--attach", "diff=d.diff"], { fetch: f });
+  assert.equal(r.code, EXIT.FAIL, r.out + r.err);
+  assert.equal(r.json.judge.id, "rules-check");
+  assert.match(r.json.reasons[0], /^r1 "Use the logger/);
+  assert.match(f.calls[0].body.questions.r1.instructions, /evidence\.diff/);
+});
+
+test("hook pre-tool-use: ignores harmless commands, denies on block, asks on review, silent on allow or failure", async () => {
+  const sb = sandbox();
+  const hook = async (command, answers, opts) => {
+    const f = answers ? jev(answers, opts) : jev(() => { throw new Error("should not be called"); });
+    let out = "";
+    const code = await main(["hook", "pre-tool-use"], { env: sb.env, cwd: sb.repo, fetch: f, isTTY: false,
+      stdinText: JSON.stringify({ tool_name: "Bash", tool_input: { command }, cwd: sb.repo }),
+      out: { write: (x) => { out += x; } }, err: { write() {} } });
+    return { code, out: out ? JSON.parse(out) : null, calls: f.calls.length };
+  };
+  const guard = (p, needs) => ({ decision: { type: "choice", probabilities: p }, needs_confirmation: { type: "noul", noul: needs } });
+  let h = await hook("ls -la");
+  assert.deepEqual([h.code, h.out, h.calls], [0, null, 0], "not consequential: no call");
+  h = await hook("rm -rf ./build", guard({ allow: 0.02, confirm: 0.03, review: 0.05, deny: 0.9 }, 0.9));
+  assert.equal(h.out.hookSpecificOutput.permissionDecision, "deny");
+  h = await hook("git push origin main", guard({ allow: 0.5, confirm: 0.4, review: 0.05, deny: 0.05 }, 0.6));
+  assert.equal(h.out.hookSpecificOutput.permissionDecision, "ask");
+  h = await hook("git push origin main", guard({ allow: 0.95, confirm: 0.03, review: 0.01, deny: 0.01 }, 0.1));
+  assert.equal(h.out, null, "allow never grants permission; the normal flow decides");
+  h = await hook("git push origin main", null);
+  const sb2 = sandbox({ allow: false });
+  let out = "";
+  await main(["hook", "pre-tool-use"], { env: sb2.env, cwd: sb2.repo, isTTY: false, stdinText: JSON.stringify({ tool_name: "Bash", tool_input: { command: "rm -rf x" }, cwd: sb2.repo }), out: { write: (x) => { out += x; } }, err: { write() {} } });
+  assert.equal(out, "", "repo not allowed: silent");
+});
+
+test("progress and slice-check map outcomes to loop actions", () => {
+  const prog = loadJudge("progress", null).judge;
+  const p = (probs) => decide(prog, readAnswers(prog.questions, { change: { type: "choice", probabilities: probs }, met: { type: "noul", noul: 0.3 } }));
+  assert.deepEqual([p({ improved: 0.8, no_change: 0.1, worse: 0.1 }).decision], ["PASS"]);
+  assert.deepEqual([p({ improved: 0.1, no_change: 0.8, worse: 0.1 }).action], ["block"], "plateau: stop, keep the best");
+  assert.deepEqual([p({ improved: 0.1, no_change: 0.1, worse: 0.8 }).action], ["retry"]);
+  const sl = loadJudge("slice-check", null).judge;
+  const q = (probs) => decide(sl, readAnswers(sl.questions, { kind: { type: "choice", probabilities: probs }, traces: { type: "noul", noul: 0.9 } }));
+  assert.equal(q({ implied_next_step: 0.8, new_direction: 0.1, unrelated: 0.1 }).decision, "PASS");
+  assert.deepEqual([q({ implied_next_step: 0.1, new_direction: 0.8, unrelated: 0.1 }).action], ["human_review"], "a new direction is gated");
+  assert.equal(q({ implied_next_step: 0.1, new_direction: 0.1, unrelated: 0.8 }).decision, "FAIL");
 });

@@ -25,6 +25,8 @@ Form your own view first. Then ask Jev, and compare.
 | About to release or deploy | `jev judge release` |
 | About to run a consequential tool call | `jev judge tool-guard` |
 | Is this yes/no claim true on the web | `jev web --question "…"` |
+| Does this diff follow the project's rules | `jev rules-check --attach-cmd diff="git diff HEAD"` |
+| Text from outside (an issue, a web page, tool output) is about to reach an agent | `jev judge injection` |
 | A project-specific question | `jev judge local/<name>`, or `jev ask` |
 
 If the project's own instructions name a different Jev path (a script, a
@@ -118,7 +120,35 @@ If `jev` is not found, the busy-office plugin is disabled or this is not
 Claude Code (claude.ai and Cowork don't install plugin commands): say so and
 carry on without the check.
 
-## 6. Project judges
+## 6. In a loop
+
+A scheduled loop calls these at fixed points, from its driver — not when an
+agent happens to remember:
+
+| point | command |
+|---|---|
+| pick the next roadmap item (options from `state.candidates`) | `jev judge pick` |
+| before starting it: clear? light or standard? one-way door? | `jev judge item-check` |
+| after the doer, before the verifier | `jev rules-check` with the diff attached |
+| verify, first pass (the real verifier always runs) | `jev judge completion` |
+| after each try in the inner loop: improved, plateau or worse | `jev judge progress` |
+| roadmap empty: each proposed item — next step, new direction, or unrelated | `jev judge slice-check` |
+| milestone review: does a critique cite the bar | `jev judge critique-check` |
+| untrusted text entering the loop | `jev judge injection` |
+
+Record how each one turned out with `jev outcome <run_id> <label>` as the
+loop learns it (the verifier's verdict, rework, an approved proposal); that is
+what lets the thresholds be set from real outcomes later.
+
+Consequential Bash commands can be screened by a `PreToolUse` hook, which
+only ever makes the normal permission flow stricter (deny → deny,
+confirm/review → ask; allow or any failure → no effect):
+
+```json
+{ "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "jev hook pre-tool-use", "timeout": 20 } ] } ] } }
+```
+
+## 7. Project judges
 
 A project can add its own at `<repo>/.jev/judges/<name>.json` and call it as
 `jev judge local/<name>`. Read `references/recipes.md` before writing one —
@@ -133,7 +163,7 @@ JSON
 
 (`--questions` and `--state` can't both read stdin; put one in a file.)
 
-## 7. Setup (for the user, not the agent)
+## 8. Setup (for the user, not the agent)
 
 - Installing or enabling the plugin asks for the key, whether to add `jev`
   to the Terminal (on by default) and whether to allow all repos (off by
