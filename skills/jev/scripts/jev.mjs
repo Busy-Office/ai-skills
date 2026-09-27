@@ -544,6 +544,20 @@ export function splitCommand(s) {
   return out;
 }
 
+// Jev judges text only. An image or other binary read as UTF-8 becomes
+// kilobytes of replacement characters that the service fails on (or, worse,
+// answers as if it were evidence). Refuse it before anything is sent.
+const BINARY_EXT = /\.(png|jpe?g|gif|webp|bmp|tiff?|ico|heic|avif|pdf|zip|gz|tgz|bz2|xz|7z|tar|jar|wasm|exe|dll|so|dylib|bin|mp[34]|mov|avi|webm|wav|flac|ogg|woff2?|ttf|otf|sqlite|db)$/i;
+export function looksBinary(buf) {
+  const head = buf.subarray(0, 8192);
+  if (head.includes(0)) return true;
+  const text = head.toString("utf8");
+  const bad = (text.match(/\uFFFD/g) ?? []).length;
+  const ctrl = (text.match(/[\x00-\x08\x0E-\x1F]/g) ?? []).length;
+  return text.length > 0 && (bad + ctrl) / text.length > 0.05;
+}
+const BINARY_HINT = "Jev judges text only — attach a text description instead: an accessibility or layout scan, image dimensions (identify / sips), OCR output, or a reviewer's notes. For visual work, a reviewer who can look at the image is the check that counts.";
+
 const clip = (s) => (s.length > ATTACH_CHARS ? s.slice(0, ATTACH_CHARS) + `\n…[truncated ${s.length - ATTACH_CHARS} chars]` : s);
 
 // Evidence the CLI reads itself is "attached"; anything the caller typed into
@@ -567,8 +581,10 @@ export function attachEvidence(state, flags, top) {
     const i = spec.indexOf("=");
     if (i < 1) throw refuse("usage", `jev: --attach takes name=file, got "${spec}".`);
     const name = spec.slice(0, i), file = resolve(top, spec.slice(i + 1));
-    let text;
-    try { text = readFileSync(file, "utf8"); } catch { throw refuse("usage", `jev: --attach ${name}: can't read ${file}.`); }
+    let buf;
+    try { buf = readFileSync(file); } catch { throw refuse("usage", `jev: --attach ${name}: can't read ${file}.`); }
+    if (BINARY_EXT.test(file) || looksBinary(buf)) throw refuse("binary_attachment", `jev: --attach ${name}: ${file} is not text (an image or other binary file); nothing was sent. ${BINARY_HINT}`);
+    const text = buf.toString("utf8");
     put(name, text, "file", null);
   }
   for (const spec of flags["attach-cmd"] || []) {
@@ -576,7 +592,11 @@ export function attachEvidence(state, flags, top) {
     if (i < 1) throw refuse("usage", `jev: --attach-cmd takes name="command args", got "${spec}".`);
     const name = spec.slice(0, i), argv = splitCommand(spec.slice(i + 1));
     if (!argv.length) throw refuse("usage", `jev: --attach-cmd ${name}: empty command.`);
-    const r = spawnSync(argv[0], argv.slice(1), { cwd: top, encoding: "utf8", timeout: 30_000, maxBuffer: 16 * 1024 * 1024 });
+    const r = spawnSync(argv[0], argv.slice(1), { cwd: top, timeout: 30_000, maxBuffer: 16 * 1024 * 1024 });
+    for (const stream of [r.stdout, r.stderr]) {
+      if (stream && stream.length && looksBinary(stream)) throw refuse("binary_attachment", `jev: --attach-cmd ${name}: the command printed binary output; nothing was sent. ${BINARY_HINT}`);
+    }
+    r.stdout = r.stdout ? r.stdout.toString("utf8") : ""; r.stderr = r.stderr ? r.stderr.toString("utf8") : "";
     if (r.error && r.error.code === "ENOENT") throw refuse("usage", `jev: --attach-cmd ${name}: command not found: ${argv[0]}`);
     const timedOut = r.error?.code === "ETIMEDOUT" || r.signal === "SIGTERM";
     const text = `${r.stdout || ""}${r.stderr || ""}${timedOut ? "\n[timed out after 30 s]" : ""}\n[exit ${r.status ?? "none"}]`;

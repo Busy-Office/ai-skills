@@ -811,3 +811,27 @@ test("keep_cases is visible: doctor shows it on or off, report flags answered ca
   r = await run(sb, ["doctor"], { fetch: jev(models) });
   assert.match(r.out, /keep_cases: off \(1 older case\(s\) kept\) — in a Terminal in this repo: .*allow --keep-cases/);
 });
+
+test("binary attachments are refused before anything is sent; real text with emoji and accents is not", async () => {
+  const sb = sandbox();
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]), Buffer.alloc(200, 0xff)]);
+  writeFileSync(join(sb.repo, "shot.png"), png);
+  writeFileSync(join(sb.repo, "shot.dat"), png);
+  writeFileSync(join(sb.repo, "notes.md"), "Layout: 3 columns ✅ — café, naïve, 日本語. Contrast 4.6:1.\n");
+  for (const [spec, why] of [["shot=shot.png", "by extension"], ["shot=shot.dat", "by content"]]) {
+    const f = jev(completionPass);
+    const r = await run(sb, ["judge", "completion", "--state", "-", "--attach", spec], { fetch: f, stdin: completionState });
+    assert.equal(r.code, EXIT.REFUSED, why);
+    assert.equal(r.json.error.code, "binary_attachment", why);
+    assert.match(r.json.error.message, /text only/);
+    assert.equal(f.calls.length, 0, `${why}: nothing sent`);
+  }
+  const f = jev(completionPass);
+  const r = await run(sb, ["judge", "completion", "--state", "-", "--attach-cmd", `png=node -e "process.stdout.write(Buffer.from([0x89,0x50,0x4e,0x47,0,0,0,0]))"`], { fetch: f, stdin: completionState });
+  assert.equal(r.json.error.code, "binary_attachment", "binary command output");
+  assert.equal(f.calls.length, 0);
+  const ok = jev(completionPass);
+  const r2 = await run(sb, ["judge", "completion", "--state", "-", "--attach", "notes=notes.md"], { fetch: ok, stdin: completionState });
+  assert.equal(r2.json.error, null, "UTF-8 text with emoji and accents passes");
+  assert.match(ok.calls[0].body.state.evidence.notes, /café, naïve, 日本語/);
+});

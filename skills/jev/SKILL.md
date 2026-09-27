@@ -51,6 +51,14 @@ Attached items are marked `attached`; anything you typed is `stated`.
 `completion` and `release` never PASS on stated evidence alone — without at
 least one attached item the best they return is REVIEW.
 
+**Jev judges text only.** It can't see an image, a diagram, a PDF or any
+other binary file, and `jev` refuses to attach one (`binary_attachment`)
+rather than send garbage. For visual work, attach a text description of it
+— an accessibility or layout scan, image dimensions, OCR output, the numbers
+a screenshot shows — and treat Jev's answer as a check on that description,
+not on the picture. A reviewer who can look at the image is the check that
+counts.
+
 Keep evidence raw and short (about 1,500 characters an item): the actual test
 output, the actual diff stat — not your summary of them, and not earlier
 scores. One call per evidence state.
@@ -112,9 +120,9 @@ Terminal" setting (on by default) makes it; otherwise the message prints the
 full launcher path. You may run `jev link` for the user — it only adds that
 link — but never `jev allow` or `jev setup`.
 
-Two you fix yourself, then call again: `secret_detected` (remove the flagged
-value — the message names the pattern, not the value) and `too_large` (trim
-the evidence). `missing_state_fields` lists what to add.
+Three you fix yourself, then call again: `secret_detected` (remove the
+flagged value — the message names the pattern, not the value), `too_large`
+(trim the evidence) and `binary_attachment` (see below). `missing_state_fields` lists what to add.
 
 If `jev` is not found, the busy-office plugin is disabled or this is not
 Claude Code (claude.ai and Cowork don't install plugin commands): say so and

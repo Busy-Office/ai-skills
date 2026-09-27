@@ -874,6 +874,7 @@ separate.
   PASS at REVIEW; a 504 is never retried, since it may already be billed.
 - **Refuses before sending** when the repo isn't allowed, a same-named repo
   sits at another path, the state holds something that looks like a secret,
+  an attachment is an image or other binary file (Jev judges text only),
   the request is too large, or the daily cap is used up — each with a message
   saying how to fix it.
 - **Audit.** One line per call — judge revision and file hash, answers, run
