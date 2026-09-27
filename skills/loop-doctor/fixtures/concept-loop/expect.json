@@ -1,0 +1,21 @@
+{
+  "drivers.length": 1,
+  "drivers.0.file": "scripts/loop.sh",
+  "drivers.0.callsClaude": true,
+  "intent.file": "intent.md",
+  "concept.loopConfig": null,
+  "concept.jev.skillOnly": true,
+  "concept.jev.calledFromCode.length": 0,
+  "concept.jev.mentionedInDocs.length": 2,
+  "concept.verifierAgents.0.name": "verifier",
+  "concept.verifierAgents.0.readOnly": true,
+  "concept.killSwitch.length": 2,
+  "concept.caps.length": 1,
+  "concept.innerLoop.length": 1,
+  "concept.challenge.length": 2,
+  "concept.milestoneTags": 1,
+  "sharpness.openItems": 3,
+  "sharpness.withAcceptance": 2,
+  "sharpness.ambiguous": 1,
+  "sharpness.ambiguousItems.0.id": "UI-13"
+}

@@ -36,7 +36,7 @@ export const SPECS = {
   "loop-doctor": {
     proseMax: 450, leadMax: 60, doNextMax: 5,
     opensWith: "diagram",
-    sections: [/^#+\s*score/im, /^#+\s*(findings|invalid|redundant|risk)/im, /^#+\s*do next/im],
+    sections: [/^#+\s*score/im, /^#+\s*(findings|invalid|redundant|risk)/im, /^#+\s*against the loop concept/im, /^#+\s*do next/im],
     citedTables: [/invalid|redundant|risk/i],
   },
   "loop-economist": {

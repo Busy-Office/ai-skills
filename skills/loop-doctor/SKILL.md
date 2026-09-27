@@ -1,6 +1,6 @@
 ---
 name: loop-doctor
-description: Reviews a project's autonomous, scheduled loop — the routine that wakes on a cadence (cron, launchd, a /loop interval, a cloud routine, a CI schedule, a driver script in a sleep loop, a tick counter), does work unattended, and re-arms. Draws how one tick works from the project's real files, scores the loop on eight dimensions (correctness, safety, reliability, cost, maintainability, understandability, observability, purpose), finds redundant and contradictory rules across the governing files, finds invalid detail (dead references, tripped stop sentinels, competing drivers, unbounded state files, gates the actor can approve itself), names ambiguous queue items and sharpens them, and prescribes improvements that close specific findings. Use whenever someone asks how their loop / tick / wake / orchestrator / routine works, wants it reviewed, scored, benchmarked, audited, simplified or made safer, says the loop is stuck, drifting, doing busywork or "doesn't stop", asks what a scheduled agent actually does each run, or wants to design a periodic autonomous loop and check it before turning it on.
+description: Reviews — and, when asked, sets up — a project's autonomous, scheduled loop — the routine that wakes on a cadence (cron, launchd, a /loop interval, a cloud routine, a CI schedule, a driver script in a sleep loop, a tick counter), does work unattended, and re-arms. Draws how one tick works from the project's real files, scores the loop on ten dimensions (correctness, safety, reliability, cost, maintainability, understandability, observability, purpose, improvement, proportionality), finds redundant and contradictory rules across the governing files, finds invalid detail (dead references, tripped stop sentinels, competing drivers, unbounded state files, gates the actor can approve itself), and compares the loop against a complete loop concept — works through the roadmap, re-plans from intent when it runs dry, tries-verifies-adjusts until the work is right, challenges finished work against a cited bar, spends in proportion, and uses Jev (if present) for cheap decisions at fixed points. Prescribes what closes each finding; in setup mode writes the loop's rules and config after approval. Use whenever someone asks how their loop / tick / wake / orchestrator / routine works, wants it reviewed, scored, benchmarked, audited, simplified or made safer, says the loop is stuck, drifting, doing busywork or "doesn't stop", asks what a scheduled agent actually does each run, or wants to design a periodic autonomous loop and check it before turning it on.
 ---
 
 # Loop Doctor
@@ -11,9 +11,14 @@ definition-of-done → a gate log → a state file. Each was written at a
 different time, and they drift. The loop keeps running on whichever copy
 it happens to read.
 
-Loop-doctor produces one artifact — a review that is **diagram first,
-score second, rows third** — and costs the project nothing. It diagnoses;
-it treats only when asked afterwards.
+Loop-doctor has two modes. **Review** (the default) produces one artifact —
+a review that is **diagram first, score second, rows third** — and costs the
+project nothing. **Setup** (only when asked to set up, design or fix a loop)
+walks through the few decisions the project must make and writes the loop's
+rules and config as one diff, after approval. Both measure against
+`references/loop-concept.md`, the complete loop: roadmap-driven, re-planning
+from intent, try-verify-adjust until right, challenged at milestones against
+a cited bar, spending in proportion, with Jev at fixed points when present.
 
 ```mermaid
 flowchart LR
@@ -30,7 +35,7 @@ flowchart LR
 The person calling loop-doctor is asking a question, not adopting a tool.
 So:
 
-- **Write nothing into the target repo.** The review goes to the
+- **Write nothing into the target repo** in review mode. The review goes to the
   scratchpad (and to a published page if that's how they read things). If
   they want it in the repo, they name the path and you write exactly that
   one file.
@@ -60,7 +65,10 @@ files with size and growth, the intent document and who references it,
 queue sharpness, and the cheap checks: repeated sentences across files,
 dangling references (dead vs moved), numbers that disagree for the same
 phrase, terminal sentinels with entries after them, swallowed errors,
-single-OS drivers. Read all of it. It is evidence, not conclusions.
+single-OS drivers. Under `concept`: a loop config file, Jev calls (from
+the driver or a hook, or only in docs), verifier agents, kill-switch, cap,
+inner-loop and challenge mentions, and milestone tags — the evidence for
+step 5b. Read all of it. It is evidence, not conclusions.
 
 No trigger, no driver, no loop docs → this project has no scheduled
 loop. Say so in three lines and stop.
@@ -94,12 +102,12 @@ One row per finding: id · what · where (file:line) · exact fix.
 "Consider consolidating" is not a row.
 
 If the loop has a queue, list the **ambiguous items** — acceptance
-unstated, or judgement-worded (*improve, look at, consider, clean up*) —
-and rewrite the top three so each names its object and its test.
+unstated, or judgement-worded (*improve, look at, consider, clean up*) — by
+id and file:line, and hand them to `requeue`. Rewording them is its job.
 
 ### 4. Score
 
-`references/scorecard.md`. Eight dimensions, 0–5 by the anchors, one-line
+`references/scorecard.md`. Ten dimensions, 0–5 by the anchors, one-line
 reason each citing a file or a number; mean → health label (`fit · watch
 · treat · stop`; a 0 in safety caps at *treat*). The score summarises the
 rows; a reader must be able to go from a score line to the rows behind it.
@@ -114,26 +122,26 @@ point high on exactly the dimensions whose reasons cited two Invalids.
 `references/patterns.md`. Recommend only what closes a finding or a gap
 from step 2, with its cost. Three habits kept beat twelve written down.
 
-### 5b. Plan the autonomy delta
+### 5b. Compare against the loop concept
 
-`references/autonomy-blueprint.md` is the target: a loop that finishes
-the roadmap with the human reading a log rather than answering
-questions, and refills itself from intent when the roadmap is done.
-List every **human-input point** in the current loop (where a person
-must start it, answer a gate before it proceeds, clarify an item, refill
-the queue, notice it is stuck, decide it is done) with what removes each.
-Then the stage rows that differ from the blueprint, and the empty-queue
-ladder **worded for this project's files, paste-ready** for the rules
-file the driver actually loads. The principle to keep: the human leaves
-the critical path, not the decision — two-way doors are decided and
-logged, one-way doors are logged and worked around.
+`references/loop-concept.md` is the target. Go through its slots — roles,
+Jev points, roadmap shape, inner loop, levels, milestone challenge and
+bar, caps and share, doors, stops, escalation, config — and mark each
+**present** (file:line), **missing** (where it should live) or
+**contradicted** (two answers). Report only missing and contradicted; the
+present ones show in the scores. List every **human-input point** (start
+it, answer a blocking gate, clarify an item, refill the queue, notice it
+is stuck, decide it is done) with what removes each. Then the concept's
+rules the loop lacks, **worded for this project's files, paste-ready** for
+the rules file the driver actually loads. Keep the principles: the human
+leaves the critical path, not the decision; good, not just done — in
+proportion.
 
 ### 6. Write the review
 
 `references/report-template.md`, exactly: ≤ 60 words, the tick diagram
 with real file names, files-by-role, the score block, the finding tables,
-sharpened items, prescriptions, the autonomy plan, do-next (≤ 5), footer
-receipt. Prose outside tables/diagrams/code ≤ 450 words in total (the
+prescriptions, the concept comparison, do-next (≤ 5), footer receipt. Prose outside tables/diagrams/code ≤ 450 words in total (the
 paste-ready rule is a code block and doesn't count). Then a terminal
 summary of ≤ 8 lines: one sentence on the loop, the health label and
 mean, findings by class, the first fix.
@@ -144,6 +152,28 @@ Invalid and Redundant fixes you proposed, one commit per class, diff
 shown first. Risk items and pattern adoption stay separate decisions:
 they change how the loop behaves, and a loop's behaviour should never
 change as a side effect of being looked at.
+
+## Setup mode — only when asked
+
+When someone asks to set up, design or rebuild their loop (not to review
+it), after steps 1–2:
+
+1. **Ask only what the files can't answer**, each with the concept's default
+   as the recommendation: where the roadmap and intent live (if the
+   inventory didn't find them), which kinds of work need which critique
+   lenses, the per-item and per-week caps, the improvement share, the
+   escalation channel, and whether Jev is available (`jev doctor`). At most
+   seven questions; take "defaults" as an answer.
+2. **Draft one diff**, written for this project's files: the concept's
+   rules as a section of the rules file the driver loads (never a second
+   copy); a `loop.config.json` with levels, caps, share, lenses, models,
+   stops, halt file and channel; the role → agent mapping; the Jev calls
+   at their fixed points, each with its fallback, if Jev is available.
+3. **Show it and wait.** Write only after an explicit yes, as one commit.
+   Never write the scheduler or driver entry — say which to use and why;
+   where money and machines are involved, the person decides.
+4. Then run review mode on the result, so the new loop gets the same score
+   as any other.
 
 ## Judgement calls
 
@@ -170,6 +200,18 @@ escalation channel and a kill switch — check for those instead.
 when the queue runs dry is the right rung — as gated proposals. A loop
 that promotes its own proposals is writing its own mandate.
 
+**Good, not just done — in proportion.** A loop with no challenge step
+converges on "done"; one that challenges every item never finishes. Look for
+the middle: one lens on standard items, a real review per milestone, a
+written share and caps.
+
+**The doer never moves the bar.** A loop that can rewrite an acceptance
+line to pass will, eventually. Rank it with self-approval.
+
+**Jev advises; code decides.** A Jev call that lives only in a skill is a
+wish; one that replaces the verifier is a hole. Look for it in the driver
+or a hook, with a fallback, and with its outcomes recorded.
+
 **Explain before you judge.** If the diagram was hard to draw from the
 files, say so once — that difficulty is itself a finding.
 
@@ -181,12 +223,18 @@ files, say so once — that difficulty is itself a finding.
 - `references/checklist.md` — dimensions → checks, with the why.
 - `references/scorecard.md` — anchors, health label, sharpness.
 - `references/patterns.md` — prescriptions catalogue.
-- `references/autonomy-blueprint.md` — the target setup: finish the
-  roadmap with minimal human input; refill from intent when it's done.
+- `references/loop-concept.md` — the target: the complete loop, its roles,
+  Jev points, inner loop, challenge, proportion, doors and stops, config,
+  and paste-ready rules.
 - `references/report-template.md` — the review, exactly.
 - `evals/gauntlet/` — the bar this skill's output is graded against.
 
 ## Related
+
+It hands off rather than repeats: ambiguous queue items to `requeue`; a
+vague or missing intent to `sharpen-intent`; what the runs actually cost to
+`loop-economist` (which also runs the concept's weekly cost pass); the
+shape inside one tick to `graph-engineer`; every cheap judgement to `jev`.
 
 Four siblings share this loop's subject and answer different questions:
 `loop-economist` (what the runs actually cost and whether the right agent did

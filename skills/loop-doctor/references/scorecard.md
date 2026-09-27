@@ -1,6 +1,6 @@
 # Scorecard
 
-Eight dimensions, each 0–5, each with a one-line reason that cites a file
+Ten dimensions, each 0–5, each with a one-line reason that cites a file
 or a number. The score is a summary of the findings, never a substitute
 for them: a reader should be able to go from the score line to the rows
 that produced it.
@@ -14,7 +14,7 @@ that produced it.
 | **3** | two or more *Risk*, nothing Invalid |
 | **2** | one *Invalid* finding |
 | **1** | two or more *Invalid* findings |
-| **0** | the dimension has no mechanism at all (e.g. no verifier exists, no state file, no intent) |
+| **0** | the dimension has no mechanism at all (e.g. no verifier exists, no state file, no intent, no challenge step, no cap anywhere) |
 
 Where a dimension's checks cannot be assessed from the files (no
 instrument), score it and mark the reason `NOT MEASURED — <why>`; don't
@@ -36,10 +36,12 @@ cites an Invalid finding, the score is at most 2; if it cites two, at most
 | **understandability** | one tick explainable from the files · three questions answered once each · every file has a role · resume ≠ history |
 | **observability** | closed outcome vocabulary · one record per tick, written last · stuckness visible in state · metrics recorded |
 | **purpose** | intent document exists and is named in loaded rules · empty-queue ladder · periodic objective review · intent read-only for the loop · items trace to intent |
+| **improvement** | bounded inner loop · hypothesis per try · adjust can't move the bar · plateau stop · isolated tries · milestone challenge · written bar · `VALIDATE` |
+| **proportionality** | item levels · caps written down · improvement share · models tiered by role · cheap judgements at fixed points with a fallback · outcomes recorded · spending reviewed |
 
 ## Health label
 
-Mean of the eight scores, then:
+Mean of the ten scores, then:
 
 | mean | label | meaning for the reader |
 |---|---|---|
@@ -55,15 +57,16 @@ because its documents are tidy.
 ## Sharpness (queue quality)
 
 Only when the loop has a queue (backlog, roadmap items, scenario list).
-Report two numbers and a list:
+Report two numbers and a list — and hand the list over; rewording items is
+`requeue`'s job, not this review's:
 
 - **stated acceptance**: share of open items with an explicit acceptance
   criterion or exit test.
 - **ambiguous items**: open items whose wording is judgement-only —
   contains *improve, look at, consider, explore, clean up, review* with no
   measurable object — as a count.
-- **top three sharpened**: for the three highest-ranked ambiguous items,
-  one proposed rewording each that names the object and the test.
+- **the ambiguous items by id**, highest-ranked first (at most ten), with
+  file:line — handed to `requeue` to sharpen.
 
-Sharpness feeds the **purpose** and **reliability** scores; it is not a
-ninth dimension.
+Sharpness feeds the **purpose** and **reliability** scores; it is not an
+eleventh dimension.

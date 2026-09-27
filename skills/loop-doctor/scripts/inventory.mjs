@@ -202,17 +202,32 @@ export function inventory(repoPath, opts = {}) {
     const open = [];
     for (const f of queueFiles) {
       const t = read(f) ?? ""; const lines = t.split("\n");
+      // A table's header names its columns; use it to find the item text and
+      // an acceptance column instead of assuming column order.
+      let header = null;
+      const cellsOf = (l) => l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
       lines.forEach((l, i) => {
+        if (/^\s*\|/.test(l) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] ?? "")) { header = cellsOf(l).map((h) => h.toLowerCase()); return; }
+        if (!/^\s*\|/.test(l)) header = null;   // any non-table line ends the table
         const box = l.match(/^\s*- \[ \]\s*(.+)$/);
         const row = l.match(/^\|\s*([A-Z]{1,8}-?\d+[\w.-]*)\s*\|(.*)$/);
-        let text = null, id = null;
+        let text = null, id = null, acceptCell = null;
         if (box) { text = box[1]; id = text.match(/^\**([A-Z]{1,8}-?\d+[\w.-]*)/)?.[1] ?? null; }
-        else if (row && /\|\s*(open|todo|active|planned|next|doing)\s*\|/i.test(l)) { id = row[1]; text = row[2].split("|")[0].trim(); }
+        else if (row && /\|\s*(open|todo|active|planned|next|doing)\s*\|/i.test(l)) {
+          id = row[1];
+          const cells = cellsOf(l);
+          const col = (re) => (header ? header.findIndex((h) => re.test(h)) : -1);
+          const ti = col(/^(item|title|task|what|description|name)$/);
+          const ai = col(/accept|done when|exit|criteri|test/);
+          text = ti >= 0 ? cells[ti] : row[2].split("|")[0].trim();
+          if (ai >= 0) acceptCell = cells[ai] ?? "";
+        }
         if (!text) return;
         const plain = stripMd(text).slice(0, 160);
         // continuation lines belong to the item only while they are indented and not a new bullet/row
         const cont = [lines[i + 1], lines[i + 2]].filter((x) => x && /^\s{2,}/.test(x) && !/^\s*- \[|^\s*\|/.test(x)).join(" ");
-        const hasAcceptance = /\b(accept(ance)?|exit|done when|until|criteri|test:|assert|verify|measure|≥|<=|>=|\d+\s*%)\b/i.test(l + " " + cont);
+        const hasAcceptance = acceptCell !== null ? acceptCell.replace(/[-—–]/g, "").trim().length > 0
+          : /\b(accept(ance)?|exit|done when|until|criteri|test:|assert|verify|measure|≥|<=|>=|\d+\s*%)\b/i.test(l + " " + cont);
         const ambiguous = /\b(improve|look (at|into)|consider|explore|clean ?up|review|investigate|tidy|refactor|better|enhance|polish)\b/i.test(plain) && !/\b(so that|until|to \d|by \d|≥|<=|>=|\d+\s*%)\b/i.test(plain);
         open.push({ file: f, line: i + 1, id, text: plain, hasAcceptance, ambiguous });
       });
@@ -227,6 +242,40 @@ export function inventory(repoPath, opts = {}) {
       };
     }
   }
+
+  // ------------------------------------------------------------ loop-concept slots
+  // Evidence for the slots of references/loop-concept.md. Mentions, not proof:
+  // the review decides whether each is really present, missing or contradicted.
+  const mention = (re, texts, cap = 5) => {
+    const hits = [];
+    for (const [f, t] of texts) for (const m of t.matchAll(re)) { hits.push({ file: f, line: lineOf(t, m.index), text: m[0].slice(0, 120).trim() }); if (hits.length >= cap) return hits; }
+    return hits;
+  };
+  const governing = [...new Set([...out.docs, ...out.skills].map((d) => d.file))].map((f) => [f, read(f) ?? ""]);
+  const driverTexts = out.drivers.map((d) => [d.file, read(d.file) ?? ""]);
+  const settingsTexts = files.filter((f) => /^\.claude\/settings(\.local)?\.json$/.test(f)).map((f) => [f, read(f) ?? ""]);
+  const loopConfig = files.find((f) => /(^|\/)(loop\.config\.json|\.claude\/loop\.json)$/.test(f)) ?? null;
+  let configKeys = null;
+  if (loopConfig) { try { configKeys = Object.keys(JSON.parse(read(loopConfig))); } catch { out.warnings.push(`${loopConfig} is not valid JSON.`); } }
+  const jevRe = /\bjev\s+(judge\s+[\w/-]+|rules-check|hook\s+pre-tool-use|ask|outcome|web)\b[^\n]{0,60}/g;
+  const jevInCode = [...mention(jevRe, driverTexts, 10), ...mention(jevRe, settingsTexts, 5)];
+  const jevInDocs = mention(jevRe, governing, 10);
+  const queueTexts = (out.sharpness?.files ?? []).map((f) => [f, read(f) ?? ""]);
+  out.concept = {
+    loopConfig: loopConfig ? { file: loopConfig, keys: configKeys } : null,
+    jev: {
+      projectJudges: files.filter((f) => /^\.jev\/judges\/[^/]+\.json$/.test(f)),
+      calledFromCode: jevInCode,
+      mentionedInDocs: jevInDocs,
+      skillOnly: jevInDocs.length > 0 && jevInCode.length === 0,
+    },
+    verifierAgents: out.agents.filter((a) => /verif|review|critic|judge|falsif|evaluat|\bqa\b/i.test(a.name)).map((a) => ({ name: a.name, file: a.file, readOnly: a.readOnly })),
+    killSwitch: mention(/\b(HALT|halt[- ]file|kill[- ]switch)\b[^\n]{0,60}/g, [...governing, ...driverTexts]),
+    caps: mention(/\b(tokens?|budget|spend|cost)\b[^\n]{0,30}?\b(per|\/|a)\s*(item|tick|day|week|month)\b[^\n]{0,40}/gi, [...governing, ...(loopConfig ? [[loopConfig, read(loopConfig) ?? ""]] : [])]),
+    innerLoop: mention(/\b(hypothesis|plateau|max(?:imum)?\s+(?:tries|attempts)|attempts?\s+per\s+item|tries\s+per\s+item)\b[^\n]{0,60}/gi, governing),
+    challenge: mention(/\b(milestone review|design review|critique|challenge|lens(?:es)?|devil'?s advocate)\b[^\n]{0,60}/gi, governing),
+    milestoneTags: queueTexts.reduce((n, [, t]) => n + (t.match(/\bmilestone\b/gi)?.length ?? 0), 0),
+  };
 
   // ------------------------------------------------------------ verdict on presence
   if (!out.triggers.length && !out.drivers.length && !out.docs.length && !out.skills.length) out.warnings.push("No scheduled-loop trigger, driver or loop documents found — this project may not have an autonomous loop.");

@@ -253,22 +253,40 @@ Ask in any session inside the project:
 > how does our loop work? I've lost track
 > review the loop — is LOOPS.md out of date vs CLAUDE.md?
 > the loop keeps running past MVP-COMPLETE, what's wrong?
+> set up a loop for this project that works through the roadmap
 
 Claude produces one review — **diagram first, score second, rows third**:
-a tick diagram drawn from your real file names, an eight-dimension
+a tick diagram drawn from your real file names, a ten-dimension
 scorecard with a health label (`fit · watch · treat · stop`), findings as
 one-line rows (Invalid / Redundant / Risk, each with file:line and the
-exact fix), ambiguous queue items rewritten, prescriptions that close
-specific findings, an **autonomy plan**, and a ≤5-line do-next. Under
-450 words of prose.
+exact fix), ambiguous queue items named and handed to `requeue`,
+prescriptions that close specific findings, the loop **compared against
+the loop concept**, and a ≤5-line do-next. Under 450 words of prose.
 
-The autonomy plan is the target setup: every point where the loop needs
-a person today and what removes it, the stages that differ from the
-[blueprint](skills/loop-doctor/references/autonomy-blueprint.md), and a
-paste-ready empty-queue rule worded for your files — finish the roadmap
-with the human reading a log, and when the roadmap is done, draft the
-next slice from intent as proposals and start on the reversible ones.
-The human leaves the critical path, not the decision.
+The [loop concept](skills/loop-doctor/references/loop-concept.md) is the
+target every loop is measured against, in any project:
+
+- **Two loops.** The tick works through the roadmap (pick → clarify if
+  unclear → do → verify → record); inside it, each item runs
+  *hypothesis → try → verify → adjust* until it's right, plateaus, or runs
+  out of tries — and adjusting may change the work, never the bar.
+- **Five roles** — picker, clarifier, doer, verifier (never the doer's
+  context), planner — mapped to whatever agents the project has.
+- **Challenge, in proportion.** Standard items get one critique lens; each
+  milestone gets a real review of the running thing, against a written bar
+  (intent → standards → measurements; uncited critique is dropped).
+  Improvements go on the roadmap within a 20% share; caps per item and week.
+- **Jev at eight fixed points** when available — pick, item-check,
+  rules-check, completion, progress, slice-check, critique-check,
+  injection — advisory, each with a fallback, called from the driver, and
+  its outcomes recorded so thresholds can be set from evidence.
+- **When the roadmap runs dry,** the planner drafts the next slice from
+  intent: the next step intent implies goes ahead, a new direction waits
+  for you. The human leaves the critical path, not the decision.
+
+**Setup mode**, only when you ask: it asks at most seven questions the
+files can't answer, drafts the loop's rules and `loop.config.json` as one
+diff, and writes it only after you say yes. It never writes the scheduler.
 
 **Guard-rail: it costs the calling project nothing.** Read-only; writes
 nothing into the repo (the review goes to your scratchpad or a page,

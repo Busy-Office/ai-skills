@@ -13,8 +13,9 @@ first screen has the tick, the score and the first fix.
 flowchart LR
   T["trigger<br/><real thing: cron entry / /schedule / human types /loop>"] --> W["wake<br/><files read, with line counts>"]
   W --> S["select<br/><how the item is chosen>"]
-  S --> A["act<br/><actor · budget>"]
+  S --> A["act<br/><actor · level · tries ≤ N>"]
   A --> V["verify<br/><who · criteria file>"]
+  V -. "fail, tries left" .-> A
   V --> G["gate<br/><block | log · gate file>"]
   G --> R["record<br/><state file · written last?>"]
   R --> X{"re-arm / stop<br/><stop conditions · kill switch>"}
@@ -32,6 +33,10 @@ flowchart LR
 | archive | | or *none* |
 | kill switch | | or *none* |
 | purpose document | | or *none* · referenced by loaded rules? |
+| roles: picker · clarifier · doer · verifier · planner | | one cell each, or *none* |
+| challenge / bar | | or *none* |
+| caps · levels | | or *none* |
+| Jev | | or *not used* · called from driver/hook or only a skill? |
 
 ## Score
 
@@ -48,8 +53,10 @@ flowchart LR
 | understandability | n | |
 | observability | n | |
 | purpose | n | |
+| improvement | n | |
+| proportionality | n | |
 
-<If a queue exists:> **Sharpness:** stated acceptance <p>% · ambiguous <n> items.
+<If a queue exists:> **Sharpness:** stated acceptance <p>% · ambiguous <n> items → `requeue`: <ids, file:line>.
 
 ## Findings
 
@@ -68,33 +75,30 @@ flowchart LR
 |---|---|---|---|
 | K-1 | | | |
 
-<If a queue exists:>
-### Ambiguous items → sharpened
-| item | as written | proposed |
-|---|---|---|
-
 ## Prescriptions
 
 | pattern | closes | cost |
 |---|---|---|
 
-## Autonomy plan
+## Against the loop concept
 
 <One sentence: how much human input the loop needs today, in the unit
 that fits — "a person per tick", "a person per gate", "a person to
-refill the queue".>
+refill the queue" — and whether it makes work good or only done.>
+
+Only the slots of `references/loop-concept.md` that are missing or
+contradicted (present ones are in the scores):
+
+| slot | today | where | target |
+|---|---|---|---|
+| | missing / contradicted | file:line | |
 
 | today the human must… | where | replace with |
 |---|---|---|
 | | file:line | |
 
-Only the stages that differ from `references/autonomy-blueprint.md`:
-
-| stage | today | target |
-|---|---|---|
-
 Paste-ready, worded for this project's files (goes in <the loaded rules
-file>):
+file>) — only the parts of the concept's rules this loop lacks:
 
 ```
 When no roadmap item is unblocked:

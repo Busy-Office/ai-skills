@@ -15,9 +15,9 @@ not seen the build must be able to grade it.
 1. **Diagram before prose.** The first thing after the title is a diagram
    of one tick with the project's *real* file names on the nodes. Prose
    before it: ≤ 60 words.
-2. **Scorecard present and evidenced.** Eight dimensions (correctness,
+2. **Scorecard present and evidenced.** Ten dimensions (correctness,
    safety, reliability, cost, maintainability, understandability,
-   observability, purpose), each scored 0–5 with a one-line reason that
+   observability, purpose, improvement, proportionality), each scored 0–5 with a one-line reason that
    cites a file or a number. An overall health label from the fixed set
    (`fit · watch · treat · stop`).
 3. **Terse.** Prose outside tables, diagrams and code ≤ 450 words for the
@@ -37,17 +37,23 @@ not seen the build must be able to grade it.
    ≤ 2 s on the target.
 9. **Cost of the review itself is bounded** and reported in the footer:
    files read, and whether any state file was read whole (it must not be).
-10. **Ambiguous tasks named.** If the loop has a queue, the review lists
-    the items whose acceptance is unstated or judgement-worded ("improve",
-    "look at", "consider") and proposes a sharpened wording for at least
-    the top three.
-11. **Autonomy plan present and concrete.** A human-input-points table
-    (each row: what the human must do today · file:line · what replaces
-    it), the stage rows that differ from the blueprint, and an
-    empty-queue rule that is **paste-ready for this project** — it names
-    the project's real roadmap, intent and gate-log files, not
-    placeholders. A plan that would let the loop edit intent, or start
-    one-way-door work without a gate entry, is a FAIL.
+10. **Ambiguous tasks named and handed off.** If the loop has a queue, the
+    review lists the items whose acceptance is unstated or judgement-worded
+    ("improve", "look at", "consider") by id and file:line, and hands them
+    to `requeue`. It does not reword them itself.
+11. **Compared against the loop concept, concretely.** Every slot of
+    `references/loop-concept.md` that is missing or contradicted has a row
+    (today · file:line · target); a human-input-points table (each row:
+    what the human must do today · file:line · what replaces it); and the
+    concept's rules the loop lacks, **paste-ready for this project** — naming
+    its real roadmap, intent, gate-log and rules files, not placeholders. A
+    plan that would let the loop edit intent, let the doer change an
+    acceptance line, start one-way-door work without a gate entry, or let a
+    Jev answer replace the verifier is a FAIL.
+12. **Challenge and proportion judged, not assumed.** The improvement and
+    proportionality scores each cite a file or say `NOT MEASURED — <why>`; a
+    loop with no challenge step or no written cap scores 0 there, not a
+    polite 2.
 
 ## Class D — diagnostic report (this artifact)
 
