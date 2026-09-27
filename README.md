@@ -284,6 +284,11 @@ target every loop is measured against, in any project:
   intent: the next step intent implies goes ahead, a new direction waits
   for you. The human leaves the critical path, not the decision.
 
+**Scale change in 0.12.0:** reviews now score ten dimensions, not eight
+(improvement and proportionality were added), so a mean is not comparable
+with one from an earlier review. If your project uses the loop-doctor mean
+as a gate, re-read the gate's threshold before trusting a new score.
+
 **Setup mode**, only when you ask: it asks at most seven questions the
 files can't answer, drafts the loop's rules and `loop.config.json` as one
 diff, and writes it only after you say yes. It never writes the scheduler.
