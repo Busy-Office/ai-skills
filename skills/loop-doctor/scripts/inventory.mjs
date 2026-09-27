@@ -136,7 +136,7 @@ export function inventory(repoPath, opts = {}) {
     if (!p || seenState.has(p)) continue; seenState.add(p);
     const t = read(p); if (t == null) continue;
     const lines = lineCount(t);
-    const entry = { file: p, lines, bytes: Buffer.byteLength(t), readFirst: /read(s)?\s+(this|it|[`'"]?[\w./-]*\/?[\w.-]*[`'"]?)\s+first/i.test(govText) && new RegExp(escapeRe(basename(p)) + "[^\\n]{0,80}first|first[^\\n]{0,80}" + escapeRe(basename(p)), "i").test(govText), growth: null, sentinels: [] };
+    const entry = { file: p, lines, bytes: Buffer.byteLength(t), readFirst: /read(s)?\s+(this|it|[`'"]?[\w./-]*\/?[\w.-]*[`'"]?)\s+first|read first/i.test(govText) && new RegExp(escapeRe(basename(p)) + "[^\\n]{0,80}first|first[^\\n]{0,80}\\n?[^\\n]{0,80}" + escapeRe(basename(p)), "i").test(govText), growth: null, sentinels: [] };
     if (git) { try { const shas = sh(`git log --format=%h -n 8 -- "${p}"`).split("\n").filter(Boolean); const pts = []; for (const s of shas.reverse()) { try { pts.push({ sha: s, lines: sh(`git show ${s}:"${p}"`).split("\n").length }); } catch { /* skip */ } } if (pts.length > 1) entry.growth = { first: pts[0], last: pts.at(-1), delta: pts.at(-1).lines - pts[0].lines, points: pts.length }; } catch { /* no history */ } }
     // sentinels: terminal markers followed by more content
     const sent = [...t.matchAll(/^(?:#+\s*)?(?:\*\*)?STATUS:\s*([A-Z][A-Z-]+)/gm)].map((m) => ({ line: lineOf(t, m.index), value: m[1] }));

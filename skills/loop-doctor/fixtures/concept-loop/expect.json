@@ -14,6 +14,8 @@
   "concept.innerLoop.length": 1,
   "concept.challenge.length": 2,
   "concept.milestoneTags": 1,
+  "stateFiles.0.file": "docs/RESUME.md",
+  "stateFiles.0.readFirst": true,
   "sharpness.openItems": 3,
   "sharpness.withAcceptance": 2,
   "sharpness.ambiguous": 1,

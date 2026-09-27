@@ -57,7 +57,7 @@ the verifier may never be the doer's context.
 | role | job | default model tier | notes |
 |---|---|---|---|
 | **picker** | choose the next dispatchable item and its level | Jev `pick` + `item-check` if present, else code (first unblocked in order) | never the strongest model |
-| **clarifier** | turn an unclear item into one with an object and a test | main | writes its answer as an **assumption** on the item; only reversible work proceeds on an assumption. `requeue` does this job well |
+| **clarifier** | turn an unclear item into one with an object and a test | main | writes its answer as an **assumption** beside the item — never over an acceptance line a person wrote; an item with no acceptance line gets a `proposed` one, and only reversible work proceeds on it. `requeue` does this job well |
 | **doer** | the work, with the skills the item needs | main | may not change the acceptance test or the bar |
 | **verifier** | separate fresh context; default FAIL; PASS only on evidence it ran or read itself (tests, build, screenshots) | small/fast for mechanical checks, main otherwise | always runs; Jev's `rules-check` and `completion` tell it where to look hardest, never replace it |
 | **planner** | roadmap empty → review against intent, propose the next slice; runs the milestone review | strongest | rare and high-leverage |
@@ -254,10 +254,15 @@ When no roadmap item is unblocked:
 
 ## What the review checks for — the slots
 
-Review mode reports each slot below as **present** (file:line), **missing**
-(the file:line where it should live), or **contradicted** (both answers,
-with their lines). Present slots show in the scores; the review lists the
-missing and contradicted ones, one row each. The first six matter most.
+Review mode reports each slot below as **present** (file:line), **partial**
+(what's there and what isn't), **missing** (the file:line where it should
+live), **contradicted** (both answers, with their lines) or **not
+applicable** (why). Present slots show in the scores; the review lists every
+other one, one row each. The first six matter most.
+
+**The config file wins for numbers.** Tries, stops, levels, caps, share,
+lenses and models live in the config; the rules file says what happens and
+points to the config for how many. A number in both is *Redundant*.
 
 | # | slot | from |
 |---|---|---|
@@ -295,4 +300,7 @@ point falls back to the smart agent" — that is present, not missing.
 in setup mode: the project's roadmap, intent, gate log, resume and rules
 files, its `HALT` path, its config file (`loop.config.json` unless the
 project already has one), and a concrete escalation channel (a command, a
-file the owner reads, a chat) — never "a notification".
+file the owner reads, a chat) — never "a notification". A name the review
+proposes (a new file, a status word such as `proposed` or `VALIDATE`, a
+channel the project doesn't have yet) is real if the review defines it and
+marks it *proposed*; in setup mode the person confirms it.

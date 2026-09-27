@@ -29,7 +29,7 @@ flowchart LR
 | rules loaded each tick | | |
 | definition of done | | |
 | human gates | | |
-| state between ticks | | lines N · Δ over last K commits |
+| state between ticks | | lines N · Δ over last K commits (or *n/a — one commit*) |
 | archive | | or *none* |
 | kill switch | | or *none* |
 | purpose document | | or *none* · referenced by loaded rules? |

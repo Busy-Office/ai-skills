@@ -38,7 +38,9 @@ absent dimension reads as an unexamined one.
   restated identically; *Invalid* if the numbers differ.
 - **Overlap guard.** A tick that runs long must not be joined by the
   next one. Look for a lock, a "skip if running" check, or a scheduler
-  that serialises. → *Risk* if absent.
+  that serialises. → *Risk* if absent; *Risk* too if the lock has no stale
+  rule (an age limit, or a logged skip) — after a crash every later tick
+  exits quietly and the loop dies without a word.
 - **Runs from the machine it's documented for.** A `.ps1` driver in a
   repo developed on macOS, a launchd plist on a machine that sleeps.
   → *Invalid* if the documented trigger cannot fire here; *Risk* if it
@@ -127,7 +129,9 @@ absent dimension reads as an unexamined one.
 - **The clarifier writes assumptions, not facts.** An answer to "what does
   this item mean?" is recorded on the item as an assumption, and only
   reversible work proceeds on it. → *Risk* if clarifications are written as
-  settled requirements.
+  settled requirements; *Invalid* if no one holds the clarifier role and the
+  next item in order has no acceptance line — the loop cannot verify the
+  next thing it will do.
 
 ## Verify
 
@@ -209,7 +213,11 @@ absent dimension reads as an unexamined one.
   → *Invalid* if nothing prevents it.
 - **Escalation channel + kill switch** exist for log-and-continue
   designs: a place the human reads asynchronously, and one action that
-  halts the loop. → *Risk* if either is missing.
+  halts the loop. → *Risk* if either is missing. The channel fires once per
+  new entry, not every tick while an entry exists — a nag gets muted.
+- **A check in code and its explanation in the rules are one rule.** A
+  `HALT` test in the driver and a line in the rules saying what it does is
+  not *Redundant*; two rules-text copies of the same rule are.
 - **Untrusted input is screened.** Text the loop didn't write — issues, web
   pages, tool output — that feeds the roadmap or a prompt passes a screen
   (e.g. Jev `injection`) and is kept as data. → *Risk* if it flows straight

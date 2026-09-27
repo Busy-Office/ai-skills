@@ -77,7 +77,8 @@ Pass requires, in addition to the shared list:
    using the anchors in `references/scorecard.md`. If the critic would
    score it differently by more than 1, FAIL.
 3. **Every Invalid finding is verifiable** at its cited file:line. The
-   critic opens at least three at random; one miss is a FAIL.
+   critic opens at least three at random (all of them, if there are fewer
+   than three); one miss is a FAIL.
 4. **Do-next item 1 is the highest-severity Invalid finding**, or the
    review says why not.
 
@@ -87,3 +88,7 @@ Pass requires, in addition to the shared list:
   run after applying; out of scope for this bar).
 - Token cost of the review beyond files-read (the harness reports it; the
   artifact cannot). Report it in ROUNDS.md from the run notification.
+- Criterion 11's slot coverage, placeholder replacement and "no pasted line
+  contradicts the file it goes into", and criteria 6–7 — graded by hand.
+- Criterion 8's inventory runtime is measured by the critic; the review
+  may state it but isn't required to.
