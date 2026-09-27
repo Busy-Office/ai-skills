@@ -20,6 +20,9 @@ Where a dimension's checks cannot be assessed from the files (no
 instrument), score it and mark the reason `NOT MEASURED — <why>`; don't
 guess upward.
 
+A *Redundant* finding counts as a *Risk* for the anchors — two copies of a
+rule are a disagreement waiting to happen.
+
 The anchors are a ceiling, not a suggestion: if the one-line reason
 cites an Invalid finding, the score is at most 2; if it cites two, at most
 1. A reason and a score that disagree is itself a defect in the review.

@@ -61,19 +61,19 @@ flowchart LR
 ## Findings
 
 ### Invalid
-| id | what | where | fix |
-|---|---|---|---|
-| I-1 | | file:line | exact edit |
+| id | class | what | where | fix |
+|---|---|---|---|---|
+| I1 | invalid | | file:line | exact edit |
 
 ### Redundant
-| id | rule | copies | keep · replace others with |
-|---|---|---|---|
-| R-1 | | file:line · file:line | |
+| id | class | rule | copies | keep · replace others with |
+|---|---|---|---|---|
+| R1 | redundant | | file:line · file:line | |
 
 ### Risk
-| id | what can go wrong unattended | evidence | guard |
-|---|---|---|---|
-| K-1 | | | |
+| id | class | what can go wrong unattended | evidence | guard |
+|---|---|---|---|---|
+| K1 | risk | | file:line | |
 
 ## Prescriptions
 
@@ -112,7 +112,7 @@ When no roadmap item is unblocked:
 3.
 
 ---
-<footer, one line:> reviewed <date> at <sha> · files read <n> · state files sampled, none read whole · target repo untouched
+<footer, one line:> reviewed <date> at <sha> · files read <n> · state files sampled, none read whole (or: read whole, all under 40 lines) · target repo untouched
 ```
 
 Rules of thumb while filling it in:
@@ -120,6 +120,9 @@ Rules of thumb while filling it in:
 - **The three questions** (who owns done · where is state · block or log)
   are answered by the diagram's verify, record and gate nodes. If a node
   needs two labels, that's a Redundant or Invalid row, not a longer label.
+- **Ids are a letter and a number** — `I1`, `R2`, `K3`, no hyphen — and
+  every row repeats its class word, so each row stands on its own when
+  quoted.
 - **A finding is one row.** If it needs a paragraph, split it into two
   findings or move the explanation to the `fix` cell as an exact edit.
 - **An absence still has a location.** When the finding is that a rule,

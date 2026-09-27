@@ -41,7 +41,9 @@ absent dimension reads as an unexamined one.
   that serialises. → *Risk* if absent.
 - **Runs from the machine it's documented for.** A `.ps1` driver in a
   repo developed on macOS, a launchd plist on a machine that sleeps.
-  → *Invalid* if the documented trigger cannot fire here.
+  → *Invalid* if the documented trigger cannot fire here; *Risk* if it
+  simply wasn't found on this machine (it may live on another, or in the
+  cloud) — say where it was looked for.
 
 ## Wake
 

@@ -218,7 +218,9 @@ export function barCheck(skill, md, collector = null, target = null) {
   // script opens all of them for nothing, and a turn not taken is the whole
   // saving — a subagent's bill is the sum of its context at each turn.
   if (target) {
-    const cites = [...new Set([...md.matchAll(/`?([\w./-]+\.(?:md|mjs|js|ts|tsx|py|sh|ps1|ya?ml|json|toml|astro|css|html))(?::(\d+))?`?/g)]
+    // Longer extensions first and a boundary after, so "loop.config.json" is
+    // not read as a ".js" file that doesn't exist.
+    const cites = [...new Set([...md.matchAll(/`?([\w./-]+\.(?:mjs|md|json|js|tsx|ts|py|sh|ps1|ya?ml|toml|astro|css|html))(?![\w-])(?::(\d+))?`?/g)]
       .map((m) => ({ file: m[1], line: m[2] ? Number(m[2]) : null }))
       .filter((c) => !c.file.startsWith("evals/") && c.file.includes("."))
       .map((c) => JSON.stringify(c)))].map((x) => JSON.parse(x));
@@ -248,7 +250,9 @@ export function barCheck(skill, md, collector = null, target = null) {
     const bad = [];
     for (const c of cites) {
       const p2 = resolve(c.file);
-      if (!p2) { bad.push(`${c.file} (no such file)`); continue; }
+      // A file named without a line may be one the review proposes creating
+      // (a missing config, a rules file); a cited line must exist.
+      if (!p2) { if (c.line != null) bad.push(`${c.file} (no such file)`); continue; }
       if (c.line != null) {
         const n = readFileSync(p2, "utf8").split("\n").length;
         if (c.line > n) bad.push(`${c.file}:${c.line} (file has ${n} lines)`);

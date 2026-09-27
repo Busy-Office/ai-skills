@@ -31,10 +31,13 @@ function walk(root, maxDepth = 6) {
 }
 
 export function inventory(repoPath, opts = {}) {
-  const { git = true, system = true } = opts;
+  let { git = true, system = true } = opts;
   const t0 = Date.now();
   const read = (p) => { try { return readFileSync(join(repoPath, p), "utf8"); } catch { return null; } };
   const sh = (cmd, cwd = repoPath) => execSync(cmd, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64e6 }).trim();
+  // History belongs to the target only if it is its own repository; a folder
+  // inside another repo would otherwise report that repo's commits as its own.
+  if (git) { try { git = realpathSync(sh("git rev-parse --show-toplevel")) === realpathSync(repoPath); } catch { git = false; } }
   const files = walk(repoPath);
   const abs = (p) => join(repoPath, p);
 
@@ -75,7 +78,7 @@ export function inventory(repoPath, opts = {}) {
     const namedLikeDriver = /(^|\/)(loop(-run|-driver)?|orchestrat\w*|tick|wake)\.(sh|ps1|py|mjs|js|ts)$/i.test(f);
     if (callsClaude || namedLikeDriver || (loops && sleeps && /loop|tick|wake/i.test(f + t.slice(0, 2000)))) {
       const stops = [...t.matchAll(/(STATUS:\s*[A-Z-]+|MVP-COMPLETE|NEEDS-HUMAN|budget\.exhausted|exit\s+[01])/g)].map((m) => m[1]);
-      out.drivers.push({ file: f, callsClaude, loops, sleeps, stopMarkers: [...new Set(stops)], lines: t.split("\n").length });
+      out.drivers.push({ file: f, callsClaude, loops, sleeps, stopMarkers: [...new Set(stops)], lines: lineCount(t) });
       const sw = [...t.matchAll(/\|\|\s*true|2>\s*\/dev\/null|-ErrorAction\s+SilentlyContinue|except\s*:\s*pass/g)];
       if (sw.length) out.checks.swallowedErrors.push({ file: f, count: sw.length, lines: sw.slice(0, 5).map((m) => lineOf(t, m.index)) });
     }
@@ -132,7 +135,7 @@ export function inventory(repoPath, opts = {}) {
     const p = files.find((f) => f === c || f.endsWith("/" + c) || basename(f) === basename(c));
     if (!p || seenState.has(p)) continue; seenState.add(p);
     const t = read(p); if (t == null) continue;
-    const lines = t.split("\n").length;
+    const lines = lineCount(t);
     const entry = { file: p, lines, bytes: Buffer.byteLength(t), readFirst: /read(s)?\s+(this|it|[`'"]?[\w./-]*\/?[\w.-]*[`'"]?)\s+first/i.test(govText) && new RegExp(escapeRe(basename(p)) + "[^\\n]{0,80}first|first[^\\n]{0,80}" + escapeRe(basename(p)), "i").test(govText), growth: null, sentinels: [] };
     if (git) { try { const shas = sh(`git log --format=%h -n 8 -- "${p}"`).split("\n").filter(Boolean); const pts = []; for (const s of shas.reverse()) { try { pts.push({ sha: s, lines: sh(`git show ${s}:"${p}"`).split("\n").length }); } catch { /* skip */ } } if (pts.length > 1) entry.growth = { first: pts[0], last: pts.at(-1), delta: pts.at(-1).lines - pts[0].lines, points: pts.length }; } catch { /* no history */ } }
     // sentinels: terminal markers followed by more content
@@ -285,13 +288,15 @@ export function inventory(repoPath, opts = {}) {
   return out;
 }
 
-function docEntry(f, t) { return { file: f, lines: (t ?? "").split("\n").length, headings: [...(t ?? "").matchAll(/^##\s+(.+)$/gm)].map((m) => m[1]).slice(0, 40) }; }
+function docEntry(f, t) { return { file: f, lines: lineCount(t ?? ""), headings: [...(t ?? "").matchAll(/^##\s+(.+)$/gm)].map((m) => m[1]).slice(0, 40) }; }
 function loopSections(t) {
   if (!t) return [];
   const out = []; const lines = t.split("\n");
   lines.forEach((l, i) => { const h = l.match(/^#{1,3}\s+(.+)$/); if (h && /loop|tick|wake|cadence|autonom|orchestrat|routine|schedule/i.test(h[1])) out.push({ heading: h[1], line: i + 1 }); });
   return out;
 }
+// Lines as an editor numbers them: a final newline doesn't start a new line.
+function lineCount(t) { return t === "" ? 0 : t.split("\n").length - (t.endsWith("\n") ? 1 : 0); }
 function lineOf(t, idx) { return idx < 0 ? null : t.slice(0, idx).split("\n").length; }
 function stripMd(s) { return (s ?? "").replace(/\*\*|`|~~/g, "").trim(); }
 function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }

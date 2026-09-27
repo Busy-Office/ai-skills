@@ -24,7 +24,7 @@ a cited bar, spending in proportion, with Jev at fixed points when present.
 flowchart LR
   A["inventory.mjs<br/>≤ 2 s · read-only"] --> B["map onto<br/>the tick"]
   B --> C["audit<br/>Invalid · Redundant · Risk"]
-  C --> D["score<br/>8 × 0–5 → health"]
+  C --> D["score<br/>10 × 0–5 → health"]
   D --> E["prescribe<br/>what closes a finding"]
   E --> F["review<br/>diagram · score · rows · do-next"]
   F -. only when asked .-> G["apply"]
@@ -44,7 +44,8 @@ So:
   inventory script.
 - **Read bounded.** Governing files fully; state files by header, first
   screen and last screen — the inventory gives their line counts, and
-  the count *is* the finding. Never read a queue or log end to end.
+  the count *is* the finding. Never read a queue or log end to end,
+  unless it is under about 40 lines; say so in the receipt.
 - **No subagents by default.** One context, one pass. The inventory
   already did the mechanical work.
 - **Leave a receipt.** The review's footer says how many files were read,
