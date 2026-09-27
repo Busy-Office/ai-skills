@@ -944,7 +944,11 @@ joins it to its call by `jev_run_id`:
 ```
 
 **`cases/…jsonl`** — the one file that keeps the full state; it never leaves
-your machine.
+your machine. To see it working: `jev doctor` in the repo says whether
+`keep_cases` is on and how many answered calls have a case; `jev report`
+shows *cases kept N of M answered calls* per project and flags any missing.
+A repo's own entry overrides allow-all entirely, so set `--keep-cases` on
+each listed repo you want cases from.
 
 ```json
 {"ts":"…","jev_run_id":"…","judge":{"…":"…"},"state":{"…":"…"},"decision":"PASS","answers":{"…":"…"}}

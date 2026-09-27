@@ -789,3 +789,25 @@ test("progress and slice-check map outcomes to loop actions", () => {
   assert.deepEqual([q({ implied_next_step: 0.1, new_direction: 0.8, unrelated: 0.1 }).action], ["human_review"], "a new direction is gated");
   assert.equal(q({ implied_next_step: 0.1, new_direction: 0.1, unrelated: 0.8 }).decision, "FAIL");
 });
+
+test("keep_cases is visible: doctor shows it on or off, report flags answered calls with no case", async () => {
+  const sb = sandbox({ keepCases: true });
+  const models = () => response({ data: [] });
+  let r = await run(sb, ["doctor"], { fetch: jev(models) });
+  assert.match(r.out, /keep_cases: on — no cases yet/);
+  await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass), stdin: completionState });
+  r = await run(sb, ["doctor"], { fetch: jev(models) });
+  assert.match(r.out, /keep_cases: on — 1 case\(s\) this month, .* 1 of 1 answered calls since \d{4}-\d{2}-\d{2} have a case/);
+  r = await run(sb, ["report"]);
+  assert.match(r.out, /cases kept: 1 of 1 answered calls/);
+  assert.doesNotMatch(r.out, /MISSING/);
+  // keep_cases switched off: the next answered call has no case, and the report says so
+  const pol = JSON.parse(readFileSync(join(sb.cfg, "projects.json"), "utf8"));
+  pol.projects["shop-api"].keep_cases = false;
+  writeFileSync(join(sb.cfg, "projects.json"), JSON.stringify(pol));
+  await run(sb, ["judge", "completion", "--state", "-"], { fetch: jev(completionPass, { headers: { "x-jev-run-id": "run-2" } }), stdin: completionState });
+  r = await run(sb, ["report"]);
+  assert.match(r.out, /cases kept: 1 of 2 answered calls .* 1 MISSING/);
+  r = await run(sb, ["doctor"], { fetch: jev(models) });
+  assert.match(r.out, /keep_cases: off \(1 older case\(s\) kept\) — in a Terminal in this repo: .*allow --keep-cases/);
+});

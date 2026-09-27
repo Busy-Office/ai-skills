@@ -597,6 +597,25 @@ function audit(env, project, rec) {
   } catch { return false; }
 }
 
+// Whether keep_cases is doing its job: every answered call since the first
+// saved case should have its own case, matched by run id.
+export function casesCheck(env, project) {
+  const dir = join(stateDir(env), "cases", project);
+  let cases = [];
+  try { cases = readdirSync(dir).filter((f) => f.endsWith(".jsonl")).sort().flatMap((f) => readJsonl(join(dir, f))); } catch {}
+  const month = new Date().toISOString().slice(0, 7);
+  const thisMonth = cases.filter((c) => String(c.ts).startsWith(month));
+  if (!cases.length) return { total: 0, thisMonth: 0, last: null, since: null, answered: 0, saved: 0, missing: 0 };
+  const since = cases.map((c) => c.ts).sort()[0];
+  const ids = new Set(cases.map((c) => c.jev_run_id));
+  const adir = join(stateDir(env), "audit", project);
+  let calls = [];
+  try { calls = readdirSync(adir).filter((f) => f.endsWith(".jsonl")).flatMap((f) => readJsonl(join(adir, f))); } catch {}
+  const answered = calls.filter((c) => c.type === "call" && !c.refused && !c.unverified && String(c.ts) >= since);
+  const saved = answered.filter((c) => ids.has(c.jev_run_id)).length;
+  return { total: cases.length, thisMonth: thisMonth.length, last: cases.map((c) => c.ts).sort().at(-1), since, answered: answered.length, saved, missing: answered.length - saved };
+}
+
 function keepCase(env, project, rec) {
   const dir = join(stateDir(env), "cases", project);
   try {
@@ -1244,6 +1263,14 @@ async function cmdDoctor(args, io) {
     const ok = entry?.send === true && realOr(entry.root || "") === id.root;
     row(ok ? true : "warn",
       `this repo: ${id.name} at ${id.root} — ${entry?.send === true ? (ok ? (via === "all" ? "allowed (all repos)" : "allowed") : "allowed at another path") : entry ? "denied (jev allow in this repo lifts it)" : "not allowed (jev allow, or jev allow --all, in a Terminal window)"}`);
+    if (entry?.send === true) {
+      const kc = casesCheck(env, id.name);
+      if (entry.keep_cases === true) {
+        row(kc.missing ? "warn" : true, kc.total
+          ? `keep_cases: on — ${kc.thisMonth} case(s) this month, last ${kc.last.slice(0, 16).replace("T", " ")} UTC; ${kc.saved} of ${kc.answered} answered calls since ${kc.since.slice(0, 10)} have a case${kc.missing ? ` — ${kc.missing} missing` : ""}`
+          : "keep_cases: on — no cases yet (one is saved with each answered call)");
+      } else row(true, `keep_cases: off${kc.total ? ` (${kc.total} older case(s) kept)` : ""} — in a Terminal in this repo: ${term(env)} allow --keep-cases`);
+    }
     if (key) {
       const places = [join(env.HOME || homedir(), ".zshrc"), join(env.HOME || homedir(), ".bashrc"), join(env.HOME || homedir(), ".profile")];
       try { for (const f of readdirSync(id.top)) if (f.startsWith(".env")) places.push(join(id.top, f)); } catch {}
@@ -1289,6 +1316,8 @@ function cmdReport(args, io) {
     }
     if (!by.size) continue;
     lines.push(`${p}`);
+    const kc = casesCheck(io.env, p);
+    if (kc.total) lines.push(`  cases kept: ${kc.saved} of ${kc.answered} answered calls since ${kc.since.slice(0, 10)} · ${kc.thisMonth} this month${kc.missing ? ` · ${kc.missing} MISSING — keep_cases was switched off, or the cases file isn't writable` : ""}`);
     for (const [k, b] of by) {
       lines.push(`  ${k}: PASS ${b.PASS} · REVIEW ${b.REVIEW} · FAIL ${b.FAIL}${b.NONE ? ` · answers ${b.NONE}` : ""} · unverified ${b.unverified} · refused ${b.refused} · ${b.tokens} input tokens · latency p50 ${pct(b.lat, 50) ?? "–"} ms, p95 ${pct(b.lat, 95) ?? "–"} ms`);
       if (Object.keys(b.out).length) lines.push(`    outcomes: ${Object.entries(b.out).map(([o, n]) => `${o} ${n}`).join(" · ")}`);
