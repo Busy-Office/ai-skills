@@ -113,7 +113,8 @@ reason each citing a file or a number; mean → health label (`fit · watch
 · treat · stop`; a 0 in safety caps at *treat*). The score summarises the
 rows; a reader must be able to go from a score line to the rows behind it.
 
-Score last, and score from the reason: write the one-line reason first,
+Score last, and score from the reason: write the one-line reason first —
+a file:line or a number from the project, then the finding ids —
 count the Invalid ids in it, and apply the ceiling (one → ≤ 2, two or more
 → ≤ 1) before writing the number. Both gauntlet rounds so far drifted one
 point high on exactly the dimensions whose reasons cited two Invalids.
@@ -125,16 +126,15 @@ from step 2, with its cost. Three habits kept beat twelve written down.
 
 ### 5b. Compare against the loop concept
 
-`references/loop-concept.md` is the target. Go through its slots — roles,
-Jev points, roadmap shape, inner loop, levels, milestone challenge and
-bar, caps and share, doors, stops, escalation, config — and mark each
-**present** (file:line), **missing** (where it should live) or
-**contradicted** (two answers). Report only missing and contradicted; the
-present ones show in the scores. List every **human-input point** (start
+`references/loop-concept.md` is the target. Go through its slots `c1`–`c26`
+and mark each **present** (file:line), **missing** (where it should live)
+or **contradicted** (both answers). One row for every missing or
+contradicted slot; the present ones show in the scores. List every **human-input point** (start
 it, answer a blocking gate, clarify an item, refill the queue, notice it
 is stuck, decide it is done) with what removes each. Then the concept's
 rules the loop lacks, **worded for this project's files, paste-ready** for
-the rules file the driver actually loads. Keep the principles: the human
+the rules file the driver actually loads — every placeholder a real name,
+and no line that contradicts a rule already in that file. Keep the principles: the human
 leaves the critical path, not the decision; good, not just done — in
 proportion.
 

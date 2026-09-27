@@ -18,7 +18,8 @@ not seen the build must be able to grade it.
 2. **Scorecard present and evidenced.** Ten dimensions (correctness,
    safety, reliability, cost, maintainability, understandability,
    observability, purpose, improvement, proportionality), each scored 0–5 with a one-line reason that
-   cites a file or a number. An overall health label from the fixed set
+   cites a file:line or a number from the project (finding ids alone don't
+   count), and doesn't contradict a finding row. An overall health label from the fixed set
    (`fit · watch · treat · stop`).
 3. **Terse.** Prose outside tables, diagrams and code ≤ 450 words for the
    whole review. Every finding is one table row: id · what · where
@@ -36,17 +37,21 @@ not seen the build must be able to grade it.
    nothing, and the artifact is the only output. Inventory script runtime
    ≤ 2 s on the target.
 9. **Cost of the review itself is bounded** and reported in the footer:
-   files read, and whether any state file was read whole (it must not be).
+   files read, and whether any state file was read whole — which is allowed
+   only for files under about 40 lines, and must be said.
 10. **Ambiguous tasks named and handed off.** If the loop has a queue, the
     review lists the items whose acceptance is unstated or judgement-worded
     ("improve", "look at", "consider") by id and file:line, and hands them
     to `requeue`. It does not reword them itself.
-11. **Compared against the loop concept, concretely.** Every slot of
-    `references/loop-concept.md` that is missing or contradicted has a row
-    (today · file:line · target); a human-input-points table (each row:
+11. **Compared against the loop concept, concretely.** Every slot `c1`–`c26`
+    of `references/loop-concept.md` that is missing or contradicted has a
+    row (today · file:line · target); a human-input-points table (each row:
     what the human must do today · file:line · what replaces it); and the
-    concept's rules the loop lacks, **paste-ready for this project** — naming
-    its real roadmap, intent, gate-log and rules files, not placeholders. A
+    concept's rules the loop lacks, **paste-ready for this project** — every
+    `<PLACEHOLDER>` replaced by a real name (roadmap, intent, gate-log,
+    resume and rules files, `HALT` path, config file, a concrete escalation
+    channel), and no pasted line contradicting a rule already in the file
+    it goes into. A
     plan that would let the loop edit intent, let the doer change an
     acceptance line, start one-way-door work without a gate entry, or let a
     Jev answer replace the verifier is a FAIL.

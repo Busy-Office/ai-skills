@@ -252,11 +252,47 @@ When no roadmap item is unblocked:
 3. Continue with the first `ready` item.
 ```
 
-## What the review checks for
+## What the review checks for — the slots
 
-Every heading above is a slot. Review mode reports each as **present**
-(with file:line), **missing** (with where it should live), or
-**contradicted** (two answers). The ones that matter most, in order: a
-separate verifier; the bar can't be moved by the doer; stops and a kill
-switch; one-way doors gated; caps written down; a challenge step that exists
-**and** is bounded.
+Review mode reports each slot below as **present** (file:line), **missing**
+(the file:line where it should live), or **contradicted** (both answers,
+with their lines). Present slots show in the scores; the review lists the
+missing and contradicted ones, one row each. The first six matter most.
+
+| # | slot | from |
+|---|---|---|
+| c1 | a separate verifier that can run what it checks, default FAIL | Roles |
+| c2 | the doer can't change an acceptance line, a standard or intent | Inner loop |
+| c3 | stops: goal met · cap · 3 failures of one item · no progress · `HALT` · steady state | Autonomy |
+| c4 | one-way doors logged fail-closed and worked around; gates can't be answered by the loop | Autonomy |
+| c5 | caps per item and per period, written in one place | Cost |
+| c6 | a challenge step that exists and is bounded (one lens on standard items, a review per milestone) | Challenge |
+| c7 | picker · clarifier (writes assumptions) · planner each held by someone | Roles |
+| c8 | roadmap items carry id · order · status · acceptance; milestone tags; goal-level exit | Roadmap |
+| c9 | inner loop: hypothesis per try · try limit · plateau stop | Inner loop |
+| c10 | tries isolated on a branch or worktree; only the kept one merged | Inner loop |
+| c11 | an experiment log per item that the next try reads | Inner loop |
+| c12 | `VALIDATE` for what only real use can settle; no live experiments on users | Inner loop |
+| c13 | item levels (light / standard), chosen and logged | Levels |
+| c14 | milestone review: two lenses on the running thing, the strongest case against, variants only on a structural finding, output as roadmap items | Challenge |
+| c15 | a written bar (intent → standards → measurements); uncited critique dropped | Challenge |
+| c16 | an improvement share | Cost |
+| c17 | models tiered by role | Cost |
+| c18 | a periodic cost review (`loop-economist`) that proposes cuts | Cost |
+| c19 | each Jev point 1–8 called from code or a hook, with its fallback — one row per point that isn't | Jev |
+| c20 | Jev outcomes recorded against run ids | Jev |
+| c21 | trigger (one) · wake read order · overlap lock | Autonomy |
+| c22 | one state file, written last, closed outcome words | Autonomy |
+| c23 | one escalation channel, named concretely | Autonomy |
+| c24 | untrusted input screened before it reaches an agent | Jev / Gate |
+| c25 | the empty-roadmap rule: next slice from intent; implied step `ready`, new direction `proposed` + gate | Paste-ready rules |
+| c26 | the loop config file exists and is the one place for levels, caps, share, lenses, models, stops | Configuration |
+
+If the project doesn't use Jev, c19–c20 are one row: "Jev not used; each
+point falls back to the smart agent" — that is present, not missing.
+
+**Every `<PLACEHOLDER>` in this file becomes a real name** in the review and
+in setup mode: the project's roadmap, intent, gate log, resume and rules
+files, its `HALT` path, its config file (`loop.config.json` unless the
+project already has one), and a concrete escalation channel (a command, a
+file the owner reads, a chat) — never "a notification".

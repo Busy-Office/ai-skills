@@ -38,6 +38,7 @@ export const SPECS = {
     opensWith: "diagram",
     sections: [/^#+\s*score/im, /^#+\s*(findings|invalid|redundant|risk)/im, /^#+\s*against the loop concept/im, /^#+\s*do next/im],
     citedTables: [/invalid|redundant|risk/i],
+    scoreReasons: /^(correctness|safety|reliability|cost|maintainability|understandability|observability|purpose|improvement|proportionality)$/i,
   },
   "loop-economist": {
     proseMax: 400, leadMax: 60, doNextMax: 5,
@@ -192,6 +193,19 @@ export function barCheck(skill, md, collector = null, target = null) {
     const unclassed = finding.filter((l) => !spec.citedTables.some((re) => re.test(l)));
     add("M5b", "every finding row names a class from the fixed set",
       `${finding.length - unclassed.length} of ${finding.length} classified`, unclassed.length === 0);
+  }
+
+  // M14 — a score reason cites evidence from the project (a file or a number),
+  // not only the ids of findings. "I1, I2" restates the rows; it doesn't let a
+  // reader check the score.
+  if (spec.scoreReasons) {
+    const rows = dataRows(b.tableRows).map((l) => l.split("|").map((c) => c.trim())).filter((c) => spec.scoreReasons.test((c[1] ?? "").replace(/\*/g, "")));
+    const bare = rows.filter((c) => {
+      const why = c.slice(3).join(" ").replace(/\b[A-Z]{1,2}\d{1,2}\b/g, "");
+      return !(/[\w-]+\.[a-z]{1,5}\b/i.test(why) || /\d/.test(why) || /NOT MEASURED/.test(why));
+    });
+    if (rows.length) add("M14", "every score reason cites a file or a number, not only finding ids",
+      bare.length ? `${bare.length} of ${rows.length} bare: ${bare.slice(0, 3).map((c) => c[1]).join(", ")}` : `all ${rows.length} reasons cite evidence`, bare.length === 0);
   }
 
   // M6 — do-next length

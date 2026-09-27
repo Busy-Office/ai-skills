@@ -43,7 +43,7 @@ flowchart LR
 **Health: <fit | watch | treat | stop>** · mean <x.x> / 5
 **Built vs declared:** <one sentence.>
 
-| dimension | score | why (one line, cites a file or number) |
+| dimension | score | why (one line: a file:line or a number, then the finding ids) |
 |---|---|---|
 | correctness | n | |
 | safety | n | |
@@ -86,19 +86,23 @@ flowchart LR
 that fits — "a person per tick", "a person per gate", "a person to
 refill the queue" — and whether it makes work good or only done.>
 
-Only the slots of `references/loop-concept.md` that are missing or
-contradicted (present ones are in the scores):
+Every slot `c1`–`c26` of `references/loop-concept.md` that is missing or
+contradicted, one row each (present ones are in the scores):
 
 | slot | today | where | target |
 |---|---|---|---|
-| | missing / contradicted | file:line | |
+| c3 stops | missing / contradicted | file:line | |
 
 | today the human must… | where | replace with |
 |---|---|---|
 | | file:line | |
 
 Paste-ready, worded for this project's files (goes in <the loaded rules
-file>) — only the parts of the concept's rules this loop lacks:
+file>) — only the parts of the concept's rules this loop lacks. Every name
+is real: files, the config file, the `HALT` path, the escalation channel
+(a command or a file, never "a notification"). Before writing it, check
+each line against the rules already in that file; a pasted rule that
+contradicts an existing one is a new Invalid, not a fix:
 
 ```
 When no roadmap item is unblocked:
@@ -120,6 +124,9 @@ Rules of thumb while filling it in:
 - **The three questions** (who owns done · where is state · block or log)
   are answered by the diagram's verify, record and gate nodes. If a node
   needs two labels, that's a Redundant or Invalid row, not a longer label.
+- **A score reason cites evidence, not only findings.** Each reason names a
+  file:line or a number from the project first, then the finding ids that
+  drive the score — "I1, I2" alone is not a reason.
 - **Ids are a letter and a number** — `I1`, `R2`, `K3`, no hyphen — and
   every row repeats its class word, so each row stands on its own when
   quoted.

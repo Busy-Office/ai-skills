@@ -1,7 +1,7 @@
 # Scorecard
 
-Ten dimensions, each 0–5, each with a one-line reason that cites a file
-or a number. The score is a summary of the findings, never a substitute
+Ten dimensions, each 0–5, each with a one-line reason that cites a file:line
+or a number from the project — finding ids may follow, but never replace it. The score is a summary of the findings, never a substitute
 for them: a reader should be able to go from the score line to the rows
 that produced it.
 
