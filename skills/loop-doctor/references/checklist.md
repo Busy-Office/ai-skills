@@ -64,6 +64,11 @@ absent dimension reads as an unexamined one.
   of an ordered source, or a counter rule — not "the actor picks
   something valuable". → *Risk*; loops with actor-chosen targets drift
   toward busywork.
+- **The pick the rule computes is the pick dispatched.** Compare the
+  recent record commits (`runway.recentTicks`, `git show <sha>:<state file>`)
+  with what the selection rule would have chosen at each. → *Invalid* if the
+  loop skipped its rule without recording why; the files say one thing and
+  the runs do another.
 - **Empty-queue ladder.** What happens when nothing is unblocked, in
   order: steady state declared → re-plan from intent as gated proposals
   → bounded explore. → *Risk* if unstated (the loop will invent work);

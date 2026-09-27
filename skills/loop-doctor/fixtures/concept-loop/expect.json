@@ -19,5 +19,10 @@
   "sharpness.openItems": 3,
   "sharpness.withAcceptance": 2,
   "sharpness.ambiguous": 1,
-  "sharpness.ambiguousItems.0.id": "UI-13"
+  "sharpness.ambiguousItems.0.id": "UI-13",
+  "runway.emptyQueueRule": true,
+  "runway.oldestOpenGates.0.date": "2026-09-20",
+  "runway.lock.mentions": 0,
+  "runway.openItems": 3,
+  "rulesDigest.0.file": "CLAUDE.md"
 }

@@ -159,7 +159,7 @@ export function inventory(repoPath, opts = {}) {
   }
 
   // Earlier loop reviews in the target: listed so the reviewer can stay blind to them.
-  out.priorReviews = files.filter((f) => /loop-doctor|LOOP-REVIEW/i.test(basename(f)) && /\.md$/.test(f));
+  out.priorReviews = files.filter((f) => /loop-doctor|LOOP-REVIEW|rescore/i.test(basename(f)) && /\.md$/.test(f));
 
   // what a tick actually loads: CLAUDE.md, @-imports, loop skills
   const claude = read("CLAUDE.md");
@@ -226,6 +226,54 @@ export function inventory(repoPath, opts = {}) {
     }
   }
   const dedup = new Map(); for (const d of out.checks.danglingRefs) { const k = d.file + "|" + d.ref; if (!dedup.has(k)) dedup.set(k, d); } out.checks.danglingRefs = [...dedup.values()].slice(0, 60);
+
+  // ------------------------------------------------------------ section map + rules digest
+  // What the reviewer reads instead of whole playbooks. The section map gives
+  // every heading's line range and whether the loaded rules point at it; the
+  // digest is the lines that govern behaviour, with file:line. A review works
+  // from these and opens a file only to confirm a finding's citation.
+  const NORMATIVE = /\b(must|never|always|only|do not|don't|stop|halt|max(?:imum)?|at most|every \d+|cap(?:ped|s)?|budget|gate[sd]?|owner|refuse[sd]?|forbid\w*|require[sd]?|exactly one|one-way|verif\w+|escalat\w+)\b/i;
+  const loadedText = [...new Set(out.checks.loadedFiles)].map((f) => read(f) ?? "").join("\n");
+  out.sections = {};
+  out.rulesDigest = [];
+  const perFileCap = 150, totalCap = 400;
+  for (const f of govFiles.filter((f) => !HISTORY_RE.test(f))) {
+    const t = read(f) ?? "";
+    const lines = t.split("\n");
+    const heads = [];
+    let fence = false;
+    lines.forEach((l, i) => {
+      if (/^\s*```/.test(l)) { fence = !fence; return; }
+      const h = !fence && l.match(/^(#{1,6})\s+(.+)$/);
+      if (h) heads.push({ level: h[1].length, title: h[2].trim().slice(0, 100), start: i + 1 });
+    });
+    heads.forEach((h, k) => {
+      const next = heads.slice(k + 1).find((x) => x.level <= h.level);
+      h.end = next ? next.start - 1 : lineCount(t);
+      h.lines = h.end - h.start + 1;
+      const step = h.title.match(/^(step\s+\d+[a-z]?)\b/i)?.[1];
+      // A file's own title (the H1) says nothing about which part a tick uses.
+      h.referenced = h.level === 1 ? false
+        : f !== "CLAUDE.md" && !out.checks.loadedFiles.includes(f)
+          ? new RegExp(escapeRe(step ?? h.title.split(/\s+[—–-]\s+/)[0]), "i").test(loadedText)
+          : true;
+    });
+    // The narrowest referenced sections: a referenced parent whose child is also referenced defers to the child.
+    heads.forEach((h) => { h.leaf = h.referenced && !heads.some((c) => c !== h && c.referenced && c.start > h.start && c.end <= h.end); });
+    out.sections[f] = heads.map(({ level, title, start, end, lines, referenced, leaf }) => ({ level, title, start, end, lines, referenced, used: leaf }));
+    // Digest order: lines in the sections the tick uses first, then the rest of the file.
+    const inUsed = (i) => heads.some((h) => h.leaf && i + 1 >= h.start && i + 1 <= h.end);
+    const fenced = []; fence = false;
+    lines.forEach((l, i) => { if (/^\s*```/.test(l)) { fence = !fence; fenced[i] = true; } else fenced[i] = fence; });
+    const pickable = (i) => !fenced[i] && !/^\s*#/.test(lines[i]) && lines[i].trim().length >= 20 && NORMATIVE.test(lines[i]);
+    const order = [...lines.keys()].filter(inUsed).concat([...lines.keys()].filter((i) => !inUsed(i)));
+    let n = 0;
+    for (const i of order) {
+      if (n >= perFileCap || out.rulesDigest.length >= totalCap) break;
+      if (pickable(i)) { out.rulesDigest.push({ file: f, line: i + 1, used: inUsed(i), text: lines[i].trim().replace(/\s+/g, " ").slice(0, 160) }); n++; }
+    }
+  }
+  out.digestTruncated = out.rulesDigest.length >= totalCap;
 
   // ------------------------------------------------------------ number disagreements for the same phrase
   const numByKey = new Map();
@@ -334,6 +382,46 @@ export function inventory(repoPath, opts = {}) {
     // A project that gates on a loop-doctor score must be told when the scale changes.
     scoreGates: mention(/loop-doctor[^\n]{0,120}\b(mean|score|dimension)s?\b[^\n]{0,80}/gi, [...governing, ...queueTexts].filter(([f]) => !out.priorReviews.includes(f))),
   };
+
+  // ------------------------------------------------------------ runway evidence
+  // What could stall the loop (a person needed for reversible work, no re-arm,
+  // a lock that jams, an old unanswered gate, no refill rule) and the numbers
+  // for an estimate. Evidence only: the review names the first blocker.
+  {
+    const texts = [...governing, ...driverTexts];
+    // A tick lock, not a package lockfile or "lock in a decision".
+    const lockMentions = mention(/\b(flock|lock dir(?:ectory)?|mkdir\s+[^\s;]*lock|[\w.-]*\.lock\b(?<!(?:package-lock|yarn|pnpm-lock|Cargo|Gemfile|poetry|composer|bun)\.lock)|(?:tick|loop|wake|run) lock\b)[^\n]{0,80}/gi, texts, 10).filter((m) => !/package-lock|lock\.json|lockb\b/.test(m.text));
+    const staleRule = mention(/\b(stale|older than|age|mtime|expire[sd]?|timeout)\b[^\n]{0,40}\block\b|\block\b[^\n]{0,60}\b(stale|older than|age|mtime|expire[sd]?|timeout)\b/gi, texts, 3);
+    const gateFiles = files.filter((f) => /(^|\/)[^/]*(GATES?|HUMAN-GATES|gate[-_]?log|decisions?)[^/]*\.md$/i.test(f) && !HISTORY_RE.test(f)).slice(0, 4);
+    const today = Date.now();
+    const gateEntries = [];
+    for (const f of gateFiles) {
+      const t = read(f) ?? "";
+      t.split("\n").forEach((l, i) => {
+        const d = l.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+        if (!d || !/\b(waiting|pending|open|unanswered|OWNER|TBD|awaiting)\b|___/i.test(l)) return;
+        const age = Math.floor((today - Date.parse(d[1])) / 86400000);
+        if (age >= 0) gateEntries.push({ file: f, line: i + 1, date: d[1], ageDays: age, text: l.trim().slice(0, 120) });
+      });
+    }
+    gateEntries.sort((a, b) => b.ageDays - a.ageDays);
+    let recentTicks = [];
+    if (git && out.stateFiles.length) {
+      try {
+        const paths = out.stateFiles.slice(0, 6).map((s) => `"${s.file}"`).join(" ");
+        recentTicks = sh(`git log -n 20 --format=%h%x09%cI%x09%s -- ${paths}`).split("\n").filter(Boolean).map((l) => { const [sha, date, subject] = l.split("\t"); return { sha, date, subject: subject.slice(0, 120) }; });
+      } catch { /* no history */ }
+    }
+    out.runway = {
+      rearm: [...new Set(out.triggers.filter((t) => t.kind !== "documented-cadence").map((t) => t.kind + (t.file ? ` ${t.file}` : "")))],
+      cadence: out.triggers.filter((t) => /cadence|interval/.test(t.kind)).map((t) => ({ file: t.file, line: t.line ?? null, cadence: t.cadence })).slice(0, 3),
+      emptyQueueRule: !!out.intent?.emptyQueueOrObjectiveRule,
+      lock: { mentions: lockMentions.length, staleRule: staleRule.length > 0, where: lockMentions.slice(0, 2) },
+      oldestOpenGates: gateEntries.slice(0, 5),
+      openItems: out.sharpness?.openItems ?? null,
+      recentTicks,
+    };
+  }
 
   // ------------------------------------------------------------ verdict on presence
   if (!out.triggers.length && !out.drivers.length && !out.instructedScripts.length && !out.docs.length && !out.skills.length) out.warnings.push("No scheduled-loop trigger, driver or loop documents found — this project may not have an autonomous loop.");

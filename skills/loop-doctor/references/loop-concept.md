@@ -293,7 +293,7 @@ ACTIVE) is **partial**: say when it's read and when it isn't.
 | c16 | an improvement share | Cost |
 | c17 | models tiered by role | Cost |
 | c18 | a periodic cost review (`loop-economist`) that proposes cuts | Cost |
-| c19 | each Jev point 1–8 called from code or a hook, with its fallback — one row per point that isn't | Jev |
+| c19 | each Jev point 1–8 called from code, a hook, or a script the rules tell the session to run, with its fallback — one row per point that isn't | Jev |
 | c20 | Jev outcomes recorded against run ids | Jev |
 | c21 | trigger (one) · wake read order · overlap lock | Autonomy |
 | c22 | one state file, written last, closed outcome words | Autonomy |

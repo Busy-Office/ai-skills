@@ -37,7 +37,8 @@ not seen the build must be able to grade it.
    nothing, and the artifact is the only output. Inventory script runtime
    ≤ 2 s on the target.
 9. **Cost of the review itself is bounded** and reported in the footer:
-   files read, and whether any state file was read whole — which is allowed
+   governing lines opened (budget ~1,500) and the commit the line numbers
+   refer to, and whether any state file was read whole — which is allowed
    only for files under about 40 lines, and must be said.
 10. **Ambiguous tasks named and handed off.** If the loop has a queue, the
     review lists the items whose acceptance is unstated or judgement-worded
@@ -62,6 +63,11 @@ not seen the build must be able to grade it.
     proportionality scores each cite a file or say `NOT MEASURED — <why>`; a
     loop with no challenge step or no written cap scores 0 there, not a
     polite 2.
+13. **Runway stated.** One line in the score block: what stops the loop
+    first, classed as a real stop or a stall, with file:line; any time or
+    tick estimate labelled *estimate* and built only from numbers the files
+    state. A review that calls a loop continuous because a rule is always
+    true, with no real stop, is a FAIL.
 
 ## Class D — diagnostic report (this artifact)
 

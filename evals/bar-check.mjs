@@ -38,6 +38,7 @@ export const SPECS = {
     opensWith: "diagram",
     sections: [/^#+\s*score/im, /^#+\s*(findings|invalid|redundant|risk)/im, /^#+\s*against the loop concept/im, /^#+\s*do next/im],
     citedTables: [/invalid|redundant|risk/i],
+    requireLine: [["M15", "runway line in the score block", /^\*\*Runway:\*\*\s*\S/m]],
     scoreReasons: /^(correctness|safety|reliability|cost|maintainability|understandability|observability|purpose|improvement|proportionality)$/i,
   },
   "loop-economist": {
@@ -207,6 +208,9 @@ export function barCheck(skill, md, collector = null, target = null) {
     if (rows.length) add("M14", "every score reason cites a file or a number, not only finding ids",
       bare.length ? `${bare.length} of ${rows.length} bare: ${bare.slice(0, 3).map((c) => c[1]).join(", ")}` : `all ${rows.length} reasons cite evidence`, bare.length === 0);
   }
+
+  // M15+ — lines a skill's template makes mandatory (e.g. loop-doctor's runway)
+  for (const [id, label, re] of spec.requireLine ?? []) add(id, label, re.test(md) ? "found" : "absent", re.test(md));
 
   // M6 — do-next length
   const doNext = (md.match(/^#+\s*(do next|what the numbers say to do|to decide)[^\n]*\n([\s\S]*?)(?=\n#{1,6}\s|\n---|(?![\s\S]))/im)?.[2] ?? "");

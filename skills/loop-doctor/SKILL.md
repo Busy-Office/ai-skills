@@ -42,11 +42,15 @@ So:
 - **Run nothing of the project's.** No install, no build, no tests, no
   `refresh` command. Only `git log`/`git show`/`git status` and the
   inventory script.
-- **Read bounded.** Governing files fully when under ~600 lines; a longer
-  one (a 2,000-line playbook) by the sections the loaded rules and the tick
-  actually use — the inventory lists every file's headings — and the
-  receipt names which sections. State files by header, first screen and
-  last screen — the inventory gives their line counts, and
+- **Read from the digest, not the files.** The inventory's `rulesDigest`
+  (the lines that govern behaviour, with file:line, the sections a tick
+  uses first) and `sections` (every heading's line range, `used` where the
+  loaded rules point) are the reading. Open a file only to confirm a
+  finding's citation or to read a `used` section the digest can't settle —
+  and batch those reads, several ranges in one command. **Budget: ~1,500
+  lines of governing text opened in all**; the receipt reports the number.
+  Cost is context × turns: ten batched reads beat fifty single ones. State
+  files by header, first screen and last screen — the inventory gives their line counts, and
   the count *is* the finding. Never read a queue or log end to end,
   unless it is under about 40 lines; say so in the receipt.
 - **Stay blind to earlier reviews.** Don't open the files the inventory
@@ -75,7 +79,9 @@ phrase, terminal sentinels with entries after them, swallowed errors,
 single-OS drivers. Under `concept`: a loop config file, Jev calls (from
 the driver or a hook, or only in docs), verifier agents, kill-switch, cap,
 inner-loop and challenge mentions, and milestone tags — the evidence for
-step 5b. Read all of it. It is evidence, not conclusions.
+step 5b. `runway` holds what could stall the loop (re-arm evidence, the
+lock and its stale rule, the oldest open gates, the empty-queue rule) and
+the recent record commits. Read all of it. It is evidence, not conclusions.
 
 No trigger, no driver, no loop docs → this project has no scheduled
 loop. Say so in three lines and stop.
@@ -89,6 +95,19 @@ is usually the worse one. Answer the three questions once each: who owns
 "done", where does state live between ticks, do human gates block or log.
 Climb the empty-queue ladder (steady state → re-plan from intent as
 proposals → bounded explore) and note which rungs exist.
+
+State the **runway** in one line: how long the loop can run unattended
+and what stops it first — a real stop (goal met, steady state, a written
+cap, `HALT`, an escalated repeat failure while other work continues) or a
+stall (a person needed for reversible work, a blocking gate with nothing
+else to take, an empty queue with no refill rule, no re-arm, a lock with
+no stale rule, "continue" typed by hand, a rule the loop skips without
+saying so). The first stall is the blocker, with file:line; add an
+estimate in ticks or days only when cadence, cap and queue length are all
+written down, labelled *estimate*. Check the recent record commits
+(`runway.recentTicks`) against what the selection rule would have picked —
+a loop that silently skips its own rule stalls in the worst way: it keeps
+running. `tick-model.md` has the lists.
 
 State **built vs declared** in one sentence: what runs today, what the
 documents describe in the present tense that is only planned, simulated
@@ -225,6 +244,16 @@ decision* with the file:line, not a gap to argue with. Before pasting or
 prescribing anything, look for a recorded "refused", "do not re-raise" or
 "decided" on the same subject; if there is one, don't paste against it —
 one row saying the concept differs and the owner decided, nothing more.
+
+**Continuous means never stalled, not never stopped.** A loop that reaches
+steady state and stops is healthy; one that always has a next item because
+a rule is always true is not continuous, it's unbounded. How clear the
+objective is belongs to `sharpen-intent`; this review checks the loop is
+anchored to it and knows when it's met.
+
+**No driver script is not no loop.** When the Claude session following the
+rules is the driver, the scripts the rules tell it to run
+(`instructedScripts`) are its code — guards, recorders, locks.
 
 **Say which scale.** The score block names the scale (ten dimensions,
 loop-doctor 0.3). If the inventory's `concept.scoreGates` shows the

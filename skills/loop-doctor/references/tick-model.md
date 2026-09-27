@@ -54,6 +54,20 @@ A loop with no rung 2 has no way to renew itself except a human
 noticing the queue is empty. A loop with rung 2 but no gate on it is
 writing its own mandate.
 
+## Runway — real stops and stalls
+
+| real stop (healthy) | stall (the runway's blocker) |
+|---|---|
+| goal met: the exit criteria hold | a person needed for reversible work |
+| steady state, with a rule saying so | a blocking gate and no other work to take |
+| a written cap reached | an empty queue with no refill rule |
+| `HALT` | no re-arm, or no scheduler found |
+| a repeat failure or no progress, escalated, other work continuing | a lock with no stale rule (a crash jams every later tick) |
+| | "continue" typed by a person |
+| | a selection rule the loop skips without saying so |
+
+A one-way door logged and worked around is neither: the loop continues.
+
 ## The three questions
 
 Every loop must answer each of these in **exactly one place**. The

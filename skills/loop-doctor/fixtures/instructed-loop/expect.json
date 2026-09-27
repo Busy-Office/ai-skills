@@ -3,7 +3,9 @@
   "instructedScripts.length": 3,
   "triggers.0.kind": "claude-scheduled-tasks-lock",
   "triggers.length": 1,
-  "priorReviews": ["notes/loop-doctor-rescore-2026-09-20.md"],
+  "priorReviews": [
+    "notes/loop-doctor-rescore-2026-09-20.md"
+  ],
   "intent.file": "ROADMAP.md#Objective",
   "sharpness.openItems": 2,
   "sharpness.withAcceptance": 1,
@@ -14,5 +16,10 @@
   "concept.caps.length": 3,
   "stateFiles.0.file": "notes/RESUME.md",
   "stateFiles.0.readFirst": true,
-  "stateFiles.1.readFirst": true
+  "stateFiles.1.readFirst": true,
+  "runway.rearm": [
+    "claude-scheduled-tasks-lock .claude/scheduled_tasks.lock"
+  ],
+  "digestTruncated": false,
+  "rulesDigest.0.used": true
 }
