@@ -1,6 +1,6 @@
 ---
 name: solo-flow
-description: Prescribes and audits a trunk-based git workflow for a repository with exactly one writer — a single autonomous agent or loop, with no other humans committing. One branch (main), local-only short-lived work branches, CI as the sole independent check (no PRs, nothing to review socially), and releases as tags cut directly off main rather than a develop/release branch dance. Use whenever someone is setting up or reviewing git/branching/release conventions for an agent-driven or loop-driven repo, asks whether to use GitFlow/GitHub Flow/GitLab Flow/trunk-based development, wants AGENTS.md or CLAUDE.md git rules written, is deciding whether a develop branch or long-lived feature branches earn their keep, or reports branch drift, a forgotten back-merge, or an autonomous loop that got confused about which branch it was on. Also use to sanity-check an existing branching setup that looks like GitFlow but has no other human collaborators to justify it, and when deciding how the agent should isolate each unit of work (git worktrees, a primary checkout that never leaves main, running items in parallel).
+description: Prescribes and audits a trunk-based git workflow for a repository with exactly one writer — a single autonomous agent or loop, with no other humans committing. One branch (main), local-only short-lived work branches, CI plus one fresh-context review as the independent checks (no PRs, nothing to review socially), and releases as tags cut directly off main rather than a develop/release branch dance. Use whenever someone is setting up or reviewing git/branching/release conventions for an agent-driven or loop-driven repo, asks whether to use GitFlow/GitHub Flow/GitLab Flow/trunk-based development, wants AGENTS.md or CLAUDE.md git rules written, is deciding whether a develop branch or long-lived feature branches earn their keep, or reports branch drift, a forgotten back-merge, or an autonomous loop that got confused about which branch it was on. Also use to sanity-check an existing branching setup that looks like GitFlow but has no other human collaborators to justify it, and when deciding how the agent should isolate each unit of work (git worktrees, a primary checkout that never leaves main, running items in parallel).
 ---
 
 # Solo Flow
@@ -15,8 +15,8 @@ more question ("which branch am I on, and is it in sync?") a tick has to
 answer before it can start.
 
 Solo Flow is trunk-based development named for this specific case: one
-branch (`main`), short-lived local work branches, CI as the only
-independent check, and releases as tags cut directly off `main` instead of
+branch (`main`), short-lived local work branches, CI plus one
+fresh-context review as the independent checks, and releases as tags cut directly off `main` instead of
 a `develop`/`release` branch dance. It is not a novel workflow — it is
 2026's mainstream recommendation for CI/CD-heavy teams, applied to the
 narrower and more clear-cut case of a single automated committer.
@@ -117,11 +117,17 @@ What worktrees cost, so the loop plans for it:
    worktree, plus one independent fresh-context review of the whole diff
    (a different agent or persona than the one that wrote it — the review
    is worth nothing if it's the same context grading its own work).
-5. Merge: in the worktree, rebase onto `origin/main` if it moved; then in
-   the primary, merge (fast-forward or `--no-ff`, pick one convention and
-   keep it) into local `main` and push `main`; then remove the worktree
-   and delete the local work branch.
-6. The merge commit message is the record: items closed, net line change,
+5. Land. For a single writer, squash then fast-forward (recommended), so
+   `main` gets one reviewed commit per unit of work: in the worktree,
+   squash the branch to one commit
+   (`git reset --soft $(git merge-base HEAD origin/main) && git commit`),
+   rebase onto `origin/main` if it moved (re-run the suite if it did), then
+   in the primary `git merge --ff-only <branch>` and push `main`. The
+   alternatives are a plain fast-forward of the branch's commits or a
+   `--no-ff` merge; pick one convention and keep it. Then remove the
+   worktree and delete the local work branch.
+6. The landed commit's message (the squashed commit, or the merge commit
+   under `--no-ff`) is the record: items closed, net line change,
    decisions taken, and a release recommendation when one is due.
 7. Anything handed off to another agent or repo cites the exact `main`
    commit SHA — never "whatever's on main," which moves.
@@ -244,7 +250,8 @@ fresh-context review before merging" is doing the job a second reviewer's
 eyes would have done — skip it and the only check left is CI, which
 catches what it was written to catch and nothing else.
 
-**`--no-ff` vs fast-forward is a one-time choice, not a per-merge one.**
+**Squash then fast-forward (recommended), plain fast-forward or `--no-ff`
+is a one-time choice, not a per-merge one.**
 Whichever you pick, every batch should look the same in history — a mix of
 both makes `git log --graph` on `main` unreadable and tells you nothing
 about which merges were "real" batches.

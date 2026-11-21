@@ -702,7 +702,8 @@ own rules file.
 
 Trunk-based development, named for this specific case: one branch
 (`main`), short-lived local work branches (`feat/*`, `fix/*`, `chore/*`,
-never pushed), CI as the sole independent check, and releases as
+never pushed), CI plus one fresh-context review as the independent checks,
+work landed as one squashed commit fast-forwarded onto `main`, and releases as
 annotated tags cut straight off `main` — no `develop`/`release` dance to
 keep in sync. Before prescribing it, it asks the one question that
 decides whether a second branch is actually justified: does anything
