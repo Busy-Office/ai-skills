@@ -21,12 +21,14 @@ node <skill-dir>/scripts/collect.mjs <repo-path> > <scratchpad>/progress-state.j
 ```
 
 Flags: `--fast` (local files only: no GitHub, no per-file git history, no
-refresh command — ~0.2 s), `--no-gh` (skip GitHub only), `--profile`
+refresh command — ~0.2 s), `--run-refresh` (run the manifest's `refresh`
+command; only after the user says yes), `--no-gh` (skip GitHub only), `--profile`
 (timings to stderr), `--json-only` (no stderr notes), `--self-test` (run
 the fixtures instead of a repo).
 
 The collector is read-only and runs out-of-process; it never touches the
-target project's files, dependencies, build or git state. Full mode costs
+target project's files, dependencies, build or git state, unless you pass
+`--run-refresh` (below). Full mode costs
 about 0.2–0.4 s for local records plus ~1.5 s for GitHub. Use `--fast` for
 a quick check (someone asks "where are we?" mid-session), full mode for the
 published page.
@@ -35,6 +37,12 @@ The collector reads `.claude/progress.json` in the target repo if present
 (see `references/manifest.md`), then shape-detects everything the manifest
 doesn't pin. It never runs a command the manifest didn't declare. Output is
 one JSON blob; read it whole before writing anything.
+
+A manifest `refresh` is a shell command from the target repo, so the
+collector does not run it by default. When `roadmap.refreshed` is `false`,
+show the user the command (`roadmap.refresh`) and ask before running it. Only
+on a yes, collect again with `--run-refresh`. Otherwise build the page from the
+roadmap as it is and say it was not refreshed.
 
 The floor is a git repo. If `warnings` says it isn't one, stop and say so.
 If it is a git repo with no decision or roadmap records, publish a short

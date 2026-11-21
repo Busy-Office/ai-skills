@@ -221,8 +221,9 @@ unchanged.
 
 The collector is **read-only and out-of-process**: it never touches the
 target project's files, dependencies, build or git state. The one exception
-is a `refresh` command the manifest explicitly declares (for generated
-roadmaps), and `--fast` skips even that.
+is a `refresh` command the manifest declares (for generated roadmaps). It
+runs only when the collector gets `--run-refresh`, which the skill passes after
+you agree to the command it shows you. `--fast` never runs it.
 
 Measured on real repos (Apple Silicon, warm cache):
 

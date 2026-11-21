@@ -32,7 +32,7 @@ is optional. Paths are relative to the repo root and may be globs.
 | `questions` | files holding open questions (`OQ-` nodes, yaml `questions:`) | same files as `decisions` |
 | `gates` | human sign-off logs | shape-detect `docs/HUMAN-GATES-LOG.md`, `GATES.md`, `docs/GATES.md` |
 | `roadmap` | the phase/milestone file | shape-detect `ROADMAP.md`, `docs/ROADMAP.md`, `PROJECT-PLAN.md`, `PLAN.md` |
-| `refresh` | command that regenerates a *generated* roadmap; run only if declared | never run anything |
+| `refresh` | command that regenerates a *generated* roadmap; run only with `--run-refresh`, after the user agrees | never run anything |
 | `backlog` | checkbox-style task lists | shape-detect `docs/BACKLOG.md`, `BACKLOG.md`, `*-BACKLOG.md` |
 | `changelog` | release notes | `CHANGELOG.md` |
 | `sessions` | session/loop notes for the momentum section | shape-detect `SESSIONS.md`, `**/session-*/**/*.md`, `**/*-session.md`, `LOOPS.md` |

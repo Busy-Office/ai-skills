@@ -12,12 +12,12 @@
 // the activity word, blockers, wording pending). Without it the output is unchanged.
 //
 // Usage:
-//   node collect.mjs [repoPath] [--no-gh] [--fast] [--profile] [--json-only]
+//   node collect.mjs [repoPath] [--no-gh] [--fast] [--run-refresh] [--profile] [--json-only]
 //   node collect.mjs --self-test          # run fixtures/*/expect.json
 //
 // The collector is read-only and out-of-process: it never touches the target
 // project's files, build, or git state (the only exception is a `refresh`
-// command the manifest explicitly declares, and --fast skips even that).
+// command the manifest declares, run only with --run-refresh and never with --fast).
 //
 // See ../references/manifest.md for the manifest keys and vocabulary.
 
@@ -496,8 +496,12 @@ export function collect(repoPath, opts = {}) {
     const generated = /<!--\s*GENERATED/i.test(text) || /^_?Generated\s+\d{4}-/m.test(text);
     const generatedAt = text.match(/Generated\s+(\d{4}-\d{2}-\d{2}T[\d:.Z+-]+|\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
     out.roadmap = { file: roadmapFile, generated, generatedAt, shape: null, refresh: manifest.refresh ?? null };
-    if (manifest.refresh && !opts.selfTest && !fast) {
+    // The manifest's refresh is a shell command from the target repo: run it only when asked (--run-refresh).
+    if (manifest.refresh && opts.runRefresh && !opts.selfTest && !fast) {
       try { sh(manifest.refresh); out.roadmap.refreshed = true; } catch { out.warnings.push(`refresh command failed: ${manifest.refresh}`); }
+    } else if (manifest.refresh) {
+      out.roadmap.refreshed = false;
+      out.notes.config.push(`refresh command declared, not run (pass --run-refresh to run it): ${manifest.refresh}`);
     }
     const lines = text.split("\n");
     const phaseStatusFromAnnot = (s) => {
@@ -928,6 +932,25 @@ function selfTest() {
   })();
   if (!shellCase) console.log("~ no-shell check skipped (no git, or Windows)");
 
+  // The manifest's refresh command runs only with runRefresh (--run-refresh).
+  const refreshCase = (() => {
+    if (process.platform === "win32") return null;
+    const dir = mkdtempSync(join(tmpdir(), "progress-dashboard-"));
+    try {
+      mkdirSync(join(dir, ".claude"));
+      writeFileSync(join(dir, ".claude", "progress.json"), JSON.stringify({ refresh: "touch REFRESHED" }));
+      writeFileSync(join(dir, "ROADMAP.md"), "# Roadmap\n");
+      const off = collect(dir, { noGh: true, git: false });
+      const ranOff = existsSync(join(dir, "REFRESHED"));
+      const on = collect(dir, { noGh: true, git: false, runRefresh: true });
+      return [
+        ["refresh: not run by default", ranOff, false],
+        ["refresh: recorded as not run", off.roadmap?.refreshed, false],
+        ["refresh: runs with runRefresh", existsSync(join(dir, "REFRESHED")) && on.roadmap?.refreshed, true],
+      ];
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  })();
+
   // boundaries no single fixture can hold at once
   const t = { quietDays: 14, stalledDays: 30 };
   const units = [
@@ -942,6 +965,7 @@ function selfTest() {
     ["exitCriteria: inherited status name refused", validateExitCriteria({ version: 1, overall: 0, phases: [{ id: "p0", number: 0, title: "t", status: "toString", rows: [], manual: [] }] }).length, 1],
     ["phase numbers: every form read", JSON.stringify(phaseNumbersIn("Phase 3: sign-off; phase-1 and phase12, not phase exit")), JSON.stringify([3, 1, 12])],
     ...(shellCase ?? []),
+    ...(refreshCase ?? []),
   ];
   let unitFailed = 0;
   for (const [label, got, want] of units) { total++; if (got !== want) { failed++; unitFailed++; console.log(`✗ ${label}\n    want ${JSON.stringify(want)}\n    got  ${JSON.stringify(got)}`); } }
@@ -960,7 +984,7 @@ if (isMain) {
   if (args.includes("--self-test")) selfTest();
   else {
     const repoPath = args.find((a) => !a.startsWith("--")) ?? process.cwd();
-    const state = collect(repoPath, { noGh: args.includes("--no-gh"), fast: args.includes("--fast") });
+    const state = collect(repoPath, { noGh: args.includes("--no-gh"), fast: args.includes("--fast"), runRefresh: args.includes("--run-refresh") });
     if (!args.includes("--json-only") && state.notes.config.length) process.stderr.write("config notes:\n" + state.notes.config.map((n) => "  - " + n).join("\n") + "\n");
     if (args.includes("--profile")) process.stderr.write(`profile (${state.mode}): ` + Object.entries(state.timings).map(([k, v]) => `${k}=${v}${k.endsWith("Ms") || !/files/.test(k) ? "ms" : ""}`).join(" ") + "\n");
     process.stdout.write(JSON.stringify(state, null, 2));
