@@ -38,11 +38,16 @@ relay), use that instead. `jev judges` lists every judge; `jev judge <name>
 Pass the state with a **quoted** heredoc or a file — never `echo '…'`, which
 breaks on apostrophes in evidence. **Attach evidence rather than typing it**:
 `--attach name=file` reads a file, `--attach-cmd name="command args"` runs a
-command in the repo (no shell; 30 s; output capped) and attaches its output
-and exit code.
+command in the repo (no shell; 30 s) and attaches its output and exit code.
+
+Each attached item keeps only its **first 8,000 characters** (`ATTACH_CHARS`
+in the CLI); the rest is cut and marked `…[truncated N chars]`. A test runner
+prints its summary last, so attach the tail of the log, not the whole run.
+`--attach-cmd` has no shell, so put a pipe inside `bash -c`, with `pipefail`
+so the exit code is the test run's, not `tail`'s:
 
 ```bash
-jev judge completion --attach-cmd tests="npm test" --attach-cmd diff_stat="git diff --stat HEAD~1" --state - <<'JSON'
+jev judge completion --attach-cmd tests="bash -c 'set -o pipefail; npm test 2>&1 | tail -40'" --attach-cmd diff_stat="git diff --stat HEAD~1" --state - <<'JSON'
 {"objective": "Add CSV export to the invoices page", "agent_claim": "Done: export button added and tested."}
 JSON
 ```
