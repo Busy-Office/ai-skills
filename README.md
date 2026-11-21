@@ -36,11 +36,28 @@ ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-d
 
 ## Start here
 
-Everything is read-only: no skill writes to your repo, runs your build, or
-installs anything, so trying one costs nothing but tokens. The one exception is
-[`jev`](#jev), which sends what you allow to an outside service — it does
-nothing until you give it a key and allow a repo. The order that
-matters is whether your loop has **history yet**.
+A review is read-only: it reads your repo, runs none of your project's
+commands, and writes its report to the scratchpad or a private claude.ai page.
+Some skills go further, and say so before they do:
+
+- **Write to your repo, only when you ask, diff shown first:** `requeue` (the
+  queue file), `sharpen-intent` (the intent file and the line that points at
+  it), `loop-doctor` (its fixes, and the loop's rules in setup mode),
+  `loop-economist` (its prescriptions, including a verifier agent file),
+  `wake-weight` (its cuts), `solo-flow` (git rules in `AGENTS.md` or
+  `CLAUDE.md`, and branch protection set through `gh api` during setup) and
+  `graph-engineer` (a workflow script in `.claude/workflows/`, run only if you
+  say so).
+- **`progress-dashboard`** runs your manifest's `refresh` command only after
+  you agree to it. It can mirror its first screen to Notion, and when it
+  creates that Notion page it writes the URL into `.claude/progress.json`.
+- **`app-icon-generator`** runs ImageMagick and `rsvg-convert` on your image,
+  writes the icon set to the folder you name, and tells you what to
+  `brew install` if they are missing.
+- **[`jev`](#jev)** sends what you allow to an outside service. It does
+  nothing until you give it a key and allow a repo.
+
+The order that matters is whether your loop has **history yet**.
 
 **If a loop has been running for a couple of weeks** — start with the one that
 routes you:
