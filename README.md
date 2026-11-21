@@ -56,6 +56,16 @@ Some skills go further, and say so before they do:
   `brew install` if they are missing.
 - **[`jev`](#jev)** sends what you allow to an outside service. It does
   nothing until you give it a key and allow a repo.
+- **[`automate-me`](#automate-me)** writes outside any repo: a "How I work"
+  section in your global `~/.claude/CLAUDE.md`, only after you approve the
+  diff, and the rules it writes have sessions append to a local decision log
+  (`~/.claude/decision-log.jsonl`) that stays on your machine. It runs only
+  when you call it.
+- **[`correct`](#correct)** changes your repo's code, checks and tests, and
+  runs the new check against a past mistake to prove it fails; it lands through
+  your repo's own flow and never pushes.
+- **[`blast-radius`](#blast-radius)** writes a small proof script in the
+  scratchpad and runs it against your code.
 
 The order that matters is whether your loop has **history yet**.
 
@@ -127,6 +137,9 @@ Nothing degrades silently: each says which numbers it could not see.
 | [solo-flow](#solo-flow) | Trunk-based git branching and release model for a repo with exactly one writer | "what git workflow for our agent/loop", "should we use GitFlow", "write git rules into AGENTS.md", "does develop earn its keep" |
 | [graph-engineer](#graph-engineer) | Redraws a linear agent as an orchestration graph and reviews Workflow scripts — contracts, fan-out, barriers, verifiers, converging cycles, tiering, cost | "this agent does A then B then C, parallelise it", "review this workflow script", "parallel() or pipeline()?", "where does the verifier go", "how many agents will this cost" |
 | [jev](#jev) | A typed second opinion from jev-ai.pro — PASS / REVIEW / FAIL with probabilities — before claiming done, routing work, trusting research, releasing or a risky tool call | "check it's really done", "which agent should take this", "is this evidence enough", "sanity-check this command", "second opinion before we deploy" |
+| [automate-me](#automate-me) | Learns how you work and decide, and writes a short "How I work" section for your global `CLAUDE.md` after you approve the diff | `/busy-office:automate-me` — you run it on purpose; Claude never picks it on its own |
+| [correct](#correct) | Turns a mistake agents keep repeating into a check that makes it impossible, proven on a real past mistake | "agents keep doing X", "stop this happening again", `/busy-office:correct` |
+| [blast-radius](#blast-radius) | What a change can break beyond its diff, with the one fact it is safe because of proven by running code | "blast radius of X", "what could this break", "X already handles Y, right?" |
 
 ### The loop family
 
@@ -995,6 +1008,66 @@ needed. Design: [`docs/jev-design.md`](docs/jev-design.md).
 
 ---
 
+## automate-me
+
+**What it answers:** how you work and decide, written where every session
+sees it. It reads your feedback memories across projects, the local decision
+log, patterns seen in two or more recent sessions, and asks one or two
+multiple-choice questions. The output is a short **"How I work"** section for
+`~/.claude/CLAUDE.md`, shown as a diff; nothing is written until you approve
+it. Rules about one repository are listed for that repository, not written.
+
+```
+/busy-office:automate-me        Claude never starts this one on its own
+```
+
+The section carries a self-check (before a recommendation, plan or "done":
+does it need to exist; every fact graded Ran / Read / Inferred; what is
+missing; what was promised and not done) and a noise filter. It also has
+sessions log each decision you answer, with your corrections tagged by kind,
+to `~/.claude/decision-log.jsonl`. That file never leaves your machine. On the
+next run, `scripts/decisions.mjs` counts it: a kind accepted 5 times in its
+last 10 with no change may be proposed as "settle and report afterwards", one
+change moves it back, and kinds you reserve never move. A correction seen
+twice becomes a proposed rule.
+
+```bash
+node skills/automate-me/scripts/decisions.mjs [log] --reserve release
+node skills/automate-me/scripts/decisions.mjs --self-test
+```
+
+---
+
+## correct
+
+**What it answers:** how to make a mistake agents keep repeating here
+impossible rather than reminded. Classes come from recorded corrections,
+reverts and fix-ups; a class counts once it has happened twice. Each is fixed
+at the highest level that works: architecture, then types, then a check whose
+error names the fix, then a test, prose last. Every new check is run against a
+real past mistake and must fail there. Exceptions carry a reason and an
+expiry. It lands through the repo's own flow, and `jev` is an optional second
+opinion.
+
+> agents keep importing the internal client — make it stop
+> `/busy-office:correct`
+
+---
+
+## blast-radius
+
+**What it answers:** what a change can break somewhere else, the part grep
+will not show: wire formats, database columns, lifecycle and async ordering,
+the pinned library's real source, consumers in other repos. It finds the one
+fact the change is safe because of and proves it by running real code, grading
+each fact from "you said so" to "reproduced in the running app". Use it before
+design too, when a brief asserts something about existing code.
+
+> what's the blast radius of making this endpoint public?
+> this diff is small but I don't trust it
+
+---
+
 ## Optional: a second brain
 
 Nothing here requires one. But these skills produce a **time series** — a run
@@ -1075,4 +1148,6 @@ is not in the code, and a call site is not in a review.
 
 ## License
 
-[MIT](LICENSE) © 2026 Busy Office
+[MIT](LICENSE) © 2026 Busy Office. `automate-me`, `correct` and
+`blast-radius` are adapted from MIT-licensed pstack; their credits and
+upstream licence are in [NOTICE.md](NOTICE.md).
