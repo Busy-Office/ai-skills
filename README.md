@@ -140,6 +140,8 @@ Nothing degrades silently: each says which numbers it could not see.
 | [automate-me](#automate-me) | Learns how you work and decide, and writes a short "How I work" section for your global `CLAUDE.md` after you approve the diff | `/busy-office:automate-me` — you run it on purpose; Claude never picks it on its own |
 | [correct](#correct) | Turns a mistake agents keep repeating into a check that makes it impossible, proven on a real past mistake | "agents keep doing X", "stop this happening again", `/busy-office:correct` |
 | [blast-radius](#blast-radius) | What a change can break beyond its diff, with the one fact it is safe because of proven by running code | "blast radius of X", "what could this break", "X already handles Y, right?" |
+| [improve-until-done](#improve-until-done) | Rounds of try, verify, judge, with five stop rules and a record per round | "keep going until it passes", "one more round?", "fix until the review is clean" |
+| [deploy-agents](#deploy-agents) | Model per job, limits, the agent brief and the standard batch, with an optional Workflow script | "spawn a builder and a reviewer", "write the agent brief", "which model for this agent" |
 
 ### The loop family
 
@@ -1024,15 +1026,23 @@ it. Rules about one repository are listed for that repository, not written.
 The section carries a self-check (before a recommendation, plan or "done":
 does it need to exist; every fact graded Ran / Read / Inferred; what is
 missing; what was promised and not done) and a noise filter. It also has
-sessions log each decision you answer, with your corrections tagged by kind,
-to `~/.claude/decision-log.jsonl`. That file never leaves your machine. On the
-next run, `scripts/decisions.mjs` counts it: a kind accepted 5 times in its
-last 10 with no change may be proposed as "settle and report afterwards", one
-change moves it back, and kinds you reserve never move. A correction seen
-twice becomes a proposed rule.
+sessions write down automate-me's predicted answer before forming a
+recommendation, then log the decision you answer (prediction and
+recommendation both), with your corrections tagged by kind, to
+`~/.claude/decision-log.jsonl`. That file never leaves your machine. On the
+next run, `scripts/decisions.mjs` scores each kind on the prediction, not the
+recommendation: at 20 or more predictions, 95 % right and no reversal in the
+last 10, it may be proposed as "settle and report afterwards". Reserved kinds
+never move: landing on a shared branch, money rules, contract wording,
+protected files and anything irreversible by default, plus any you add. A
+correction seen twice becomes a proposed rule. `scripts/backfill.mjs` reads one
+past session and prints proposed log lines from the questions you answered
+(prediction unknown), for you to review and append; it writes nothing.
 
 ```bash
 node skills/automate-me/scripts/decisions.mjs [log] --reserve release
+node skills/automate-me/scripts/backfill.mjs <session.jsonl> [--kind <slug>]
+node skills/automate-me/scripts/backfill.mjs --self-test
 node skills/automate-me/scripts/decisions.mjs --self-test
 ```
 
@@ -1065,6 +1075,43 @@ design too, when a brief asserts something about existing code.
 
 > what's the blast radius of making this endpoint public?
 > this diff is small but I don't trust it
+
+---
+
+## improve-until-done
+
+**What it answers:** whether to do one more round. Work goes try, verify,
+judge, then again or stop, and stops at the first of: **done** (the gate is
+green, the reviewer has no should-fix findings, every claim graded Ran or
+Read), **plateau** (two rounds with no new fix, or a fix that comes back),
+**budget** (3 review rounds per batch, and a token or time cap stated up
+front), **scope growth** (a new contract, package or permission: ask) and
+**cannot verify** (re-run the check alone, then ask). Each round ends with a
+three-line record: what was tried, the graded evidence, the decision.
+
+> keep fixing until the review is clean
+> is one more round worth it?
+
+---
+
+## deploy-agents
+
+**What it answers:** how to hand a batch to subagents and trust what comes
+back. A model per job (the strongest at high effort for money, posting,
+concurrency and other hard-rule code; a standard one for builds; the reviewer
+always another model or a fresh context; a cheaper one for page drafts; a
+cheap one for searches and re-runs), at most 3 agents and one full test suite
+at a time, a brief template, and the standard batch: worktree, build, re-run
+the claims, fresh review, fix, final check alone, explain, your yes, land. The
+coordinator cites only claims it checked.
+
+An optional Workflow script runs build, verify, review and bounded fix rounds
+so only results return to the coordinator. It runs only when you opt in; try
+it on one batch first and compare tokens with the manual way.
+
+```bash
+node skills/deploy-agents/scripts/dry-run.mjs --self-test   # the script's stop rules, no tokens
+```
 
 ---
 
