@@ -8,7 +8,7 @@ description: "Apply when a loop-family skill reviews or audits someone's project
 **Apply when** you review or audit someone's project or loop with a loop-family skill:
 `loop-doctor`, `loop-economist`, `loop-atlas`, `wake-weight`, `requeue`, `sharpen-intent`, or
 `graph-engineer` in review mode. `busy-office:how`, `busy-office:why`, `busy-office:review` and
-`blast-radius` follow their own rules.
+`busy-office:blast-radius` follow their own rules.
 
 **The rule.** The person asking for the review is not adopting a tool, so the answer costs their
 project nothing.

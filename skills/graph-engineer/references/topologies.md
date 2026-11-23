@@ -96,9 +96,11 @@ const { severity } = await agent(`Classify this diff's risk:\n${diff}`, {
             properties: { severity: { type: 'string', enum: ['low', 'high'] } },
             required: ['severity'] },
 })
-const review = severity === 'high'
-  ? await pipeline(files, (f) => agent(`Audit ${f}`, { schema: FINDINGS }))
-  : await agent(`Quick review:\n${diff}`, { schema: FINDINGS })
+const review = []
+if (severity === 'high')
+  for (const wave of waves(files))          // waves of 3, see "Waves of 3"
+    review.push(...await pipeline(wave, (f) => agent(`Audit ${f}`, { schema: FINDINGS })))
+else review.push(await agent(`Quick review:\n${diff}`, { schema: FINDINGS }))
 ```
 
 The classification is the agent's. Which branch runs is the script's, and
