@@ -6,8 +6,8 @@ higher one worked, the proof that the check fails on a real past mistake, and th
 The reference is the skill's ladder (`principle-encode-lessons-in-structure`) and
 `principle-prove-it-works`.
 
-Run `node evals/bar-check.mjs correct <artifact> --target <the built repo>` first for the mechanical
-rows. A green pre-check is not a pass. The answer key is the fixture's
+Run `node evals/bar-check.mjs correct <artifact> --target <out-dir>` first for the mechanical rows
+(`<out-dir>` is what `build.mjs` was given: `repo/` and `memory/` sit side by side in it). A green pre-check is not a pass. The answer key is the fixture's
 [`README.md`](../../fixtures/repeat-offender/README.md); the run under test works in the repo that
 `build.mjs` builds and does not read it.
 

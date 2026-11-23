@@ -14,16 +14,21 @@ import { join, dirname } from "node:path";
 const out = process.argv[2];
 if (!out) { console.error("usage: node build.mjs <out-dir>"); process.exit(2); }
 const repo = join(out, "repo");
-if (existsSync(repo)) { console.error(`${repo} already exists; give an empty directory`); process.exit(2); }
+for (const p of [repo, join(out, "memory")]) {
+  if (existsSync(p)) { console.error(`${p} already exists; give an empty directory`); process.exit(2); }
+}
 mkdirSync(repo, { recursive: true });
 
+// git sees none of the caller's GIT_* variables (a GIT_DIR or GIT_WORK_TREE from a hook would
+// point it at another repository) and none of the caller's config.
+const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")));
 let day = 9;
 const git = (...args) => {
   const when = `2026-03-${String(day).padStart(2, "0")}T10:00:00Z`;
   const who = { NAME: "Sample Dev", EMAIL: "dev@example.invalid" };
   execFileSync("git", ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", "-c", "init.defaultBranch=main", ...args], {
     cwd: repo, stdio: ["ignore", "ignore", "inherit"],
-    env: { ...process.env, GIT_AUTHOR_NAME: who.NAME, GIT_AUTHOR_EMAIL: who.EMAIL, GIT_COMMITTER_NAME: who.NAME, GIT_COMMITTER_EMAIL: who.EMAIL, GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when },
+    env: { ...cleanEnv, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_AUTHOR_NAME: who.NAME, GIT_AUTHOR_EMAIL: who.EMAIL, GIT_COMMITTER_NAME: who.NAME, GIT_COMMITTER_EMAIL: who.EMAIL, GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when },
   });
 };
 const write = (base, files) => {
@@ -173,7 +178,7 @@ description: correction given on the CSV export and again on the PDF summary
 type: feedback
 ---
 Report code reads orders through src/db/orders.js and never imports src/db/client.js. Said on the
-CSV export and again on the PDF summary; the import check passed both times.
+CSV export and again on the PDF summary.
 `,
   "feedback-replies.md": `---
 name: short replies
