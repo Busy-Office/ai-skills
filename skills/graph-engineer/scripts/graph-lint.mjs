@@ -357,27 +357,60 @@ export function lint(src, file = "<stdin>") {
   }
 
   // ------------------------------------------------------------- shape --
-  const widthOf = (c) => {
-    const arg = code.slice(c.argStart, c.end).trim();
-    const orig = src.slice(c.argStart, c.end).trim();
-    let m;
-    if ((m = /^Array\.from\s*\(\s*\{\s*length\s*:\s*(\d+)/.exec(arg))) return Number(m[1]);
-    if (arg.startsWith("[")) { const e = matchBracket(arg, 0); return countElements(arg.slice(0, e + 1)); }
-    if ((m = /^([A-Za-z_$][\w$]*)\s*(\.filter\s*\(\s*Boolean\s*\))?\s*(\.map|\.flatMap|,|$)/.exec(arg))) {
-      const def = new RegExp(`(?:const|let|var)\\s+${m[1]}\\s*=\\s*\\[`).exec(code);
-      if (def) { const o = def.index + def[0].length - 1; const e = matchBracket(code, o); return countElements(code.slice(o, e + 1)); }
-      if (/^args\b/.test(m[1])) return "args";
+  // How many items the list expression at `i` holds, when the script shows it:
+  // a literal, Array.from({ length: N }), .slice(0, N) or .slice(i, i + N), a
+  // const bound to one of those, or a parallel()/pipeline() result over one
+  // (same length; .filter and .map keep it as an upper bound). null otherwise.
+  const listWidth = (i, depth = 0) => {
+    if (depth > 5) return null;
+    let open = 0, w = null, m;
+    const skip = () => { while (/\s/.test(code[i] ?? "")) i++; };
+    for (skip(); code[i] === "("; skip()) { open++; i++; }
+    if (code.startsWith("await", i) && !/[\w$]/.test(code[i + 5])) { i += 5; skip(); }
+    const head = code.slice(i, i + 200);
+    if ((m = /^Array\.from\s*\(\s*\{\s*length\s*:\s*(\d+)/.exec(head))) { w = Number(m[1]); i = matchBracket(code, i + head.indexOf("(")) + 1; }
+    else if (code[i] === "[") { const e = matchBracket(code, i); const lit = code.slice(i, e + 1); w = /[[,]\s*\.\.\./.test(lit) ? null : countElements(lit); i = e + 1; }
+    else if ((m = /^(parallel|pipeline)\s*\(/.exec(head))) { const o = i + m[0].length - 1; w = listWidth(o + 1, depth + 1); i = matchBracket(code, o) + 1; }
+    else if ((m = /^[A-Za-z_$][\w$]*/.exec(head))) {
+      i += m[0].length;
+      const def = new RegExp(`(?:const|let|var)\\s+${m[0].replace(/\$/g, "\\$")}\\s*=\\s*`).exec(code);
+      w = m[0] === "args" ? "args" : def ? listWidth(def.index + def[0].length, depth + 1) : null;
+    } else return null;
+    for (;;) {
+      skip();
+      if (code[i] === ")" && open > 0) { open--; i++; continue; }
+      const step = /^\.\s*([A-Za-z_$][\w$]*)\s*(\()?/.exec(code.slice(i, i + 80));
+      if (!step) break;
+      const o = step[2] ? i + step[0].length - 1 : -1;
+      const e = o >= 0 ? matchBracket(code, o) : -1;
+      if (step[1] === "slice" && o >= 0) {
+        const s = /^\s*(?:0\s*,\s*(\d+)|([A-Za-z_$][\w$]*)\s*,\s*\2\s*\+\s*(\d+))\s*$/.exec(code.slice(o + 1, e));
+        const n = s ? Number(s[1] ?? s[3]) : null;
+        w = n === null ? null : typeof w === "number" ? Math.min(w, n) : n;
+      } else if (!(o >= 0 && /^(filter|map|sort|reverse)$/.test(step[1]))) w = w === "args" && o < 0 ? "args" : null;
+      i = e >= 0 ? e + 1 : i + step[0].length;
     }
-    return null;
+    return w;
   };
-  // G16 unchunked fan-out: more than 3 agents in flight with no visible waves.
-  // Waves read as a chunk/wave/batch name or a .slice() in the first argument.
-  for (const c of fan) {
+  const widthOf = (c) => listWidth(c.argStart);
+  // G16 unchunked fan-out: more than 3 agents in flight. A fan-out's width is
+  // what listWidth shows, or 3 when it runs over one wave (a singular
+  // chunk/wave/batch name — `chunks` is every wave at once); a fan-out inside
+  // another's callback multiplies by the enclosing widths.
+  const fanWidth = (c) => {
     const w = widthOf(c);
-    if (typeof w === "number" && w <= 3) continue;
-    const head = src.slice(c.argStart, c.end).split(/,|=>/)[0];
-    if (/chunk|wave|batch/i.test(head) || /\.slice\s*\(/.test(head)) continue;
-    row("G16", "warn", c.idx, `${c.kind}() over ${typeof w === "number" ? `${w} items` : "a list of unknown width"} with no visible chunking`, "run it in waves of 3 (`principle-guard-the-machine`): chunk the items, then `for (const wave of waves) out.push(...(await parallel(wave.map(...))))`");
+    if (typeof w === "number") return w;
+    const root = /^\s*\(?\s*(?:await\s+)?([A-Za-z_$][\w$]*)/.exec(code.slice(c.argStart, c.end))?.[1] ?? "";
+    return /(^|[a-z0-9_$])(chunk|wave|batch)$/i.test(root) ? 3 : null;
+  };
+  const G16_FIX = "run it in waves of 3 (`principle-guard-the-machine`): chunk the items, then `for (const wave of waves) out.push(...(await parallel(wave.map(...))))`; a nested fan-out counts its enclosing waves too";
+  for (const c of fan) {
+    const w = fanWidth(c);
+    if (w === null) { row("G16", "warn", c.idx, `${c.kind}() over a list of unknown width with no visible chunking`, G16_FIX); continue; }
+    const outer = fan.filter((o) => o !== c && c.idx > o.argStart && c.idx < o.end).map(fanWidth);
+    if (outer.includes(null)) continue;   // the enclosing fan-out is its own row
+    const inFlight = outer.reduce((a, b) => a * b, w);
+    if (inFlight > 3) row("G16", "warn", c.idx, outer.length ? `${c.kind}() of ${w} inside ${outer.join(" × ")} — ${inFlight} agents in flight` : `${c.kind}() over ${w} items with no visible chunking`, G16_FIX);
   }
   function countElements(lit) {
     let depth = 0, n = 0, any = false, trailing = false;
@@ -444,20 +477,16 @@ const GOOD = `export const meta = {
 const FINDINGS = { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } } }, required: ['findings'] }
 const VERDICT = { type: 'object', properties: { real: { type: 'boolean' } }, required: ['real'] }
 const DIMENSIONS = [{ key: 'bugs', prompt: 'find bugs' }, { key: 'perf', prompt: 'find perf issues' }]
-const results = await pipeline(
-  DIMENSIONS,
-  (d) => agent(d.prompt, { label: 'review:' + d.key, phase: 'Review', schema: FINDINGS }),
-  async (review) => {
-    const out = []
-    for (let i = 0; i < review.findings.length; i += 3) {
-      const wave = review.findings.slice(i, i + 3)
-      out.push(...(await parallel(wave.map((f) => () =>
-        agent('Try to refute: ' + f.title + '. Default to refuted if uncertain.', { phase: 'Verify', schema: VERDICT, effort: 'high' })
-          .then((v) => ({ ...f, verdict: v }))))).filter(Boolean))
-    }
-    return out
-  },
-)
+const reviews = (await pipeline(DIMENSIONS, (d) => agent(d.prompt, { label: 'review:' + d.key, phase: 'Review', schema: FINDINGS }))).filter(Boolean)
+// the barrier is earned: a finding both dimensions report is refuted once
+const unique = [...new Map(reviews.flatMap((r) => r.findings).map((f) => [f.title, f])).values()]
+const results = []
+for (let i = 0; i < unique.length; i += 3) {
+  const wave = unique.slice(i, i + 3)
+  results.push(...(await parallel(wave.map((f) => () =>
+    agent('Try to refute: ' + f.title + '. Default to refuted if uncertain.', { phase: 'Verify', schema: VERDICT, effort: 'high' })
+      .then((v) => ({ ...f, verdict: v }))))).filter(Boolean))
+}
 const seen = new Set(); const confirmed = []; let dry = 0
 while (dry < 2) {
   const found = (await parallel(Array.from({ length: 3 }, (_, i) => () => agent('Find bugs, angle ' + i, { schema: FINDINGS })))).filter(Boolean).flatMap((r) => r.findings)
@@ -466,9 +495,18 @@ while (dry < 2) {
   dry = 0; fresh.forEach((b) => seen.add(b.title))
   confirmed.push(...fresh)
 }
-const flat = results.filter(Boolean).flat()
-return { flat, confirmed }
+return { results, confirmed }
 `;
+
+// G16 cases: [name, script body after meta, G16 rows wanted]
+const G16_CASES = [
+  ["nested: a wave of 3 × 3 refuters is 9 in flight", "const LENSES = ['a', 'b', 'c']\nfor (const wave of waves) out.push(...(await parallel(wave.map((f) => () => parallel(LENSES.map((l) => () => agent(l + f))))))).filter(Boolean))", 1],
+  ["a .slice() that keeps 40 is not a wave", "const r = (await parallel(xs.slice(0, 40).map((x) => () => agent(x)))).filter(Boolean)", 1],
+  ["chunks.map runs every chunk at once", "const r = (await parallel(chunks.map((c) => () => agent(c)))).filter(Boolean)", 1],
+  ["a wave cut by .slice(i, i + 3) passes", "for (let i = 0; i < xs.length; i += 3) { const wave = xs.slice(i, i + 3); out.push(...(await parallel(wave.map((x) => () => agent(x)))).filter(Boolean)) }", 0],
+  ["a pipeline of 2 stages over 3 items passes", "const ITEMS = ['a', 'b', 'c']\nconst r = (await pipeline(ITEMS, (x) => agent(x, { phase: 'One' }), (y) => agent(y, { phase: 'Two' }))).filter(Boolean)", 0],
+  ["judge panel: scoring the attempts of a 3-angle fan-out is ≤ 3 (verification.md)", "const ANGLES = ['MVP-first', 'risk-first', 'user-first']\nconst attempts = (await parallel(ANGLES.map((a) => () => agent(a)))).filter(Boolean)\nconst scores = (await parallel(attempts.map((d, i) => () => agent('score ' + i)))).filter(Boolean)", 0],
+];
 
 const BAD = `export const meta = {
   name: 'smelly',
@@ -497,6 +535,10 @@ function selfTest() {
   const fails = [];
   if (good.rows.length) fails.push(`GOOD produced rows: ${JSON.stringify(good.rows)}`);
   if (good.shape.agents !== 3 || good.shape.pipeline !== 1 || good.shape.parallel !== 2 || good.shape.loops !== 2) fails.push(`GOOD shape off: ${JSON.stringify(good.shape)}`);
+  for (const [name, body, want] of G16_CASES) {
+    const got = lint(`export const meta = { name: 'g16', description: 'd' }\n${body}\nreturn 1\n`, "g16.js").rows.filter((r) => r.id === "G16");
+    if (got.length !== want) fails.push(`G16 ${name}: ${got.length} rows, want ${want} ${JSON.stringify(got.map((r) => r.what))}`);
+  }
   const want = ["G3", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15", "G16"];
   const got = ids(bad);
   for (const w of want) if (!got.includes(w)) fails.push(`BAD missing ${w}`);

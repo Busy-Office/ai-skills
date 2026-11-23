@@ -17,7 +17,7 @@ removed.
 | G7  | 44   | `agent("Combine these results …")` — plumbing done by an agent |
 | G8  | 47   | `while (true)` with no dry counter, budget guard, round cap or `break` |
 | G9  | 52   | fresh filtered with `!confirmed.some(...)` — dedupe against confirmed, no `seen` Set; rejected findings return every round |
-| G16 | 34, 40, 48, 53 | `parallel(items.map…)`, `parallel(labelled.map…)`, `parallel(items.map…)`, `pipeline(fresh…)` — fan-outs of unknown width with no waves of 3 |
+| G16 | 34, 40, 48, 53 | `parallel(items.map…)` twice over the 20-item slice, `parallel(labelled.map…)` and `pipeline(fresh…)` of unknown width — fan-outs wider than 3 with no waves of 3 |
 | G11 | 56   | `phase('Verify')` called inside a pipeline stage callback — races; should be `opts.phase` |
 
 Not planted, and must not fire: G1 (meta is a literal and first), G2 (no
