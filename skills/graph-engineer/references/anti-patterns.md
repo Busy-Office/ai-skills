@@ -60,9 +60,9 @@ expensive seat. Scout inline; pass the list in.
 that fails in three distinct ways share the blind spot. Three lenses do
 not. `verification.md`'s table.
 
-**Width without a wave count.** A fan-out of 40 on a cap of 6 is seven
-waves. The review that says "40 in parallel" has estimated a critical path
-of one agent-time; the run will take seven.
+**Width without a wave count.** A fan-out of 40 on the default cap of 3
+is fourteen waves. The review that says "40 in parallel" has estimated a
+critical path of one agent-time; the run will take fourteen.
 
 **The merge that judges nothing.** One `agent()` at the diamond's point
 whose prompt is "write the report from these" — fine, if the report needs

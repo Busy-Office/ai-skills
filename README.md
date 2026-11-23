@@ -814,8 +814,8 @@ One artifact — a graph review: mermaid diagram with node ids; node table
 (job · in · out schema · model/effort · verifier); edge table (what
 variable crosses, code or agent); barrier table (the cross-item need that
 earns each one, or the pipeline that replaces it); cost block (agents,
-critical path, the caps this run will meet — concurrency `min(16, CPUs − 2)`,
-≤ 4096 items per call, ≤ 1000 agents per run — all labelled estimate); the
+critical path, the caps this run will meet — concurrency 3 by default
+(`min(16, CPUs − 2)` only on your opt-in), ≤ 4096 items per call, ≤ 1000 agents per run — all labelled estimate); the
 lint rows and how each was closed; the script; do-next. It writes the script
 where you name, never into the repo unasked, and never runs it — the Workflow
 tool runs only on your explicit opt-in.

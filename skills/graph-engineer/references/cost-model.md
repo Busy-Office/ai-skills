@@ -90,19 +90,20 @@ the run is the measurement.
 
 ## Worked example — 9-source research diamond, 3-vote verify
 
-Session: 8 CPUs → cap 6. Per-agent time ~40 s. Prompt ~2k, return ~300.
+Session: default cap 3 (no opt-in). Per-agent time ~40 s. Prompt ~2k, return ~300.
 
 | stage | shape | width | agents | wall-clock (est.) |
 |---|---|---|---|---|
-| research | fan-out | 9 sources | 9 | `ceil(9/6) = 2` waves × 40 s = 80 s |
+| research | fan-out | 9 sources | 9 | `ceil(9/3) = 3` waves × 40 s = 120 s |
 | curate | barrier node (cross-set dedupe + rank — earned) | 1 | 1 | 40 s |
-| verify | fan-out over ~12 curated × 3 refuters | 36 | 36 | `ceil(36/6) = 6` waves × 40 s = 240 s |
+| verify | fan-out over ~12 curated × 3 refuters | 36 | 36 | `ceil(36/3) = 12` waves × 40 s = 480 s |
 | synthesise | 1 | 1 | 1 | 40 s |
-| **total** | | | **47** | **~400 s** |
+| **total** | | | **47** | **~680 s** |
 
 Tokens ≈ 47 × (2k + 0.3k) ≈ **108k** (estimate). The verify stage is 77 %
-of the agents and 60 % of the clock; dropping to single-vote verify on
-`impact: 'low'` items (say 7 of 12) saves 14 agents and one wave. That is
+of the agents and 71 % of the clock; dropping to single-vote verify on
+`impact: 'low'` items (say 7 of 12) saves 14 agents and four waves
+(`ceil(22/3) = 8`), 160 s. That is
 the sentence the review writes under the cost block: which stage dominates,
 and the one change that moves it.
 

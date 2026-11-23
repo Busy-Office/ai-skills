@@ -109,7 +109,7 @@ or save to `.claude/workflows/<name>.js` and run by name).
 
 Three sources read at once, a code dedupe on url, one rank node that
 compares items (earned), one synthesis. 5 agents, critical path ≈ 3
-agent-times on a cap of 6. First change: schema on the source nodes —
+agent-times on the default cap of 3. First change: schema on the source nodes —
 they return prose.
 
 ```mermaid
