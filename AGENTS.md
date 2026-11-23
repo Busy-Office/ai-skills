@@ -48,13 +48,15 @@ The `plugin-release` playbook is the general shape; these are this repository's 
    `.claude-plugin/marketplace.json`; the three must match. Add the version's entry to
    `CHANGELOG.md`.
 2. Run the checks above.
-3. Commit as `<version>: <what changed>`, fast-forward `main`, and tag `busy-office--v<version>`.
-4. Ask the owner before pushing: a push publishes to everyone who has the plugin. Then push `main`
-   and the tag.
-5. Update the installed copy and restart the session:
+3. Commit as `<version>: <what changed>`, rebased onto `main`.
+4. Ask the owner one yes/no naming the version and the tip: a release publishes to everyone who has
+   the plugin.
+5. On the yes, for that tip: fast-forward `main`, tag `busy-office--v<version>`, push `main` and the
+   tag.
+6. Update the installed copy and restart the session:
 
        claude plugin marketplace update busy-office-ai-skills
        claude plugin update busy-office@busy-office-ai-skills
 
-6. Run `jev` once. The plugin's startup hook re-points `~/.local/bin/jev` at the new version;
+7. Run `jev` once. The plugin's startup hook re-points `~/.local/bin/jev` at the new version;
    `jev link` re-creates it if it did not.

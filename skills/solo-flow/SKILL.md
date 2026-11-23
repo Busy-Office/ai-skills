@@ -121,7 +121,9 @@ What worktrees cost, so the loop plans for it:
    squash the branch to one commit
    (`git reset --soft $(git merge-base HEAD origin/main) && git commit`),
    rebase onto `origin/main` if it moved (re-run the suite if it did), then
-   in the primary `git merge --ff-only <branch>` and push `main`. The
+   in the primary `git merge --ff-only <branch>`. Push `main` after the
+   owner's yes to the tip you showed (a landing on a shared branch is a
+   reserved kind), unless the repo's own instructions authorise pushes. The
    alternatives are a plain fast-forward of the branch's commits or a
    `--no-ff` merge; pick one convention and keep it. Then remove the
    worktree and delete the local work branch.
