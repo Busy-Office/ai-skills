@@ -22,7 +22,7 @@ const f = (id) => ({ id, severity: "should-fix", where: "a.js:1", problem: id })
 const held = (grade = "Ran") => ({ results: [{ claim: "tests pass", held: true, couldRun: true, grade, evidence: "…" }] });
 
 // reviews: findings per review round; verify(round): the verifier's answer; the rest as named
-export async function simulate({ reviews = [[]], verify = () => held(), grade = "Ran", scope = [], reviewScope = [],
+export async function simulate({ reviews = [[]], verify = () => held(), grade = "Ran", noClaims = false, scope = [], reviewScope = [],
   final = { passed: true, tail: "ok" }, args = {}, budget = { total: null, remaining: () => Infinity } } = {}) {
   let review = 0;
   const calls = [], prompts = {}, logs = [];
@@ -30,7 +30,7 @@ export async function simulate({ reviews = [[]], verify = () => held(), grade = 
     const label = opts.label ?? "";
     calls.push(label);
     prompts[label] = prompt;
-    if (label === "build" || label.startsWith("fix")) return { summary: "did it", claims: [{ claim: "tests pass", grade, check: "npm test" }], scopeGrowth: label === "build" ? scope : [] };
+    if (label === "build" || label.startsWith("fix")) return { summary: "did it", claims: noClaims ? [] : [{ claim: "tests pass", grade, check: "npm test" }], scopeGrowth: label === "build" ? scope : [] };
     if (label.startsWith("verify")) return verify(Number(label.slice(8)));
     if (label.startsWith("review")) return { findings: reviews[review++] ?? [], scopeGrowth: reviewScope };
     if (label === "final check") return final;
@@ -58,6 +58,7 @@ async function selfTest() {
     ["a claim that fails re-checking is a finding for the next round", async () => { const r = await s({ verify: (n) => (n === 1 ? { results: [{ claim: "tests pass", held: false, couldRun: true, grade: "Ran", evidence: "1 failed" }] } : held()) }); return r.status === "done" && /tests pass/.test(r.prompts["fix r1"]); }],
     ["an Inferred claim the verifier upgrades → done", async () => (await s({ grade: "Inferred", verify: () => held("Read") })).status === "done"],
     ["an Inferred claim left Inferred with a clean review → unproven", async () => (await s({ grade: "Inferred", verify: () => held("Inferred") })).status === "unproven"],
+    ["a builder with no claims → unproven, not done", async () => (await s({ noClaims: true, verify: () => ({ results: [] }) })).status === "unproven"],
     ["builder reports scope growth → scope growth, no review", async () => { const r = await s({ scope: ["new package left-pad"] }); return r.status === "scope growth" && !r.calls.some((c) => c.startsWith("review")); }],
     ["reviewer reports scope growth → scope growth", async () => (await s({ reviewScope: ["new permission"] })).status === "scope growth"],
     ["reviewer and verifier get the rules", async () => { const r = await s(); return ["review r1", "verify r1"].every((l) => /Never push/.test(r.prompts[l]) && /Never run the full suite/.test(r.prompts[l])); }],

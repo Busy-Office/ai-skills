@@ -25,8 +25,17 @@ export const meta = {
 // Sequential by design: one agent touches the worktree at a time, so no
 // isolation option and no two test suites at once.
 //
-// Returns { status, why, rounds, final }. status is one of: done, plateau,
-// budget, scope growth, cannot verify, unproven, final red, agent failed.
+// Returns { status, why, rounds, final }. status, the improve-until-done stop
+// rules plus three of this script's own:
+//   done           clean review, every claim Ran or Read, final check green
+//   plateau        a fixed finding came back, or two rounds fixed nothing new
+//   budget         3 review rounds used, or the "+Nk" budget cannot pay a round
+//                  (agent count and minutes stay with the coordinator)
+//   scope growth   an agent named a new contract, package or permission
+//   cannot verify  a check, the verifier, the reviewer or the final check did not run
+//   unproven       clean review, but a claim is still Inferred or none was returned
+//   final red      the full suite failed after a clean review
+//   agent failed   the builder or a fixer did not return
 
 const SCOPE = { type: 'array', items: { type: 'string' }, description: 'a new contract, package or permission the work needs; empty if none' }
 
@@ -162,7 +171,8 @@ for (let round = 1; round <= maxRounds && !result; round++) {
   open = shouldFix
 
   // improve-until-done stop rules, in order
-  const decision = shouldFix.length === 0 && unproven.length === 0 ? ['done', 'no should-fix findings; every claim Ran or Read']
+  const decision = shouldFix.length === 0 && work.claims.length === 0 ? ['unproven', 'no claims returned, so nothing was checked']
+    : shouldFix.length === 0 && unproven.length === 0 ? ['done', 'no should-fix findings; every claim Ran or Read']
     : shouldFix.length === 0 ? ['unproven', `still Inferred: ${unproven.map((r) => r.claim).join('; ')}`]
     : returned.length ? ['plateau', `came back: ${returned.map((x) => x.id).join(', ')}`]
     : stale >= 2 ? ['plateau', 'two rounds fixed nothing new']
