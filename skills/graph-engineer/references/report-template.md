@@ -143,8 +143,8 @@ flowchart LR
 | number | value | formula |
 |---|---|---|
 | agents | 5 | 3 + 1 + 1 |
-| critical path | ~3 agent-times | ceil(3/6)=1 wave + n4 + n5 |
-| cap this run | 6 | min(16, 8 − 2) |
+| critical path | ~3 agent-times | ceil(3/3)=1 wave + n4 + n5 |
+| cap this run | 3 | the default (`principle-guard-the-machine`) |
 | tokens | ~12k | 5 × (2k + 0.4k) |
 n1–n3 dominate nothing; the graph is as short as its chain allows.
 

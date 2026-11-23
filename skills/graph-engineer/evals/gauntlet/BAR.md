@@ -41,7 +41,8 @@ criteria below are what the critic adds.
    against confirmed. Any one missing is a FAIL.
 6. **Every figure is labelled and derived.** Agent count, critical path and
    token estimates each carry *estimate* and the formula. The caps are stated
-   correctly: concurrency `min(16, CPUs − 2)` per workflow, ≤ 4096 items per
+   correctly: concurrency 3 by default, `min(16, CPUs − 2)` per workflow only
+   when the user opted into that scale, ≤ 4096 items per
    `parallel()`/`pipeline()` call, ≤ 1000 agents per run. "Around your core
    count" or an unlabelled number is a FAIL.
 7. **The script is a workflow script.** Plain JS, `export const meta = {…}`
