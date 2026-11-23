@@ -18,7 +18,8 @@ Read, in this order:
 
 - the corrections already on record: the user's feedback memories for this workspace
   (`~/.claude/projects/<encoded-cwd>/memory/*.md` with `type: feedback`) and, if the user keeps one,
-  the local decision log's corrections (`automate-me` describes it);
+  the local decision log's corrections (`~/.claude/decision-log.jsonl`: read it directly, `grep` by
+  topic; its format is in `busy-office:automate-me`'s `references/decision-log.md`);
 - recent commits, reverts and fix-ups (`git log`, `git log --grep=revert -i`), and the diffs that
   undid an agent's change;
 - the agent instruction files (`CLAUDE.md`, `AGENTS.md`, skills) and code comments that explain a

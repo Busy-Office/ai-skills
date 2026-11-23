@@ -61,7 +61,7 @@ turned into `-`. Read the current workspace's by default; read other workspaces 
 asks for it. They hold private conversations from unrelated work.
 
 For more than a handful, run Claude Code subagents in parallel over slices (for example the last
-2–4 weeks in three slices), on a cheaper model: this is reading, not judgement. Give each the paths
+2–4 weeks in three slices; more slices run in waves of 3, `principle-guard-the-machine`), on a cheaper model: this is reading, not judgement. Give each the paths
 and the signals; each returns a short list of patterns with evidence pointers. Signals worth hunting:
 
 - response preferences: length, tone, format, "shorter" or "plainer" corrections

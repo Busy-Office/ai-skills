@@ -45,18 +45,19 @@ consumer.
 
 | Branch | Where it lives | Purpose | Who merges into it |
 |---|---|---|---|
-| `main` | remote, default | the only shared state; every commit on it has already passed the full check suite | the agent, automatically, once checks pass |
+| `main` | remote, default | the only shared state; every commit on it has already passed the full check suite | the agent, once checks pass and the owner said yes to the tip it showed (or the repo authorises landings) |
 | `feat/*`, `fix/*`, `chore/*` | local only, each in its own worktree | one unit of work (one roadmap item, one bug, one cleanup) | never pushed — merged locally into `main`, then the worktree and branch are deleted |
 | `release/x.y.z` | local, ephemeral (minutes, not days), in its own worktree — only needed if the version bump + notes take more than one commit, or the owner wants to review notes before they're permanent | holds the version bump and release notes until the owner signs off | fast-forwarded into `main`, then discarded — nothing merges back out of it |
 
 The permission boundary is intentionally short, because there's only one
 writer to grant permissions to:
 
-- **Automatic:** local branches and commits, merging a work branch into
-  `main` once checks pass, deleting merged local branches, cutting and
-  merging `release/*`.
-- **Needs the owner:** tags and GitHub releases, CI configuration changes,
-  repository settings.
+- **Automatic:** local branches and commits, running the checks, deleting
+  merged local branches, cutting a `release/*` branch.
+- **Needs the owner's yes to the tip you showed** (unless the repo's own
+  instructions authorise it): landing a work branch on `main`, pushing
+  `main`, fast-forwarding a `release/*` into `main`, tags and GitHub
+  releases, CI configuration changes, repository settings.
 - **Never:** force-pushing `main`, deleting `main`, committing to `main`
   without the check suite having run on that commit.
 

@@ -16,7 +16,7 @@ reviewing against.
 | slot | where it comes from | if you cannot fill it |
 |---|---|---|
 | `{{CHECK_COMMAND}}` | the project's task file — `package.json` scripts, `Makefile`, `justfile`, `pyproject.toml` (pytest/ruff/mypy), `tox.ini`, `go.mod`, `Cargo.toml`, Gradle/Maven, `Gemfile`, `composer.json` | **stop — do not install the agent** |
-| `{{SCOPE_RULE}}` | how to narrow it to the change: the touched workspace's suite, or the root suite when the change crosses workspaces or that workspace has no suite of its own | run the whole suite and say so |
+| `{{SCOPE_RULE}}` | how to narrow it to the change: the touched workspace's suite, or the tests for the touched files when the change crosses workspaces or that workspace has no suite of its own; the full suite is the coordinator's | run the tests for the touched files, by name or path, and say so |
 | `{{ACCEPTANCE_SOURCE}}` | where the item's acceptance test is written — the queue file and field | say the item states none, and fail the item back to `requeue` |
 | `{{RECORD_TARGET}}` | the file the loop already appends its tick record to | leave the record step out |
 

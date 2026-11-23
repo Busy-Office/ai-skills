@@ -11,7 +11,7 @@
 4. On the yes, land that tip: the repository's own landing step, if it has one (e.g. an approval
    stamp or a land script); otherwise fast-forward the main branch. Main moved after the yes →
    rebase again; the change must be identical to the approved one (`git range-diff` shows no
-   difference), or ask again.
+   difference), or ask again — and run the full suite again, alone, on the new tip.
 5. Push only when the repository's rules and the owner say so.
 6. Clean up: remove the worktree, delete the work branch, update the queue item.
 

@@ -3,7 +3,7 @@
 **Answer the question asked, with citations. Change nothing.**
 
 1. Restate the question in one line, and say what would count as an answer.
-2. How X works → `busy-office:how`. Why X is the way it is → `busy-office:why`. Both → `how` first.
+2. How X works → `busy-office:how`. Why X is the way it is → `busy-office:why`. Both → `busy-office:how` first.
 3. Bulk reading goes to subagents or scripts (`principle-guard-the-context-window`).
 4. Grade every claim in the answer (`principle-prove-it-works`). A fact you can observe by running
    something, run.

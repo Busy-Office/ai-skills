@@ -14,7 +14,8 @@
 6. **Fix rounds.** A fresh fixer per round, briefed with the open findings, until a stop rule holds
    (`improve-until-done`).
 7. **Final check.** The full suite, run alone, by you, once per batch
-   (`principle-guard-the-machine`).
+   (`principle-guard-the-machine`). Red → another fix round under `improve-until-done`, within its
+   round budget, then the Final check again; budget spent → stop and report what is still red.
 8. **Explain.** The repository's own step, if it has one (e.g. an `explain-landing` skill);
    otherwise a short message: what changed, why, the evidence with its grades, what is open.
 9. **Land** through `landing`: squash and rebase, one yes/no about that exact tip, then land.

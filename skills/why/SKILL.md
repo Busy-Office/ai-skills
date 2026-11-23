@@ -22,7 +22,7 @@ Find the forces that shaped X, with evidence. Keep what the record says apart fr
 
    A commit that names a PR or issue → read it (`gh pr view <n>`).
 3. **Search every source this project has.** More than two to read → subagents in parallel
-   (`principle-guard-the-context-window`).
+   (`principle-guard-the-context-window`), in waves of 3 (`principle-guard-the-machine`).
 
    | source | where |
    |---|---|

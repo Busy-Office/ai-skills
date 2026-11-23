@@ -8,7 +8,8 @@
 3. Add the changelog entry: what changed, for someone who uses the plugin.
 4. Run the plugin's checks one at a time — the repository's own list, e.g. in its `AGENTS.md`.
 5. `busy-office:review` the release diff.
-6. Commit, then rebase onto the main branch, so the tip you show is the tip that ships.
+6. Commit, then rebase onto the main branch, so the tip you show is the tip that ships. The
+   rebase moved the tip → run the checks again on it.
 7. Ask the owner: one yes/no naming the version and the tip.
 8. On the yes, for that tip: fast-forward the main branch, tag in the repository's own naming, push
    both, update the installed copy, restart the session.

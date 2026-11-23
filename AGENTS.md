@@ -48,7 +48,8 @@ The `plugin-release` playbook is the general shape; these are this repository's 
    `.claude-plugin/marketplace.json`; the three must match. Add the version's entry to
    `CHANGELOG.md`.
 2. Run the checks above.
-3. Commit as `<version>: <what changed>`, rebased onto `main`.
+3. Commit as `<version>: <what changed>`, rebased onto `main`. The rebase moved the tip → run
+   the checks again on it.
 4. Ask the owner one yes/no naming the version and the tip: a release publishes to everyone who has
    the plugin.
 5. On the yes, for that tip: fast-forward `main`, tag `busy-office--v<version>`, push `main` and the

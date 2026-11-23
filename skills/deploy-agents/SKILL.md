@@ -49,6 +49,8 @@ edge, a fresh reviewer, and a fresh fixer while should-fix findings stay open, u
 `improve-until-done` stop rules. Agents in it run targeted checks only. Its header lists every
 status it can return. Only the round records and the result come back to your context. The other
 steps stay with you: on done, you run the Final check (the full suite, alone) after the workflow.
+Red → another fix round under `improve-until-done`, within the rounds the workflow left of its
+budget; budget spent → stop and report what is still red.
 
 The Workflow tool runs only when the user explicitly opts in. Fill `args` from the brief (the
 header comment lists the fields). Every agent in it is a fresh context; set `reviewModel` to another

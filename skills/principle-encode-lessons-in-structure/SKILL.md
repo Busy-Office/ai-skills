@@ -17,7 +17,7 @@ writing an instruction a second time.
 4. **a test** of the behaviour;
 5. **prose**, last, only for a judgement call no machine can make.
 
-Prove a new check by running it on the real past mistake and pasting it failing. The `correct` skill
+Prove a new check by running it on the real past mistake and pasting it failing. `busy-office:correct`
 is the full procedure.
 
 **Why.** A rule in an instruction file enforces nothing: nothing fails when an agent skips it, and
