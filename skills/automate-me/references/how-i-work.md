@@ -38,7 +38,7 @@ not support.
   ~/.claude/decision-log.jsonl | grep -E '"type": ?"decision"' | tail -20`). Append its answer as a
   prediction line (`type: prediction`, a new id, kind, question, prediction, prediction confidence,
   ts). Then form your recommendation and ask.
-- After I answer, append the decision line (kind, question, options, `prediction_id`,
+- After I answer, append the decision line (ts, kind, question, options, `prediction_id`,
   recommendation, confidence, evidence grades, answer, accepted or changed); it carries no
   prediction of its own. If I later overturn a settled decision, append a settled line with
   `outcome: changed` and `reverses: <its ts>`. When I correct you, add the correction with its kind:

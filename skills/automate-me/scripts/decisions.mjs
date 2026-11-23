@@ -53,7 +53,7 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
     corrections.set(c.kind, row);
   };
   // A prediction scores a decision only if its line came earlier in the file, it is of the same
-  // kind, it is stamped before the decision (a decision ts that cannot be read scores nothing), and no other decision
+  // kind, both lines carry a readable ts and the prediction's is earlier, and no other decision
   // used it first. Each id is spent on first use.
   const claim = (r, kind) => {
     const pred = r.prediction_id != null ? predictions.get(r.prediction_id) : null;
@@ -61,7 +61,7 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
     predictions.delete(r.prediction_id);
     const at = time(pred.ts), decided = time(r.ts);
     if (norm(pred.kind ?? "") !== kind || at === null) return null;
-    if (r.ts != null && (decided === null || at >= decided)) return null;   // a decision with no ts falls back to line order
+    if (decided === null || at >= decided) return null;   // an undated or unreadable decision ts scores nothing
     return pred.prediction ?? null;
   };
   text.split("\n").forEach((line, i) => {
@@ -84,8 +84,10 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
     const hit = ({ r, p }) => same(p, r.answer);
     const correct = scored.filter(hit).length;
     const n = scored.length + overturned.length;   // an overturned settlement is a miss
-    const window = [...scored, ...settled]
-      .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || a.i - b.i)   // no ts sorts last
+    // An undated settled decision joins the window only when overturned, and then sorts last:
+    // undated rows can never push a newer dated miss out.
+    const window = [...scored, ...settled.filter(({ r, at }) => at !== null || r.outcome === "changed")]
+      .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || a.i - b.i)
       .slice(-WINDOW);
     const reversal = [...window].reverse().find((x) => (x.r.mode === "settled" ? x.r.outcome === "changed" : !hit(x)));
     const status = reserved.has(kind) ? "reserved"
@@ -165,7 +167,9 @@ function selfTest() {
     ["window ordered by ts, not by line", status([...rep(29, (i) => ({ ts: `2026-11-${String(i + 1).padStart(2, "0")}` })), { answer: "no", ts: "2026-11-30" }, ...rep(10, () => ({ ts: "2026-01-01" }))]).status === "ask"],
     ["one prediction line scores one decision only", (() => { const t = JSON.stringify({ type: "prediction", id: "ONE", kind: "k", question: "q", prediction: "yes", ts: "2025-12-31T00:00:00Z" }) + "\n" + synth(rep(20, () => ({ pid: "ONE" }))); return kind("k", analyse(t)).predictions === 1; })()],
     ["a prediction of another kind → unscored", status(rep(20, () => ({ pkind: "other" }))).predictions === 0],
-    ["a decision with no ts sorts last, so its miss stays in the window", status([...rep(29, () => ({})), { answer: "no", ts: null }]).status === "ask"],
+    ["an undated decision → unscored", status(rep(20, () => ({ ts: null }))).predictions === 0],
+    ["undated hits early cannot push the latest dated miss out of the window", status([...rep(10, () => ({ ts: null })), ...rep(19, () => ({})), { answer: "no" }]).status === "ask"],
+    ["undated settled decisions cannot push a dated miss out either", status([...rep(29, () => ({})), { answer: "no" }, ...rep(10, () => ({ mode: "settled", ts: null }))]).status === "ask"],
     ["a prediction stamped after its decision → unscored", status(rep(20, (i) => ({ pts: "2099-01-01T00:00:00Z" }))).predictions === 0],
     ["a decision ts that cannot be read → unscored", status(rep(20, () => ({ ts: "2026-11-01T00:00:0461", pts: "2099-01-01T00:00:00Z" }))).predictions === 0],
     ["a prediction with no ts → unscored", status(rep(20, () => ({ pts: null }))).predictions === 0],

@@ -105,8 +105,8 @@ act on. A decision is **scored** when it was asked (`mode: asked`), was answered
 (case and spacing ignored), carries a `ts` **earlier** than the decision's, and no earlier decision
 used. Each prediction id scores one decision. A prediction written on the decision line, written
 after it, stamped later, reused, of another kind, or missing (a backfilled decision) is not scored. A
-decision with no `ts` falls back to line order and sorts last in the window; one whose `ts` cannot
-be read is not scored.
+decision with no `ts`, or one that cannot be read, is not scored. An undated settled decision counts
+only if the user overturned it, and then sorts last in the window.
 
 **Known limit.** The log shows that a prediction was written before the decision line, not that it
 was written before the question reached the user. Only the session transcript proves that (the
