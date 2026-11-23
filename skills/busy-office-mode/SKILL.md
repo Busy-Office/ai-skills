@@ -1,21 +1,24 @@
 ---
 name: busy-office-mode
-description: "Routes a multi-step task to one playbook — feature, bug fix, investigation, refactor, goal run, loop tick, grill, landing, plugin release, session pickup, pause — opens its steps as todos and names the skill each step calls. Use at the start of any task with more than one step, when unsure which busy-office skill fits, or to see how the loop-family skills hand off to each other."
+description: "Routes a multi-step task to one playbook — feature, bug fix, investigation, refactor, goal run, loop tick, grill, landing, plugin release, session pickup, pause — opens its steps as todos and names the skill each step calls. Use at the start of any task with more than one step, when unsure which busy-office skill fits, or to see how the loop-family skills hand off to each other. Not for a single lookup, a question a couple of tool calls answer, or a one-file edit."
 ---
 
 # Busy Office mode
 
 Route the task to one playbook, then work its steps.
 
+**Not for** a single lookup, a question a couple of tool calls answer, or a one-file edit: do those
+directly.
+
 ## Route
 
 1. **Match the task to one playbook** below. Two fit → the one whose "for" names the deliverable the
-   user asked for. None fits → `figure-it-out`.
+   user asked for. Multi-step work that none fits → `figure-it-out`.
 2. **Read it.** A repository may override a playbook with a file of the same name in its own
    `.agents/playbooks/` (for example `.agents/playbooks/feature.md`); when that file exists, read it
    instead of the one here.
 3. **Open todos** whose first items are the playbook's steps, in order, each naming the skill it
-   calls.
+   calls. No todo tool → write the steps as a numbered list in the reply.
 4. **Say which playbook** you picked, in one line, then work it. The triggers below fire inside any
    playbook.
 
@@ -32,7 +35,7 @@ Route the task to one playbook, then work its steps.
 | `plugin-release` | a new version of a Claude Code plugin |
 | `session-pickup` | resuming from a handoff, a goal file or the decision log |
 | `pause-safely` | parking in-flight work so a cold start can resume it |
-| `figure-it-out` | none of the above: write a one-off playbook first |
+| `figure-it-out` | multi-step work none of the above fits: write a one-off playbook first |
 
 The files are `playbooks/<name>.md` beside this skill.
 
@@ -40,21 +43,21 @@ The files are `playbooks/<name>.md` beside this skill.
 
 | when | call |
 |---|---|
-| how X works, before changing it | `how` |
-| why X is the way it is | `why` |
-| a diff, plan or report is ready to be judged | `review` |
-| what a change can break beyond its diff | `blast-radius` |
+| how X works, before changing it | `busy-office:how` |
+| why X is the way it is | `busy-office:why` |
+| a diff, plan or report is ready to be judged | `busy-office:review` |
+| what a change can break beyond its diff | `busy-office:blast-radius` |
 | spawning or briefing an agent | `deploy-agents` |
 | work going in rounds | `improve-until-done` |
-| the same mistake a second time | `correct` |
+| the same mistake a second time | `busy-office:correct` |
 | a cheap second opinion at a decision point | `jev` |
 | branches, worktrees, release tags | `solo-flow` |
 | "where are we", a status page | `progress-dashboard` |
 | a scheduled loop's design, cost, picture, preamble, queue or purpose | the loop family below |
 | the shape of one multi-agent run | `graph-engineer` |
 
-`automate-me` runs only when the user calls it. Principles are the `principle-*` skills: load one
-when its "Apply when" fires, and name it in the reply where it changed a decision.
+`busy-office:automate-me` runs only when the user calls it. Principles are the `principle-*`
+skills: load one when its "Apply when" fires, and name it in the reply where it changed a decision.
 
 ## The loop family
 
