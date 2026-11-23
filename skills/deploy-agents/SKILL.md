@@ -37,6 +37,10 @@ Report: what changed (files, commits), then each claim graded Ran, Read or Infer
         (principle-prove-it-works), with the command or line that shows it
 ```
 
+**Reply** when a batch plan is checked before spawning: `references/report-template.md`, exactly:
+the defects with their lines and the rule each breaks, the fixed briefs under the plan's job
+headings, the launch in waves of at most 3, and a receipt that nothing was spawned.
+
 ## The batch
 
 The steps from worktree to landing are the `feature` playbook in `busy-office-mode`.

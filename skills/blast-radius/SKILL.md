@@ -71,7 +71,8 @@ the exact function you are worried about.
 
 Cite real code, keep it short, and strip anything private before it goes anywhere public.
 
-**Reply:** the writeup above, with the one safety fact either proven or marked unproven.
+**Reply:** `references/report-template.md`, exactly: the writeup above, with the one safety fact
+either proven or marked unproven.
 
 ---
 

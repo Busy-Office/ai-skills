@@ -95,7 +95,9 @@ Draft the section from [references/how-i-work.md](references/how-i-work.md). Its
 self-check before any recommendation, plan or "done" claim (not plain answers), a noise filter, and
 the decision-log rules that keep this loop fed. Fill the rest from steps 1–4.
 
-Show it as a unified diff against the current `~/.claude/CLAUDE.md`. Take feedback; expect more than
+Show it as a unified diff against the current `~/.claude/CLAUDE.md`, in the shape of
+`references/report-template.md`: the signals with their verdicts, the decision-log proposals, the
+repository rules, the questions, then the diff. Take feedback; expect more than
 one round; cut on every round. Write the file only after the user approves that exact diff. If the
 user edits it, show the new diff before writing.
 

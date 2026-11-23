@@ -75,8 +75,9 @@ Keep a table in the repository's agent instruction file that pairs each rule wit
 rule. If the rule was already there and nothing enforces it, that is a repeat: fix it at the highest
 level in the same change. Drop a rule once its mistake can no longer happen.
 
-**Reply:** each class with its evidence, the level picked and why a higher one did not work, the
-proof that the check fails on the past mistake, and the rule-table rows added or dropped.
+**Reply:** `references/report-template.md`, exactly: each class with its evidence, the level picked
+and why a higher one did not work, the proof that the check fails on the past mistake, and the
+rule-table rows added or dropped.
 
 ---
 

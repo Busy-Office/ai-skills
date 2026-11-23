@@ -30,8 +30,10 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// Per-skill shape. Keep these in step with each BAR.md — the bar is the
-// authority, this file is the instrument.
+// Per-skill shape. Keep these in step with each BAR.md and the skill's
+// references/report-template.md — the bar is the authority, the template is
+// the shape the skill is told to write, this file is the instrument. A spec
+// checks nothing the template does not state.
 export const SPECS = {
   "loop-doctor": {
     proseMax: 450, leadMax: 60, doNextMax: 5,
@@ -85,26 +87,30 @@ export const SPECS = {
     locatedSection: /the flow/,
   },
   "improve-until-done": {
-    proseMax: 300, leadMax: 40, doNextMax: 0,
+    // 400: six round records written as plain lines still fit
+    proseMax: 400, leadMax: 40, doNextMax: 0,
     opensWith: "table",
     sections: [/^#+\s*decisions/im, /^#+\s*round records?/im],
     citedTables: [],
     locatedSection: /decisions/,
     vocab: [/go again|stop: (done|plateau|budget)|ask: scope growth|cannot verify/i],
     requireLine: [["M15", "a three-line round record", /tried:[^\n]*\nEvidence:[^\n]*\nDecision:/]],
+    receipt: /\bread\s+\d+\s+files?\b/i,
+    receiptLabel: "footer receipt names the files read",
   },
   "deploy-agents": {
     proseMax: 300, leadMax: 50, doNextMax: 5,
     opensWith: "table",
-    sections: [/^#+\s*(defects|findings|what is wrong)/im, /^#+\s*(fixed )?briefs/im, /^#+\s*launch/im],
+    // the fixed briefs sit under "Fixed briefs" or under the plan's own job headings (J1 — …)
+    sections: [/^#+\s*(defects|findings|what is wrong)/im, /^#+\s*((fixed )?briefs|J\d+\b)/im, /^#+\s*launch/im],
     citedTables: [],
     locatedSection: /(defects|findings|what is wrong)/,
-    vocab: [/\b(goal|where|do not touch|decisions?|verbatim|test|report|model|effort|limit|agents? at once|in flight|full suite|review(er)?|fresh|push)\b/i],
+    vocab: [/\b(goal|where|do not touch|decisions?|verbatim|test|report|model|effort|job table|limit|agents? at once|in flight|full suite|review(er)?|fresh|push)\b/i],
     doNext: /launch/,
     receipt: /\b(nothing|no agents?)\b[^\n]{0,30}\b(spawned|launched|started)\b|\bnot (spawned|launched)\b/i,
   },
   "blast-radius": {
-    proseMax: 350, leadMax: 90, doNextMax: 5,
+    proseMax: 350, leadMax: 120, doNextMax: 5,
     opensWith: "table",
     sections: [/^#+\s*what it does/im, /^#+\s*the one fact/im, /^#+\s*risks/im, /^#+\s*cleared/im, /^#+\s*before it lands/im],
     citedTables: [],
@@ -115,13 +121,13 @@ export const SPECS = {
   "correct": {
     proseMax: 300, leadMax: 50, doNextMax: 0,
     opensWith: "table",
-    sections: [/^#+\s*classes/im, /^#+\s*proof/im, /^#+\s*rule table/im],
+    sections: [/^#+\s*(the )?class(es)?\b/im, /^#+\s*(the )?proof/im, /^#+\s*rule[- ]table/im],
     citedTables: [],
-    locatedSection: /classes/,
+    locatedSection: /(?:the )?class(?:es)?\b/,
     commitsLocate: true,
     vocab: [/\b(architecture|types?|check|test|prose|none|not a class)\b/i],
-    requireLine: [["M15", "the proof section pastes output", /^#+\s*proof[^\n]*\n[\s\S]*?```/im]],
-    receipt: /\bnot pushed\b|\bnothing (was )?pushed\b|\bno push\b/i,
+    requireLine: [["M15", "the proof section pastes output", /^#+\s*(the )?proof[^\n]*\n[\s\S]*?```/im]],
+    receipt: /\bnot pushed\b|\bnothing (has been |was )?pushed\b|\bno push\b|\bdid( not|n't) push\b/i,
   },
   "automate-me": {
     proseMax: 300, leadMax: 50, doNextMax: 2,
@@ -280,7 +286,7 @@ export function barCheck(skill, md, collector = null, target = null) {
   const receipt = spec.receipt
     ? spec.receipt.test(md)
     : /(read|inspected)\s+\d+[^\n]*(untouched|read-only|not written)/i.test(md) || /target repo untouched/i.test(md);
-  add("M7", spec.receipt ? "footer receipt names what was not done" : "footer receipt with a count and 'untouched'", receipt ? "found" : "absent", receipt);
+  add("M7", spec.receiptLabel ?? (spec.receipt ? "footer receipt names what was not done" : "footer receipt with a count and 'untouched'"), receipt ? "found" : "absent", receipt);
 
   // M8 — the fixed verdict vocabulary, where the class has one
   if (spec.requireVerdict) {

@@ -43,3 +43,7 @@ Decision: go again — fix <finding> | stop: done | stop: plateau | ask: scope g
 
 The last record is the report: what was tried, what the evidence is and its grade, and why it
 stopped.
+
+**Reply** at a Decide, for one batch or several: `references/report-template.md`, exactly: a
+decisions table (decision, first rule that holds, counted budget, evidence), then one round record
+per batch, then the files read.
