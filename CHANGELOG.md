@@ -21,7 +21,11 @@ tool skills cite principles.
   grouped Act on, Consider, Noted, Dismissed).
 - `evals/consistency.mjs` checks that every skill named exists: `busy-office:<x>` and
   `principle-<x>` in every file, a backticked hyphenated name in a SKILL.md, and every backticked
-  name in `busy-office-mode` and its playbooks.
+  name in `busy-office-mode` and its playbooks. It lists files with `git ls-files` and also fails on a
+  backticked near-miss of a real skill name (edit distance 2 or less) in README, AGENTS, CHANGELOG
+  and `skills/*/references/`.
+- graph-engineer lint rule **G16**: a fan-out wider than 3, or of unknown width, with no visible
+  waves. The references show the "waves of 3" pattern wherever they fan out.
 
 ### Changed
 
@@ -32,6 +36,12 @@ tool skills cite principles.
   playbook's Build to Fix rounds steps, with targeted checks only. The full suite stays with the
   coordinator, once per batch.
 - The seven loop-family "Related" sections point to the map in `busy-office-mode`.
+- At most 3 agents at once is also the default concurrency of a Workflow script; graph-engineer's
+  `min(16, CPUs − 2)` applies only when the user opts in. Subagents never run the full suite.
+- Landing on `main`, pushing it, and a release's fast-forward and tag wait for the owner's yes to
+  the tip shown (solo-flow, landing, plugin-release, AGENTS.md), unless the repository authorises
+  them. Squash and rebase come before the ask; if `main` moves after the yes, `git range-diff` must
+  show the same change and the full suite runs again.
 
 ### Removed
 

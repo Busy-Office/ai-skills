@@ -453,7 +453,7 @@ const results = await pipeline(
       const wave = review.findings.slice(i, i + 3)
       out.push(...(await parallel(wave.map((f) => () =>
         agent('Try to refute: ' + f.title + '. Default to refuted if uncertain.', { phase: 'Verify', schema: VERDICT, effort: 'high' })
-          .then((v) => ({ ...f, verdict: v })))).filter(Boolean)))
+          .then((v) => ({ ...f, verdict: v }))))).filter(Boolean))
     }
     return out
   },

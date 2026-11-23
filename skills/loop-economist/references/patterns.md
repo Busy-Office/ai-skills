@@ -74,7 +74,7 @@ having is too slow to run every time:
 
 | tier | scope | budget | blocks |
 |---|---|---|---|
-| **commit gate** | the tests that name the changed modules, plus the touched workspace's own suite and lint — or the root suite where that workspace has none | a few minutes | the commit, never the loop |
+| **commit gate** | the tests that name the changed modules, plus the touched workspace's own suite and lint — or, where that workspace has none, the tests nearest the change (the root suite is the coordinator's, once per batch) | a few minutes | the commit, never the loop |
 | **deep tier** | end-to-end, cross-workspace, build — everything slow | none, because nothing waits on it; but it must land before the next release, or deferred work becomes notional | a release, not a tick |
 
 Four rules keep the split honest:

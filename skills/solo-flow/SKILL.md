@@ -121,10 +121,10 @@ What worktrees cost, so the loop plans for it:
    `main` gets one reviewed commit per unit of work: in the worktree,
    squash the branch to one commit
    (`git reset --soft $(git merge-base HEAD origin/main) && git commit`),
-   rebase onto `origin/main` if it moved (re-run the suite if it did), then
-   in the primary `git merge --ff-only <branch>`. Push `main` after the
-   owner's yes to the tip you showed (a landing on a shared branch is a
-   reserved kind), unless the repo's own instructions authorise pushes. The
+   rebase onto `origin/main` if it moved (re-run the suite if it did). Then,
+   after the owner's yes to the tip you showed (a landing on a shared branch
+   is a reserved kind) unless the repo's own instructions authorise it, run
+   `git merge --ff-only <branch>` in the primary and push `main`. The
    alternatives are a plain fast-forward of the branch's commits or a
    `--no-ff` merge; pick one convention and keep it. Then remove the
    worktree and delete the local work branch.
@@ -174,9 +174,9 @@ here should auto-recommend one.)
 **Steps**, using the ephemeral `release/x.y.z` branch only when the bump
 isn't a single mechanical commit:
 1. Cut `release/x.y.z` from `main` at the commit to release, in its own
-   worktree like any other work branch (skip this and commit the bump
-   straight to `main` if it's genuinely one commit and needs no review
-   before it's permanent).
+   worktree like any other work branch (skip the branch only if it's
+   genuinely one commit; the bump still reaches `main` only after the
+   owner's yes).
 2. Bump the version, write the notes.
 3. Owner approves; fast-forward `main` to include that commit.
 4. Tag `vx.y.z` on that commit, push the tag, publish the GitHub release.
