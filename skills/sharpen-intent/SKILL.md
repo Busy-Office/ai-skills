@@ -26,17 +26,17 @@ flowchart LR
 
 ## The guard-rail: intent is theirs
 
+`principle-write-nothing-unasked` — the draft lives in the message and the
+scratchpad — and:
+
 - **Never invent a purpose.** Where the files do not answer, the draft
   carries `TO DECIDE — <question>`, visibly, rather than a plausible
   sentence. A fabricated intent is worse than a missing one: the loop
   will obey it.
-- **Write nothing into the repo** unless the person names the path and
-  asks. The draft lives in the message and the scratchpad.
 - **One round of questions, five at most,** each with options, asked once,
   after the draft exists.
-- **Read bounded.** Purpose documents fully; everything else by heading.
-- **No subagents.** One context, one pass.
-- **Leave a receipt**: documents read, repo untouched.
+- **Read bounded** means: purpose documents fully; everything else by
+  heading.
 
 ## Workflow
 

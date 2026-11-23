@@ -14,16 +14,14 @@ and carry the result to the user. You cite only what you checked yourself.
 |---|---|
 | hard-rule code: money, posting, concurrency, security, anything a test cannot fully pin | the strongest model, high effort |
 | an ordinary build or fix | a standard strong model, default effort |
-| review | always a **different model or a fresh context** from the builder; never the builder reviewing itself |
+| review | per `principle-fresh-reviewer`: another model, or a fresh context |
 | a page, a doc or a report draft | a cheaper model |
 | a search, a lookup, a re-run of a command | a cheap or explore agent, low effort |
 
 ## Limits
 
-- **At most 3 agents at once.**
-- **One full test suite at a time**, across every agent and the coordinator. Parallel full suites
-  starve each other and can crash with no summary; that looks like a red build and wastes a round.
-  Agents run targeted tests; the full suite runs once, alone, at the end.
+`principle-guard-the-machine`: at most 3 agents at once, one full test suite at a time, short
+commands inside agents.
 
 ## The brief
 
@@ -35,8 +33,8 @@ Where: worktree <path>, branch <name>. Work only there.
 Do not touch: <paths, files, services; and: never push, merge or land>
 Decisions (verbatim): <the user's words, quoted, not summarised>
 Test: <exact commands for targeted checks>; never the full suite — the coordinator runs it
-Report: what changed (files, commits), then each claim graded Ran (a tool printed it),
-        Read (file:line) or Inferred, with the command or line that shows it
+Report: what changed (files, commits), then each claim graded Ran, Read or Inferred
+        (principle-prove-it-works), with the command or line that shows it
 ```
 
 ## The standard batch

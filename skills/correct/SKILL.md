@@ -38,10 +38,10 @@ evidence: the commits or `file:line` where it happened.
    pattern is already common, fail only when a change adds more.
 4. **Test the behaviour.** Fix or delete any test that still passes when the behaviour it checks
    breaks, or that fails when only the internals change.
-5. **Prose last, and only for judgement calls.** A rule in an instruction file enforces nothing;
-   nothing fails when an agent skips it.
+5. **Prose last, and only for judgement calls.**
 
-Say why each higher level did not work before settling on a lower one.
+The ladder and why prose comes last are `principle-encode-lessons-in-structure`. Say why each higher
+level did not work before settling on a lower one.
 
 ## Fix and prove
 

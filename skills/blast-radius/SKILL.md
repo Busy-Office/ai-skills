@@ -15,9 +15,8 @@ not show you.
 
 ## Don't trust your own writeup
 
-A blast-radius writeup that sounds right is worthless: it reads as convincing whether or not it is
-true. So don't hand back the writeup alone. Find the one or two facts the whole thing depends on and
-prove them by running code.
+Find the one or two facts the whole thing depends on and prove them by running code
+(`principle-prove-it-works`).
 
 ### How sure are you
 
@@ -55,9 +54,8 @@ the exact function you are worried about.
    a caller or an API.
 5. **Prove the one fact.** Write a script or test that runs the real code, run it, and paste what it
    printed. Write it in the scratchpad unless the user wants it kept as a test.
-6. **For a big or wide change, get independent reads.** Give the diff, not your conclusion, to one
-   or more Claude Code subagents in a fresh context, and merge what they find; different reviewers
-   catch different real bugs. The `jev` skill can add a quick second opinion on a narrow question if
+6. **For a big or wide change, get independent reads** per `principle-fresh-reviewer`, and merge
+   what they find. The `jev` skill can add a quick second opinion on a narrow question if
    it is installed and the repository is allowed.
 
 ## What to hand back

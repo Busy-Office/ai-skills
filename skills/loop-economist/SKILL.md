@@ -28,20 +28,15 @@ flowchart LR
 
 ## The guard-rail: no overhead on the project
 
-- **Write nothing into the target repo.** The review goes to the
-  scratchpad, or to a published page if that is how they read things.
-- **Run nothing of the project's.** No install, build or test run. Only
-  `git log` and the collector.
+`principle-write-nothing-unasked`, and:
+
 - **Never quote a transcript.** Sessions contain the user's own words and
   their code. Cite a session by id and a metric, never by content.
-- **Read bounded.** `derived` and `warnings` fully; `sessions` and
+- **Read bounded** means: `derived` and `warnings` fully; `sessions` and
   `git.commits` by id only, when a finding needs that one entry's
-  evidence. Never read the full `runs.json` — it scales with the window,
+  evidence. Never the full `runs.json` — it scales with the window,
   `derived` doesn't.
-- **One context, one pass.** No subagents by default — reviewing a
-  fan-out problem by fanning out is its own joke.
-- **Leave a receipt** in the footer: transcripts read, window, commits,
-  repo untouched.
+- **The receipt** names the transcripts read, the window and the commits.
 
 ## Workflow
 
@@ -133,8 +128,8 @@ cannot carry a 3.
 `references/patterns.md`, and only what closes a finding you wrote:
 verifier seam, route the reading out, cache discipline, per-tick budget,
 persona split, and for the items one pass cannot reach — a **bounded
-subloop** (try · verify · adjust, N rounds, each round must change the
-approach) or a **gauntlet** (k independent attempts, a bar written first,
+subloop** (try · verify · adjust, stopping per `principle-stop-on-a-rule`)
+or a **gauntlet** (k independent attempts, a bar written first,
 a judge that wrote none of them). Give every prescription its cost.
 
 ### 6. Name the binding constraint

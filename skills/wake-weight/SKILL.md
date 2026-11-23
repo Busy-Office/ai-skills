@@ -23,13 +23,11 @@ flowchart LR
 
 ## The guard-rail
 
-- **Write nothing into the target repo.** The report goes to the scratchpad or
-  a published page.
-- **Run nothing of the project's.** Only `git log` and the collector.
+`principle-write-nothing-unasked`, and:
+
 - **Estimates are labelled as estimates.** Token figures come from character
   counts, not a bill. Where a measured number exists, use it instead.
-- **No subagents.** One context, one pass.
-- **Leave a receipt** — files read, and what the collector could not prove.
+- **The receipt** also says what the collector could not prove.
 
 ## Workflow
 

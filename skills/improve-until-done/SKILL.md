@@ -5,8 +5,8 @@ description: "Runs work in rounds — try, verify, judge, then go again or stop 
 
 # Improve until done
 
-Work in **rounds**. Each round is: try → verify → judge → go again or stop. Stop at the **first**
-rule below that holds; a round that hits none goes again.
+Work in **rounds**. Each round is: try → verify → judge → go again or stop. The stop rules are
+`principle-stop-on-a-rule`'s five, checked in order; a round that hits none goes again.
 
 ## Before round 1
 
@@ -20,30 +20,16 @@ Write down, where the user can see it:
 ## One round
 
 1. **Try** — the change for this round, aimed at the findings the last round left open.
-2. **Verify** — run the gate. Re-run every claim the round rests on: a claim from an agent or from
-   your own memory is not evidence until a tool printed it. Grade each one **Ran** (a tool printed
-   it this round), **Read** (`file:line`) or **Inferred**. A claim that fails when re-run is a
-   should-fix finding for the next round.
-3. **Judge** — a reviewer that did not build it (a fresh context or another model) lists findings as
-   should-fix or nice-to-have. If `jev` is installed, `jev judge completion` is a cheap second
-   opinion before stop rule 1; it advises, the stop rules decide.
+2. **Verify** — run the gate, and re-run every claim the round rests on, graded per
+   `principle-prove-it-works`. A claim that fails when re-run is a should-fix finding for the next
+   round.
+3. **Judge** — a reviewer per `principle-fresh-reviewer` lists findings as should-fix or
+   nice-to-have. If `jev` is installed, `jev judge completion` is a cheap second opinion before the
+   **done** stop; it advises, the stop rules decide.
 4. **Decide** — check the stop rules in order, then write the round record.
-
-## Stop rules
-
-| # | stop | when | then |
-|---|---|---|---|
-| 1 | **done** | the gate is green, the reviewer has no should-fix findings, and every claim is Ran or Read | report done, with the evidence |
-| 2 | **plateau** | two rounds in a row fixed no new finding, or a fixed finding came back | stop trying; report what is stuck and the approaches already spent |
-| 3 | **budget** | the 3rd review round is over, or the agent count or the minutes since the start reach the stated cap | stop; report what is open and what one more round would cost |
-| 4 | **scope growth** | the work needs a new contract, package or permission | ask the user before building it |
-| 5 | **cannot verify** | a check cannot run at all (a missing tool, a service down, a crashed or starved run) | re-run that check alone first; still cannot run → ask the user |
 
 A clean review with a claim still Inferred is not done: run or read what would show it, or report
 it as unproven.
-
-A next round changes the approach, not only the wording: repeating a failed try is how a plateau
-starts.
 
 ## The round record
 

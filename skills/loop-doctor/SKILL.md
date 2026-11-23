@@ -32,16 +32,9 @@ flowchart LR
 
 ## The guard-rail: no overhead on the project
 
-The person calling loop-doctor is asking a question, not adopting a tool.
-So:
+Review mode follows `principle-write-nothing-unasked` (no `refresh`
+command either). What is particular to this skill:
 
-- **Write nothing into the target repo** in review mode. The review goes to the
-  scratchpad (and to a published page if that's how they read things). If
-  they want it in the repo, they name the path and you write exactly that
-  one file.
-- **Run nothing of the project's.** No install, no build, no tests, no
-  `refresh` command. Only `git log`/`git show`/`git status` and the
-  inventory script.
 - **Read from the digest, not the files.** The inventory's `rulesDigest`
   (the lines that govern behaviour, with file:line, the sections a tick
   uses first) and `sections` (every heading's line range, `used` where the
@@ -58,11 +51,7 @@ So:
 - **Stay blind to earlier reviews.** Don't open the files the inventory
   lists under `priorReviews`; a previous score anchors the new one. The
   footer says they were skipped.
-- **No subagents by default.** One context, one pass. The inventory
-  already did the mechanical work.
-- **Leave a receipt.** The review's footer says how many files were read,
-  that no state file was read whole, and that the target repo is
-  untouched — so the reader can see the cost.
+- **The receipt** also says that no state file was read whole.
 
 ## Workflow
 

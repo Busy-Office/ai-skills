@@ -22,15 +22,15 @@ flowchart LR
 
 ## The guard-rail
 
-- **Propose; do not rewrite.** The repo is untouched unless the person
-  names the file and asks. Reordering someone's roadmap unasked is the one
-  thing this skill must never do.
+`principle-write-nothing-unasked`, and:
+
+- **Propose; do not rewrite.** Reordering someone's roadmap unasked is the
+  one thing this skill must never do.
 - **Rank against a written purpose.** If no intent document exists, say so
   in the first line and rank on unblocking and readiness only — and say
   that the ranking is unanchored.
-- **Read bounded.** Queue files fully; everything else by header.
-- **No subagents.** One context, one pass.
-- **Leave a receipt**: files read, items considered, repo untouched.
+- **Read bounded** means: queue files fully; everything else by header.
+- **The receipt** also counts the items considered.
 
 ## Workflow
 
@@ -67,8 +67,8 @@ traces to no sentence of intent is a deletion candidate, not a low rank.
 ### 4. Split the lanes
 
 - **loop** — the loop can finish it unattended.
-- **loop, subloop** — the approach is uncertain: budget try · verify ·
-  adjust rounds with a round cap.
+- **loop, subloop** — the approach is uncertain: try · verify · adjust
+  rounds under `principle-stop-on-a-rule`.
 - **loop, gauntlet** — more than one plausible approach and a costly wrong
   choice: the bar gets written before the attempts run.
 - **human** — a credential, an account, a decision, a signature. It leaves

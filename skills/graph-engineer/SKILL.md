@@ -30,21 +30,19 @@ flowchart LR
 
 ## The guard-rail
 
-- **Write nothing into the target repo unasked.** The review and the script
-  go to the scratchpad. If the user wants the script kept (`.claude/workflows/`
-  is the usual home), they name the path and you write exactly that file.
+`principle-write-nothing-unasked` — the review and the script go to the
+scratchpad; a kept script (`.claude/workflows/` is the usual home) goes to
+the path the user names — and:
+
 - **Never launch the graph yourself.** The Workflow tool runs only on the
   user's explicit opt-in ("run it", "use a workflow", `ultracode`). Hand back
   the script and say how to run it; running is their call.
-- **No subagents to design a graph.** One context, one pass. Designing a
-  fan-out by fanning out is the joke the economist already told.
-- **Read bounded.** The linear agent's prompt/script fully; anything it reads
-  (a backlog, a log) by header and size only.
+- **Read bounded** means: the linear agent's prompt/script fully; anything
+  it reads (a backlog, a log) by header and size only.
 - **Every number is derived or labelled an estimate.** Agent counts come from
   the script; latency and tokens are estimates from the topology, stated as
   such, with the formula.
-- **Leave a receipt** in the footer: what was read, lint rows found and
-  closed, nothing written into the repo.
+- **The receipt** also lists the lint rows found and closed.
 
 ## Load only what the job needs
 

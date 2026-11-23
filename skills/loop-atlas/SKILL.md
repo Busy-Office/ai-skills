@@ -23,17 +23,17 @@ flowchart LR
 
 ## The guard-rail
 
+`principle-write-nothing-unasked`: the page is an artifact, with a receipt
+in its footer. And:
+
 - **Nothing on a card is invented.** Every ability, stat and weakness
   traces to the agent's own file, its tool grant, or its observed runs. A
   stat that cannot be derived prints `—`. People will route real work by
   this deck.
 - **Draw the gaps.** A stage with no evidence and a class with no agent
   are rendered as labelled holes, not omitted.
-- **Write nothing into the target repo.** The page is an artifact; files
-  go to the scratchpad unless a path is asked for.
 - **Never quote a transcript.** Counts and ids only.
 - **Install nothing.** The page animates itself.
-- **Leave a receipt** in the footer.
 
 ## Workflow
 

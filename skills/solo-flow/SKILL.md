@@ -114,9 +114,8 @@ What worktrees cost, so the loop plans for it:
 3. While building, run only the fast checks (typecheck + lint) — save the
    full suite for step 4, it's too slow to run on every save.
 4. Before merging: the full check suite, once per batch, run in the work
-   worktree, plus one independent fresh-context review of the whole diff
-   (a different agent or persona than the one that wrote it — the review
-   is worth nothing if it's the same context grading its own work).
+   worktree, plus one independent review of the whole diff
+   (`principle-fresh-reviewer`).
 5. Land. For a single writer, squash then fast-forward (recommended), so
    `main` gets one reviewed commit per unit of work: in the worktree,
    squash the branch to one commit
