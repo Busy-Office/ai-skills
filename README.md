@@ -68,8 +68,9 @@ git clone https://github.com/Busy-Office/ai-skills.git ~/Projects/ai-skills
 ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-dashboard
 ```
 
-A skill names the principle skills it relies on (`principle-*`); symlink those
-too, or the pointers lead nowhere.
+A skill names the principle skills it relies on (`principle-*`), and several
+point at `busy-office-mode` for its playbooks and the loop family's hand-off
+map; symlink those too, or the pointers lead nowhere.
 
 ## Start here
 

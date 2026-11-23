@@ -59,4 +59,4 @@ tool skills cite principles.
 - 0.4.0 (2026-09-09) — sharpen-intent.
 - 0.3.0 (2026-09-09) — loop-economist and requeue.
 - 0.2.0 (2026-09-08) — loop-doctor autonomy plan.
-- 0.1.0 (2026-09-08) — loop-doctor, packaged as the busy-office plugin.
+- 0.1.0 (2026-09-08) — progress-dashboard and loop-doctor, packaged as the busy-office plugin.
