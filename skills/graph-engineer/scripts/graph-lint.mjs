@@ -394,20 +394,58 @@ export function lint(src, file = "<stdin>") {
   };
   const widthOf = (c) => listWidth(c.argStart);
   // G16 unchunked fan-out: more than 3 agents in flight. A fan-out's width is
-  // what listWidth shows, or 3 when it runs over one wave (a singular
-  // chunk/wave/batch name — `chunks` is every wave at once); a fan-out inside
-  // another's callback multiplies by the enclosing widths.
+  // what listWidth shows, or one wave when it runs over a singular
+  // chunk/wave/batch name (`chunks` is every wave at once): the size argument
+  // of the call the for-of reads (`waves(xs, 5)` is 5), else 3. A fan-out in
+  // another's callback multiplies by the enclosing widths; one awaited in its
+  // list expression has finished before the outer starts.
+  // Known limits: a fan-out inside a helper function the callback calls is not
+  // seen as nested; an array filled by push() reads as its literal (often 0);
+  // a wave-named alias of a list of unknown width counts as 3.
+  const esc = (s) => s.replace(/\$/g, "\\$");
+  const waveSize = (name) => {
+    const f = new RegExp(`for\\s*\\(\\s*(?:const|let|var)\\s+${esc(name)}\\s+of\\s+`).exec(code);
+    if (!f) return null;
+    let at = f.index + f[0].length;
+    const id = /^[A-Za-z_$][\w$]*(?![\w$.(\s])/.exec(code.slice(at, at + 80))?.[0];
+    if (id) {   // `for (const wave of waves)`: read the const it names
+      const def = new RegExp(`(?:const|let|var)\\s+${esc(id)}\\s*=\\s*`).exec(code);
+      if (!def) return null;
+      at = def.index + def[0].length;
+    }
+    const call = /^(?:await\s+)?[A-Za-z_$][\w$.]*\s*\(/.exec(code.slice(at, at + 120));
+    if (!call) return null;
+    const open = at + call[0].length - 1;
+    const n = /,\s*(\d+)\s*$/.exec(code.slice(open + 1, matchBracket(code, open)));
+    return n ? Number(n[1]) : null;
+  };
   const fanWidth = (c) => {
     const w = widthOf(c);
     if (typeof w === "number") return w;
     const root = /^\s*\(?\s*(?:await\s+)?([A-Za-z_$][\w$]*)/.exec(code.slice(c.argStart, c.end))?.[1] ?? "";
-    return /(^|[a-z0-9_$])(chunk|wave|batch)$/i.test(root) ? 3 : null;
+    return /(^|[a-z0-9_$])(chunk|wave|batch)$/i.test(root) ? waveSize(root) ?? 3 : null;
+  };
+  // True when index i sits inside a function written in o's arguments.
+  const inCallback = (i, o) => {
+    const re = /=>|\bfunction\b/g;
+    re.lastIndex = o.argStart;
+    for (let m; (m = re.exec(code)) && m.index < i;) {
+      let depth = 0, k = m.index + m[0].length;
+      for (; k < o.end; k++) {
+        const ch = code[k];
+        if ("([{".includes(ch)) depth++;
+        else if (")]}".includes(ch)) { if (--depth < 0) break; }
+        else if (ch === "," && depth === 0) break;
+      }
+      if (i < k) return true;
+    }
+    return false;
   };
   const G16_FIX = "run it in waves of 3 (`principle-guard-the-machine`): chunk the items, then `for (const wave of waves) out.push(...(await parallel(wave.map(...))))`; a nested fan-out counts its enclosing waves too";
   for (const c of fan) {
     const w = fanWidth(c);
     if (w === null) { row("G16", "warn", c.idx, `${c.kind}() over a list of unknown width with no visible chunking`, G16_FIX); continue; }
-    const outer = fan.filter((o) => o !== c && c.idx > o.argStart && c.idx < o.end).map(fanWidth);
+    const outer = fan.filter((o) => o !== c && c.idx > o.argStart && c.idx < o.end && inCallback(c.idx, o)).map(fanWidth);
     if (outer.includes(null)) continue;   // the enclosing fan-out is its own row
     const inFlight = outer.reduce((a, b) => a * b, w);
     if (inFlight > 3) row("G16", "warn", c.idx, outer.length ? `${c.kind}() of ${w} inside ${outer.join(" × ")} — ${inFlight} agents in flight` : `${c.kind}() over ${w} items with no visible chunking`, G16_FIX);
@@ -453,7 +491,8 @@ export function lint(src, file = "<stdin>") {
     fanOutWidths: topFan.map((c) => ({ kind: c.kind, line: lineOf(src, c.idx), width: widthOf(c) })),
     agentsInLoops: agents.filter((a) => inLoop(a.idx)).length,
     staticAgentEstimate: est.total,
-    estimateNote: (est.unknown ? "some widths unresolved (counted as 1); " : "") + (!loops.length
+    estimateNote: "an upper bound: a filtered list counts at its input's width, and a fan-out in another's arguments multiplies by it; "
+      + (est.unknown ? "some widths unresolved (counted as 1, so not a bound there); " : "") + (!loops.length
       ? "no cycles"
       : agents.some((a) => inLoop(a.idx))
         ? "agents inside loops count once — multiply by expected rounds"
@@ -506,6 +545,11 @@ const G16_CASES = [
   ["a wave cut by .slice(i, i + 3) passes", "for (let i = 0; i < xs.length; i += 3) { const wave = xs.slice(i, i + 3); out.push(...(await parallel(wave.map((x) => () => agent(x)))).filter(Boolean)) }", 0],
   ["a pipeline of 2 stages over 3 items passes", "const ITEMS = ['a', 'b', 'c']\nconst r = (await pipeline(ITEMS, (x) => agent(x, { phase: 'One' }), (y) => agent(y, { phase: 'Two' }))).filter(Boolean)", 0],
   ["judge panel: scoring the attempts of a 3-angle fan-out is ≤ 3 (verification.md)", "const ANGLES = ['MVP-first', 'risk-first', 'user-first']\nconst attempts = (await parallel(ANGLES.map((a) => () => agent(a)))).filter(Boolean)\nconst scores = (await parallel(attempts.map((d, i) => () => agent('score ' + i)))).filter(Boolean)", 0],
+  ["the judge panel inline: a fan-out awaited in another's list runs first, 3 then 3", "const A3 = ['a', 'b', 'c']\nconst r = (await parallel((await parallel(A3.map((a) => () => agent(a)))).filter(Boolean).map((d) => () => agent('score ' + d)))).filter(Boolean)", 0],
+  ["a pipeline of 3 whose stage fans out 2 is 6 in flight", "const I = ['a', 'b', 'c']\nconst L = ['x', 'y']\nconst r = (await pipeline(I, (i) => agent(i, { phase: 'A' }), (y) => parallel(L.map((l) => () => agent(l + y))))).filter(Boolean)", 1],
+  ["waves(xs, 5) is a wave of 5", "for (const wave of waves(xs, 5)) out.push(...(await parallel(wave.map((x) => () => agent(x)))).filter(Boolean))", 1],
+  ["a wave from chunk(xs, 3), through a const, passes", "const waves = chunk(xs, 3)\nfor (const wave of waves) out.push(...(await parallel(wave.map((x) => () => agent(x)))).filter(Boolean))", 0],
+  ["a wave named for a list of 5 is 5, not 3 by its name", "const all = ['a', 'b', 'c', 'd', 'e']\nconst wave = all\nconst r = (await parallel(wave.map((x) => () => agent(x)))).filter(Boolean)", 1],
 ];
 
 const BAD = `export const meta = {
