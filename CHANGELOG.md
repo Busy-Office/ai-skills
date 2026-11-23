@@ -8,8 +8,10 @@ Five more skills get a gauntlet, and graph-engineer's fan-out rule counts what i
 
 - **Gauntlets for `correct`, `blast-radius`, `improve-until-done`, `deploy-agents` and
   `automate-me`**: a bar (`evals/gauntlet/BAR.md`), an empty rounds table, `evals/evals.json`, a
-  `bar-check.mjs` spec with pass and fail fixtures, and a small synthetic fixture whose README is the
-  answer key. Each fixture plants cases a weak run gets wrong: an import check that passes on both
+  reply template (`references/report-template.md`, which each SKILL.md's reply points to), a
+  `bar-check.mjs` spec that checks only what that template states, pass and fail fixtures (one pass
+  fixture per skill is a reviewer's strong run reshaped to the template), and a small synthetic
+  fixture whose README is the answer key. Each fixture plants cases a weak run gets wrong: an import check that passes on both
   real past mistakes (`correct`, built by `fixtures/repeat-offender/build.mjs`); a Python consumer
   outside the diff that a field rename breaks (`blast-radius`); a plateau, an Inferred claim, a
   minutes cap, a new package and a crashed gate beside a go-again control (`improve-until-done`);
@@ -18,8 +20,9 @@ Five more skills get a gauntlet, and graph-engineer's fan-out rule counts what i
   reserved kind with a perfect record and a tripwire kind (`automate-me`). No round has been run.
 - `evals/consistency.mjs` fails a gauntlet that is not wired: every `evals/gauntlet/` needs
   `BAR.md`, `ROUNDS.md`, `evals/evals.json` and a bar-check spec or its own `CRITIC.md`.
-- `bar-check.mjs` specs can name their do-next heading, their receipt, a row vocabulary for rows
-  without ids, and accept a commit sha as a location; a spec with `doNextMax: 0` has no do-next.
+- `bar-check.mjs` specs can name their do-next heading, their receipt and its label, a row
+  vocabulary for rows without ids, and accept a commit sha as a location; a spec with
+  `doNextMax: 0` has no do-next.
 
 ### Changed
 
@@ -27,8 +30,15 @@ Five more skills get a gauntlet, and graph-engineer's fan-out rule counts what i
   multiplies by the enclosing widths (a wave of 3 × 3 refuters is 9), `.slice(0, N)` and
   `.slice(i, i + N)` count N instead of exempting any `.slice(`, `chunks.map(…)` is every wave at
   once (only a singular `wave`, `chunk` or `batch` counts as 3), and a `parallel()` result keeps its
-  input's width, so `verification.md`'s judge panel no longer fires. The lint's GOOD example keeps
-  3 in flight.
+  input's width, so `verification.md`'s judge panel no longer fires. Only a fan-out in a callback
+  nests: one awaited in another's list expression has finished before the outer starts. A singular
+  wave reads the size argument of the call its `for … of` iterates (`waves(xs, 5)` is 5). The
+  rule's comment names its known limits (a fan-out inside a helper function, a push-filled array).
+  The lint's GOOD example keeps 3 in flight.
+- graph-lint's `staticAgentEstimate` follows the same `.slice` and const widths; it is an upper
+  bound (a filtered list counts at its input's width), and `estimateNote` says so.
+- bar-check's do-next count (M6) counts the outermost list only, so a question's options are not
+  items: automate-me's two questions of three options are 2, not 8.
 - solo-flow's two-branch variant: landing on the shared `develop` needs the owner's yes to the tip
   shown, unless the repository's instructions authorise it.
 - `evals/consistency.mjs` takes skill, playbook and reference names from `git ls-files`, like the

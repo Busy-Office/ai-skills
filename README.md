@@ -1088,9 +1088,11 @@ node skills/automate-me/scripts/backfill.mjs --self-test
 node skills/automate-me/scripts/decisions.mjs --self-test
 ```
 
-> **Measured:** the gauntlet's bar ([`BAR.md`](skills/automate-me/evals/gauntlet/BAR.md)) and a
-> fixture with planted cases ([`home`](skills/automate-me/fixtures/home/README.md)) are written and
-> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/automate-me/evals/gauntlet/BAR.md)), a
+> fixture with planted cases ([`home`](skills/automate-me/fixtures/home/README.md)) and the reply's shape
+> ([`report-template.md`](skills/automate-me/references/report-template.md)) are written. The pre-check
+> checks only that shape and is self-tested, including on a reviewer's strong run reshaped to it,
+> but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1108,9 +1110,11 @@ opinion.
 > agents keep importing the internal client — make it stop
 > `/busy-office:correct`
 
-> **Measured:** the gauntlet's bar ([`BAR.md`](skills/correct/evals/gauntlet/BAR.md)) and a
-> fixture with planted cases ([`repeat-offender`](skills/correct/fixtures/repeat-offender/README.md)) are written and
-> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/correct/evals/gauntlet/BAR.md)), a
+> fixture with planted cases ([`repeat-offender`](skills/correct/fixtures/repeat-offender/README.md)) and the reply's shape
+> ([`report-template.md`](skills/correct/references/report-template.md)) are written. The pre-check
+> checks only that shape and is self-tested, including on a reviewer's strong run reshaped to it,
+> but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1126,9 +1130,11 @@ design too, when a brief asserts something about existing code.
 > what's the blast radius of making this endpoint public?
 > this diff is small but I don't trust it
 
-> **Measured:** the gauntlet's bar ([`BAR.md`](skills/blast-radius/evals/gauntlet/BAR.md)) and a
-> fixture with planted cases ([`wire-format`](skills/blast-radius/fixtures/wire-format/README.md)) are written and
-> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/blast-radius/evals/gauntlet/BAR.md)), a
+> fixture with planted cases ([`wire-format`](skills/blast-radius/fixtures/wire-format/README.md)) and the reply's shape
+> ([`report-template.md`](skills/blast-radius/references/report-template.md)) are written. The pre-check
+> checks only that shape and is self-tested, including on a reviewer's strong run reshaped to it,
+> but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1148,9 +1154,11 @@ evidence, the decision.
 > keep fixing until the review is clean
 > is one more round worth it?
 
-> **Measured:** the gauntlet's bar ([`BAR.md`](skills/improve-until-done/evals/gauntlet/BAR.md)) and a
-> fixture with planted cases ([`six-decides`](skills/improve-until-done/fixtures/six-decides/README.md)) are written and
-> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/improve-until-done/evals/gauntlet/BAR.md)), a
+> fixture with planted cases ([`six-decides`](skills/improve-until-done/fixtures/six-decides/README.md)) and the reply's shape
+> ([`report-template.md`](skills/improve-until-done/references/report-template.md)) are written. The pre-check
+> checks only that shape and is self-tested, including on a reviewer's strong run reshaped to it,
+> but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1173,9 +1181,11 @@ it on one batch first and compare tokens with the manual way.
 node skills/deploy-agents/scripts/dry-run.mjs --self-test   # the script's stop rules, no tokens
 ```
 
-> **Measured:** the gauntlet's bar ([`BAR.md`](skills/deploy-agents/evals/gauntlet/BAR.md)) and a
-> fixture with planted cases ([`batch-plan`](skills/deploy-agents/fixtures/batch-plan/README.md)) are written and
-> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/deploy-agents/evals/gauntlet/BAR.md)), a
+> fixture with planted cases ([`batch-plan`](skills/deploy-agents/fixtures/batch-plan/README.md)) and the reply's shape
+> ([`report-template.md`](skills/deploy-agents/references/report-template.md)) are written. The pre-check
+> checks only that shape and is self-tested, including on a reviewer's strong run reshaped to it,
+> but **no gauntlet round has been run yet**.
 
 ---
 
