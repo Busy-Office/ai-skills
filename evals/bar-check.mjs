@@ -93,6 +93,16 @@ export const SPECS = {
     vocab: [/go again|stop: (done|plateau|budget)|ask: scope growth|cannot verify/i],
     requireLine: [["M15", "a three-line round record", /tried:[^\n]*\nEvidence:[^\n]*\nDecision:/]],
   },
+  "deploy-agents": {
+    proseMax: 300, leadMax: 50, doNextMax: 5,
+    opensWith: "table",
+    sections: [/^#+\s*(defects|findings|what is wrong)/im, /^#+\s*(fixed )?briefs/im, /^#+\s*launch/im],
+    citedTables: [],
+    locatedSection: /(defects|findings|what is wrong)/,
+    vocab: [/\b(goal|where|do not touch|decisions?|verbatim|test|report|model|effort|limit|agents? at once|in flight|full suite|review(er)?|fresh|push)\b/i],
+    doNext: /launch/,
+    receipt: /\b(nothing|no agents?)\b[^\n]{0,30}\b(spawned|launched|started)\b|\bnot (spawned|launched)\b/i,
+  },
 };
 
 // What counts as "located". A finding must be checkable by someone who has
@@ -134,7 +144,7 @@ function words(lines) {
 // findings table (sharpen-intent traces items, loop-atlas locates stages).
 function rowsUnder(md, headingRe) {
   const m = md.match(new RegExp(`^#+\\s*${headingRe.source}[^\\n]*\\n([\\s\\S]*?)(?=\\n#{1,6}\\s|\\n---|(?![\\s\\S]))`, "im"));
-  return m ? dataRows(m[1].split("\n").filter((l) => /^\s*\|/.test(l))) : [];
+  return m ? dataRows(m[m.length - 1].split("\n").filter((l) => /^\s*\|/.test(l))) : [];
 }
 
 function dataRows(tableLines) {

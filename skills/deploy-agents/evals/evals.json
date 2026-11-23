@@ -1,0 +1,23 @@
+{
+  "skill_name": "deploy-agents",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I've drafted the next batch in skills/deploy-agents/fixtures/batch-plan/PLAN.md (read only that file). Check the plan and the briefs before I spawn anything, and write the fixed plan to <scratchpad>/DEPLOY.md. Don't spawn or run anything.",
+      "expected_output": "A deployment review: a defects table with PLAN.md:<line>, the rule each breaks and the fix (4 agents launched together; refund posting on a cheap model; the user's decision paraphrased; J1 may push; J2 has no Goal and no stop; J3 runs the full suite; J4 reviews its own diff); the fixed briefs with all six fields; J5 left as it is; a launch order in waves of at most 3; receipt: nothing spawned.",
+      "files": ["fixtures/batch-plan/PLAN.md"],
+      "assertions": [
+        "Flags the launch of J1-J4 together as 4 agents in flight and replaces it with waves of at most 3",
+        "Moves J1 (refund posting) to the strongest model at high effort",
+        "Quotes the user's refund sentence verbatim in J1's Decisions",
+        "Adds never push, merge or land to J1",
+        "Gives J2 a Goal with a checkable done condition in place of 'until it is good'",
+        "Replaces J3's npm test with a targeted check and leaves the full suite to the coordinator",
+        "Gives J4 a fresh context or another model, handed the diff, the goal and the decision",
+        "Claims no defect on J5",
+        "Every defect cites PLAN.md:<line>",
+        "Spawns nothing and says so"
+      ]
+    }
+  ]
+}
