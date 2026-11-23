@@ -12,8 +12,17 @@
 // It exists because the record-file pattern was widened in one collector and
 // left stale in three others within the hour, which is the exact defect
 // loop-doctor was written to find in other people's projects.
+//
+// Second check: every skill the repo names exists. It reads the files
+// `git ls-files` lists (tracked only, symlinks skipped) and counts as a name:
+// `busy-office:<x>` and a backticked `principle-<x>` anywhere; a backticked
+// hyphenated name in a SKILL.md; any backticked lowercase name in the mode's
+// SKILL.md and playbooks; and, in README.md, AGENTS.md, CHANGELOG.md and
+// skills/*/references/, a backticked hyphenated name within edit distance 2
+// of a real skill (a typo such as `loop-docter`).
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, lstatSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join, dirname, basename, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -97,12 +106,9 @@ console.log(`\n${checked - failed}/${checked} shared rules consistent across ${c
 // Every skill the repo names must exist. Skills point at each other
 // (principles, the mode's playbooks, the loop-family map), so a renamed or
 // removed skill leaves dangling pointers; animated-svg was named for months by
-// a skill that nothing shipped. What counts as a reference:
-//   - `busy-office:<x>` and `principle-<x>`, in every file of the repo;
-//   - in a SKILL.md, a backticked hyphenated name (a one-word one cannot be
-//     told apart from a command);
-//   - in the mode's SKILL.md and its playbooks, a closed vocabulary, every
-//     backticked lowercase name, one word or hyphenated.
+// a skill that nothing shipped. What counts as a reference: see the header.
+// A one-word backticked name outside the mode cannot be told apart from a
+// command, and prose such as "principle-based" is not a name.
 const ROOT = join(HERE, "..");
 const EXTERNAL_SKILLS = new Set([
   "explain-landing", "loop", // a repository's own skills, named as "the repository's own step"
@@ -115,11 +121,20 @@ const BINARY = /\.(png|gif|jpe?g|webp|ico|pdf|woff2?)$/;
 const skillNames = new Set(readdirSync(SKILLS).filter((d) => existsSync(join(SKILLS, d, "SKILL.md"))));
 const MODE = join(SKILLS, "busy-office-mode");
 const playbookNames = new Set(existsSync(join(MODE, "playbooks")) ? readdirSync(join(MODE, "playbooks")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)) : []);
-const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-  e.name === ".git" || e.name === "node_modules" ? []
-  : e.isDirectory() ? walk(join(dir, e.name))
-  : BINARY.test(e.name) ? [] : [join(dir, e.name)]);
-const files = walk(ROOT);
+const isFile = (f) => { try { return lstatSync(f).isFile(); } catch { return false; } };
+const files = execFileSync("git", ["ls-files", "-z"], { cwd: ROOT, encoding: "utf8" })
+  .split("\0").filter((f) => f && !BINARY.test(f)).map((f) => join(ROOT, f)).filter(isFile);
+const PROSE = new Set(["README.md", "AGENTS.md", "CHANGELOG.md"]);
+const distance = (a, b) => {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+};
+const nearMiss = (name) => [...skillNames].some((s) => distance(name, s) <= 2);
 
 const dangling = [];
 let refs = 0;
@@ -128,15 +143,20 @@ for (const file of files) {
   const skill = rel.split(sep)[1];
   const isSkill = rel === join("skills", skill ?? "", "SKILL.md");
   const closed = file.startsWith(MODE + sep) && file.endsWith(".md");
+  const prose = PROSE.has(rel) || (rel.split(sep)[2] === "references" && rel.endsWith(".md"));
   const refDir = join(SKILLS, skill ?? "", "references");
   const ownRefs = new Set(isSkill && existsSync(refDir) ? readdirSync(refDir).map((f) => f.replace(/\.[^.]+$/, "")) : []);
   readFileSync(file, "utf8").split("\n").forEach((line, i) => {
-    const named = [
+    const hyphenated = [...line.matchAll(/`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`/g)].map((m) => m[1]);
+    const found = [
       ...[...line.matchAll(/busy-office:([a-z0-9-]+)/g)].map((m) => [m[1], true]),
-      ...[...line.matchAll(/\b(principle-[a-z0-9]+(?:-[a-z0-9]+)*)/g)].map((m) => [m[1], true]),
-      ...(isSkill || closed ? [...line.matchAll(/`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`/g)].map((m) => [m[1], false]) : []),
+      ...[...line.matchAll(/`(principle-[a-z0-9]+(?:-[a-z0-9]+)*)`/g)].map((m) => [m[1], true]),
+      ...(isSkill || closed ? hyphenated.map((n) => [n, false]) : []),
+      ...(prose && !isSkill && !closed ? hyphenated.filter((n) => skillNames.has(n) || nearMiss(n)).map((n) => [n, false]) : []),
       ...(closed ? [...line.matchAll(/`([a-z][a-z0-9]*)`/g)].map((m) => [m[1], false]) : []),
     ];
+    const named = new Map();   // one report per name per line; strict wins
+    for (const [name, strict] of found) named.set(name, named.get(name) || strict);
     for (const [name, strict] of named) {
       refs++;
       if (skillNames.has(name) || EXTERNAL_SKILLS.has(name)) continue;
