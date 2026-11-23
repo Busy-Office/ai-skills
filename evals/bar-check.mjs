@@ -123,6 +123,16 @@ export const SPECS = {
     requireLine: [["M15", "the proof section pastes output", /^#+\s*proof[^\n]*\n[\s\S]*?```/im]],
     receipt: /\bnot pushed\b|\bnothing (was )?pushed\b|\bno push\b/i,
   },
+  "automate-me": {
+    proseMax: 300, leadMax: 50, doNextMax: 2,
+    opensWith: "table",
+    sections: [/^#+\s*signals/im, /^#+\s*draft/im, /^#+\s*repository rules/im],
+    citedTables: [],
+    locatedSection: /signals/,
+    sessionsLocate: true,
+    vocab: [/\b(kept|dropped|repository|reserved|tripwire|may-settle|ask|calibration|rule|contradicted)\b/i],
+    requireLine: [["M15", "the draft is a unified diff", /```diff\n/]],
+  },
 };
 
 // What counts as "located". A finding must be checkable by someone who has

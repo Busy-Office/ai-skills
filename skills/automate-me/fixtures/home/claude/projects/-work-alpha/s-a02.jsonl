@@ -1,0 +1,5 @@
+{"type": "user", "timestamp": "2026-04-08T09:00:00Z", "sessionId": "s-a02", "message": {"role": "user", "content": "Rename the totals helper everywhere."}}
+{"type": "assistant", "timestamp": "2026-04-08T09:01:00Z", "sessionId": "s-a02", "message": {"role": "assistant", "content": [{"type": "text", "text": "Renaming it in four files now."}]}}
+{"type": "user", "timestamp": "2026-04-08T09:02:00Z", "sessionId": "s-a02", "message": {"role": "user", "content": "Diff first, then write it."}}
+{"type": "assistant", "timestamp": "2026-04-08T09:03:00Z", "sessionId": "s-a02", "message": {"role": "assistant", "content": [{"type": "text", "text": "Here is the diff across the four files."}]}}
+{"type": "user", "timestamp": "2026-04-08T09:04:00Z", "sessionId": "s-a02", "message": {"role": "user", "content": "Good, go ahead."}}

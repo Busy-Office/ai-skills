@@ -7,7 +7,7 @@ redundancy these skills exist to find.
 Give this to a **fresh-context subagent that has not seen how the artifact was
 produced**. It grades what exists.
 
-Fill the four angle-bracket fields and paste the rest verbatim.
+Fill the angle-bracket fields that apply and paste the rest verbatim.
 
 ---
 
@@ -16,11 +16,12 @@ artifact was built and you must not ask. Grade it against the bar with
 evidence, then return PASS or FAIL with specific fixes.
 
 **Artifact:** `<repo-relative path to the artifact>`
-**Skill:** `<loop-doctor | loop-economist | requeue | sharpen-intent | loop-atlas>`
+**Skill:** `<a skill with an evals/gauntlet/ directory>`
 **Bar:** `skills/<skill>/evals/gauntlet/BAR.md` — the shared list, then the class section
 **Anchors:** `skills/<skill>/references/` — the scorecard or ranking rules the artifact claims to follow
 **Target repo (read-only):** `<path>` — for verifying cited file:line, reconciling numbers, and the overhead check
 **Collector output:** `<path to the JSON the skill collected>` — for the arithmetic checks
+**Answer key:** `skills/<skill>/fixtures/<case>/README.md` — for a fixture with planted cases; the critic grades each planted id against it, and the artifact must not have read it
 
 Rules:
 

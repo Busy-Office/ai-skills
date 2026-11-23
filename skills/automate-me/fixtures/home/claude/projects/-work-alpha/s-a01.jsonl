@@ -1,0 +1,5 @@
+{"type": "user", "timestamp": "2026-04-06T09:00:00Z", "sessionId": "s-a01", "message": {"role": "user", "content": "Add the export button to the report page."}}
+{"type": "assistant", "timestamp": "2026-04-06T09:01:00Z", "sessionId": "s-a01", "message": {"role": "assistant", "content": [{"type": "text", "text": "I'll add it to the toolbar and write the handler."}]}}
+{"type": "user", "timestamp": "2026-04-06T09:02:00Z", "sessionId": "s-a01", "message": {"role": "user", "content": "Show me the diff before you write any file."}}
+{"type": "assistant", "timestamp": "2026-04-06T09:03:00Z", "sessionId": "s-a01", "message": {"role": "assistant", "content": [{"type": "text", "text": "Here is the diff for the toolbar and the handler."}]}}
+{"type": "user", "timestamp": "2026-04-06T09:04:00Z", "sessionId": "s-a01", "message": {"role": "user", "content": "Fine. Commit it yourself, no need to ask."}}

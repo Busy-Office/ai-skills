@@ -1,0 +1,5 @@
+{"type": "user", "timestamp": "2026-04-10T09:00:00Z", "sessionId": "s-a03", "message": {"role": "user", "content": "Tidy the README for the report module."}}
+{"type": "assistant", "timestamp": "2026-04-10T09:01:00Z", "sessionId": "s-a03", "message": {"role": "assistant", "content": [{"type": "text", "text": "I'll shorten the intro and fix the headings."}]}}
+{"type": "user", "timestamp": "2026-04-10T09:02:00Z", "sessionId": "s-a03", "message": {"role": "user", "content": "Use British spelling in everything you write."}}
+{"type": "assistant", "timestamp": "2026-04-10T09:03:00Z", "sessionId": "s-a03", "message": {"role": "assistant", "content": [{"type": "text", "text": "Switched to British spelling."}]}}
+{"type": "user", "timestamp": "2026-04-10T09:04:00Z", "sessionId": "s-a03", "message": {"role": "user", "content": "Ask me before you commit anything."}}

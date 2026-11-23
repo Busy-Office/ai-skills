@@ -21,11 +21,15 @@
 // SKILL.md and playbooks; and, in README.md, AGENTS.md, CHANGELOG.md and
 // skills/*/references/, a backticked hyphenated name within edit distance 2
 // of a real skill (a typo such as `loop-docter`).
+//
+// Third check: every skills/<x>/evals/gauntlet/ has BAR.md, ROUNDS.md,
+// evals/evals.json and an instrument (a bar-check spec or its own CRITIC.md).
 
 import { readFileSync, readdirSync, existsSync, lstatSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname, basename, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SPECS } from "./bar-check.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILLS = join(HERE, "..", "skills");
@@ -174,4 +178,15 @@ if (!dangling.length) {
   console.log(`✗ ${dangling.length} named skills do not exist (add the skill, fix the name, or allow-list a real external one)`);
   for (const d of dangling) console.log(`    · ${d}`);
 }
-process.exit(failed || dangling.length ? 1 : 0);
+// Third check: every gauntlet is wired. A skill with evals/gauntlet/ has its
+// bar, its rounds table and evals.json, and an instrument: a bar-check spec, or
+// a CRITIC.md naming its own (graph-engineer's lint).
+const has = (...p) => tracked.some((t) => t.join("/") === ["skills", ...p].join("/"));
+const gauntlets = [...new Set(tracked.filter((p) => p[0] === "skills" && p[2] === "evals" && p[3] === "gauntlet").map((p) => p[1]))];
+const unwired = gauntlets.flatMap((g) => [
+  ...["BAR.md", "ROUNDS.md"].filter((f) => !has(g, "evals", "gauntlet", f)).map((f) => `${g}: no evals/gauntlet/${f}`),
+  ...(has(g, "evals", "evals.json") ? [] : [`${g}: no evals/evals.json`]),
+  ...(SPECS[g] || has(g, "evals", "gauntlet", "CRITIC.md") ? [] : [`${g}: no spec in evals/bar-check.mjs and no CRITIC.md naming its instrument`]),
+]);
+console.log(unwired.length ? `✗ ${unwired.length} gauntlet gaps\n${unwired.map((u) => `    · ${u}`).join("\n")}` : `✓ every gauntlet is wired — ${gauntlets.length} with a bar, rounds, evals and an instrument`);
+process.exit(failed || dangling.length || unwired.length ? 1 : 0);

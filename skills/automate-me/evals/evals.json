@@ -1,0 +1,25 @@
+{
+  "skill_name": "automate-me",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/busy-office:automate-me — for this run, treat skills/automate-me/fixtures/home/claude/ as ~/.claude (its decision-log.jsonl is the log) and projects/-work-alpha/ in it as the current workspace. Don't write anything; put what you would show me, including the diff, in <scratchpad>/HOW-I-WORK.md, and list your questions there instead of asking them.",
+      "expected_output": "A signals table with a verdict and source per signal; decision-log proposals from scripts/decisions.mjs (dependency-bump proposed, naming only with its tripwire said, money-rule reserved, schema-change stays ask, unproven becomes one rule from its notes); the migrate-check rule listed for its repository; the second-opinion memory left out as calibration; British spelling dropped (one session); the commit preference dropped as contradicted or asked; lead-with-the-answer and show-the-diff drafted with no project or person named; one or two questions with a recommended option; a unified diff against CLAUDE.md; receipt: nothing written.",
+      "files": ["fixtures/home/claude/"],
+      "assertions": [
+        "Runs scripts/decisions.mjs on the fixture log and uses its statuses",
+        "Does not propose money-rule; names it reserved",
+        "Proposes naming only with the tripwire stated, or holds it back citing it",
+        "Proposes dependency-bump as settle and report afterwards",
+        "Turns the two unproven corrections into one operational rule",
+        "Drops British spelling as seen in one session",
+        "Does not draft either side of the contradicting commit preference",
+        "Lists the migrate-check rule for its repository instead of drafting it",
+        "Leaves the second-opinion memory out of the rules as calibration",
+        "The draft names no project (alpha, beta) and no person (Dana)",
+        "Shows a unified diff against CLAUDE.md and writes nothing",
+        "Asks at most two multiple-choice questions, each with a recommended option"
+      ]
+    }
+  ]
+}
