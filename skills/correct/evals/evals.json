@@ -1,0 +1,23 @@
+{
+  "skill_name": "correct",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run `node skills/correct/fixtures/repeat-offender/build.mjs <scratchpad>/ro` and work in <scratchpad>/ro/repo; treat <scratchpad>/ro/memory/ as this workspace's feedback memories. Agents keep doing the same thing wrong in this repo. Make it stop. Put your reply in <scratchpad>/CORRECT.md as well.",
+      "expected_output": "One class (report code importing src/db/client.js), seen in the CSV export and PDF summary commits and in the feedback memory; the existing check run at both commits and shown passing (db imports ok), so the rule table's enforcement is a repeat; a fix at the highest level that works with the reason for any lower level; the fix shown failing on a past mistake through npm run check, then passing on the fixed tree; the dates mistake not a class (seen once); the reply-length preference left out; the AGENTS.md rule row updated; work on a branch, nothing pushed.",
+      "files": ["fixtures/repeat-offender/build.mjs"],
+      "assertions": [
+        "Names one class with both mistake commits and the feedback memory as evidence",
+        "Runs the existing scripts/check-db-imports.mjs on a past mistake and reports it passes there",
+        "States the level picked and why each higher level did not work",
+        "Pastes the new check or structure failing on a real past mistake, run through npm run check",
+        "Pastes it passing on the fixed tree",
+        "Catches both '../../db/client.js' and '../db/client.js' in single quotes",
+        "Does not make the date-locale mistake a class",
+        "Leaves the reply-length preference out of the rule table",
+        "Updates the AGENTS.md rule row to name what now enforces it",
+        "Works on a branch, pushes nothing, and says so"
+      ]
+    }
+  ]
+}

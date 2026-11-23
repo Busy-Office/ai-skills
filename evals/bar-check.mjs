@@ -112,6 +112,17 @@ export const SPECS = {
     doNext: /before it lands/,
     requireLine: [["M15", "the one fact is graded Ran or marked unproven", /^#+\s*the one fact[^\n]*\n[\s\S]{0,400}?\b(Ran|unproven)\b/im]],
   },
+  "correct": {
+    proseMax: 300, leadMax: 50, doNextMax: 0,
+    opensWith: "table",
+    sections: [/^#+\s*classes/im, /^#+\s*proof/im, /^#+\s*rule table/im],
+    citedTables: [],
+    locatedSection: /classes/,
+    commitsLocate: true,
+    vocab: [/\b(architecture|types?|check|test|prose|none|not a class)\b/i],
+    requireLine: [["M15", "the proof section pastes output", /^#+\s*proof[^\n]*\n[\s\S]*?```/im]],
+    receipt: /\bnot pushed\b|\bnothing (was )?pushed\b|\bno push\b/i,
+  },
 };
 
 // What counts as "located". A finding must be checkable by someone who has
