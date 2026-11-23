@@ -108,6 +108,7 @@ made every downstream width unknowable.
   stages; the other items continue. `.filter(Boolean)` the result.
 - `parallel()` is the same: a thunk that throws resolves to `null`; the call
   itself never rejects.
-- Per call, ≤ 4096 items. Concurrency is `min(16, CPUs − 2)` per workflow;
-  the rest queue. A hundred items finish; a handful run at once —
+- Per call, ≤ 4096 items. Concurrency is 3 by default
+  (`principle-guard-the-machine`), up to `min(16, CPUs − 2)` per workflow when
+  the user opted into that scale; the rest queue. A hundred items finish; a handful run at once —
   `cost-model.md` for what that does to the critical path.

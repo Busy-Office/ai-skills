@@ -38,13 +38,14 @@ whole graph to another tier and losing the choice.
 
 | cap | value | consequence for the estimate |
 |---|---|---|
-| concurrency per workflow | `min(16, CPUs − 2)` — **not** the core count | a fan-out of width W runs in `ceil(W / cap)` waves |
+| concurrency per workflow | 3 by default (`principle-guard-the-machine`); `min(16, CPUs − 2)` — **not** the core count — only when the user opted into that scale | a fan-out of width W runs in `ceil(W / cap)` waves |
 | items per `parallel()` / `pipeline()` call | 4096 — hard error above | chunk larger lists; never assume truncation |
 | agents per run lifetime | 1000 | a cycle's expected rounds × per-round agents must fit with the synthesis left over |
 | `budget.total` | the user's "+N" directive, when set | a hard ceiling — `agent()` throws past it; reserve the synthesis's share |
 
-On an 8-CPU laptop the cap is 6. On a 16-CPU box it is 14. On a 64-CPU host
-it is 16. Write the number the run will actually get.
+The default cap is 3. Opted into scale: on an 8-CPU laptop it is 6, on a
+16-CPU box 14, on a 64-CPU host 16. Write the number the run will actually
+get.
 
 ---
 

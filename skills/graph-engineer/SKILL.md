@@ -143,9 +143,12 @@ node carries, not by where it sits.
 Then the three numbers, with their formulas: **agents** (static count ×
 fan-out widths, plus the cycle's expected rounds), **critical path**
 (pipeline: the slowest single-item chain; barrier: the slowest node of every
-stage, summed), and the **caps** the run will meet — concurrency is
-`min(16, CPUs − 2)` per workflow, not your core count; ≤ 4096 items per
-`parallel()`/`pipeline()` call; ≤ 1000 agents per run.
+stage, summed), and the **caps** the run will meet — concurrency is 3 by
+default (`principle-guard-the-machine`): the script keeps at most 3 agents in
+flight, so a wider fan-out runs in waves of 3. The platform's
+`min(16, CPUs − 2)` per workflow is the ceiling, used only when the user
+opted into that scale. ≤ 4096 items per `parallel()`/`pipeline()` call;
+≤ 1000 agents per run.
 
 ### 6. Write the script, lint it, close every row
 
@@ -200,8 +203,10 @@ verifier.
 often the last one to be written and the first one people put the big model
 on.
 
-**The cap is not your core count.** `min(16, CPUs − 2)`. A hundred thunks
-finish; a handful run at once. Plan the critical path from that.
+**The cap is 3, not your core count.** 3 by default
+(`principle-guard-the-machine`); `min(16, CPUs − 2)` only when the user opted
+into that scale. A hundred thunks finish; a handful run at once. Plan the
+critical path from that.
 
 **Phase is a label.** `phase()` groups the display and changes nothing about
 execution; inside a stage callback use `opts.phase`, or the labels race.
