@@ -32,13 +32,17 @@ not support.
 
 ### Decisions
 
-- Predict first: before you form a recommendation for a decision you will put to me, write down
-  the answer you predict I will give, and your confidence, from this section and my past answers
-  for that kind in `~/.claude/decision-log.jsonl`. Then form the recommendation.
-- After I answer, append one line to that log (kind, question, options, prediction, prediction
-  confidence, recommendation, confidence, evidence grades, answer, accepted or changed). When I
-  correct you, add the correction with its kind: noise, unproven, obsolete, false-alarm,
-  incomplete, inaction. The log stays on this machine: never commit, publish or send it.
+- Predict first. Before you form a recommendation for a decision you will put to me, spawn a fresh,
+  cheap agent and give it only: the kind, the question, the options, this section, and my past
+  answers for that kind (`grep -E '"kind": ?"<kind>"' ~/.claude/decision-log.jsonl | tail -20`).
+  Append its answer as a prediction line (`type: prediction`, id, kind, question, prediction,
+  prediction confidence, ts). Then form your recommendation and ask.
+- After I answer, append the decision line (kind, question, options, `prediction_id`,
+  recommendation, confidence, evidence grades, answer, accepted or changed); it carries no
+  prediction of its own. If I later overturn a settled decision, append a settled line with
+  `outcome: changed` and `reverses: <its ts>`. When I correct you, add the correction with its kind:
+  noise, unproven, obsolete, false-alarm, incomplete, inaction. The log stays on this machine: never
+  commit, publish or send it.
 - Settle and report afterwards: <kinds, or "none yet">
 - Always ask: land-shared-branch, money-rule, contract-wording, protected-file, irreversible,
   <other kinds the user reserves>

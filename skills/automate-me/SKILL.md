@@ -33,22 +33,23 @@ Take the rule, not the story: no project names, file paths or people carry into 
 ### 2. The decision log
 
 Run `node scripts/decisions.mjs --reserve <kinds the user also keeps>` (default log
-`~/.claude/decision-log.jsonl`; schema, the default reserve list and the graduation rule in
-[references/decision-log.md](references/decision-log.md)). A missing log is normal on a first run;
-the section this skill writes starts one.
+`~/.claude/decision-log.jsonl`). The schema, the default reserve list and the graduation thresholds
+are in [references/decision-log.md](references/decision-log.md), the one place they are stated. A
+missing log is normal on a first run; the section this skill writes starts one.
 
-Scores come from the **prediction** each record carries, made before the recommendation, never from
-the recommendation.
+Scores come from the **prediction line** each decision points at, written by a fresh agent before
+the recommendation, never from the recommendation.
 
-- A kind with status `may-settle` (20+ predictions, 95 %+ right, no reversal in its last 10) may be
-  **proposed** as "settle and report afterwards".
+- A kind with status `may-settle` may be **proposed** as "settle and report afterwards". Read its
+  `tripwire` line first, and say it in the proposal when the prediction never differed from the
+  recommendation.
 - A kind already in the settled list that now reads `ask` goes back: propose removing it.
 - A reserved kind never moves.
 - A correction kind with `propose: true` becomes one proposed rule, written from its notes.
 
 If the log is thin and the user wants history in it, offer `node scripts/backfill.mjs <session.jsonl>`
-on sessions they name: it prints proposed lines (prediction `null`) for them to review, label and
-append themselves.
+on sessions they name: it prints proposed decision lines (no prediction, so never scored) for them
+to review, label and append themselves.
 
 How much to trust a source of confidence (a second-opinion verdict, a test suite) is calibration,
 not the user. It never becomes one of the user's rules.

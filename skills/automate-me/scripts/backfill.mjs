@@ -5,6 +5,8 @@
 // per question the user answered through AskUserQuestion, a proposed decision
 // record (schema in ../references/decision-log.md). The user reviews the lines,
 // fills in each `kind`, and appends the ones they keep to their log themselves.
+// Question text and typed answers are copied verbatim, so review them before
+// keeping them.
 //
 // Usage: node backfill.mjs <session.jsonl> [--kind <slug>]
 //        node backfill.mjs --self-test
@@ -49,7 +51,7 @@ export async function backfill(path, { kind = null } = {}) {
         lines.push({
           ts: r.timestamp ?? askedAt, type: "decision", kind,
           question: q.question, options: options.map(strip),
-          prediction: null, prediction_confidence: null,
+          prediction_id: null,  // no prediction line exists for a past decision
           recommendation, confidence: null, evidence: null,
           mode: "asked", answer,
           // A multi-select answer or a typed "Other" cannot be matched to one option.
@@ -72,7 +74,7 @@ async function selfTest() {
     ["answer against the recommendation → changed", by("Rename").outcome === "changed" && by("Rename").answer === "Keep the name"],
     ["no recommended option → outcome null", by("Which colour").recommendation === null && by("Which colour").outcome === null],
     ["typed answer kept as written", by("Ship").answer === "Ship on Monday instead"],
-    ["prediction left null, mode asked", got.lines.every((l) => l.prediction === null && l.mode === "asked")],
+    ["no prediction: prediction_id null, no inline prediction, mode asked", got.lines.every((l) => l.prediction_id === null && !("prediction" in l) && l.mode === "asked")],
     ["kind left for the user", got.lines.every((l) => l.kind === null)],
     ["declined question counted, not proposed", got.declined === 1],
     ["malformed line counted", got.malformed === 1],

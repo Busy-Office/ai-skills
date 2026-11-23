@@ -1025,19 +1025,22 @@ it. Rules about one repository are listed for that repository, not written.
 
 The section carries a self-check (before a recommendation, plan or "done":
 does it need to exist; every fact graded Ran / Read / Inferred; what is
-missing; what was promised and not done) and a noise filter. It also has
-sessions write down automate-me's predicted answer before forming a
-recommendation, then log the decision you answer (prediction and
-recommendation both), with your corrections tagged by kind, to
-`~/.claude/decision-log.jsonl`. That file never leaves your machine. On the
-next run, `scripts/decisions.mjs` scores each kind on the prediction, not the
-recommendation: at 20 or more predictions, 95 % right and no reversal in the
-last 10, it may be proposed as "settle and report afterwards". Reserved kinds
-never move: landing on a shared branch, money rules, contract wording,
-protected files and anything irreversible by default, plus any you add. A
-correction seen twice becomes a proposed rule. `scripts/backfill.mjs` reads one
-past session and prints proposed log lines from the questions you answered
-(prediction unknown), for you to review and append; it writes nothing.
+missing; what was promised and not done) and a noise filter. Before a
+session puts a decision to you, a fresh, cheap agent predicts your
+answer from that section and your past answers of the same kind, and the
+session logs the prediction first, then the decision, to
+`~/.claude/decision-log.jsonl`, with your corrections tagged by kind. That file
+never leaves your machine. On the next run, `scripts/decisions.mjs` scores
+each kind on the prediction, not the recommendation, and says when a kind may
+be proposed as "settle and report afterwards" (the thresholds are in
+[`decision-log.md`](skills/automate-me/references/decision-log.md)). It also
+says plainly when a kind's prediction never differed from the recommendation.
+Reserved kinds never move: landing on a shared branch, money rules, contract
+wording, protected files and anything irreversible, plus any you add. A
+correction seen twice becomes a proposed rule. `scripts/backfill.mjs` reads
+one past session and prints proposed log lines from the questions you
+answered, verbatim and unscored, for you to review and append; it writes
+nothing.
 
 ```bash
 node skills/automate-me/scripts/decisions.mjs [log] --reserve release
