@@ -176,7 +176,7 @@ Nothing degrades silently: each says which numbers it could not see.
 | [correct](#correct) | Turns a mistake agents keep repeating into a check that makes it impossible, proven on a real past mistake | "agents keep doing X", "stop this happening again", `/busy-office:correct` |
 | [blast-radius](#blast-radius) | What a change can break beyond its diff, with the one fact it is safe because of proven by running code | "blast radius of X", "what could this break", "X already handles Y, right?" |
 | [improve-until-done](#improve-until-done) | Rounds of try, verify, judge, with five stop rules and a record per round | "keep going until it passes", "one more round?", "fix until the review is clean" |
-| [deploy-agents](#deploy-agents) | Model per job, limits, the agent brief, with an optional Workflow script for the feature playbook's build-to-final-check steps | "spawn a builder and a reviewer", "write the agent brief", "which model for this agent" |
+| [deploy-agents](#deploy-agents) | Model per job, limits, the agent brief, with an optional Workflow script for the feature playbook's build-to-fix steps | "spawn a builder and a reviewer", "write the agent brief", "which model for this agent" |
 | [busy-office-mode](#how-it-fits-together) | Routes a multi-step task to one of twelve playbooks and opens its steps as todos | any task with more than one step; `/busy-office:busy-office-mode` |
 | [how](#how-it-fits-together) | How part of a codebase works: overview, key parts, flow, where things live, gotchas | "how does X work", "walk me through X before I change it" |
 | [why](#how-it-fits-together) | Why it is that way, cited, with the sources that came up empty | "why does X work this way", "why did we pick Y" |

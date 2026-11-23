@@ -29,7 +29,8 @@ tool skills cite principles.
   loop family's guard-rail block are gone from the skills that repeated them; each names its
   principle and keeps only what is particular to it.
 - deploy-agents' standard batch is now the feature playbook; its Workflow script runs that
-  playbook's steps 3–7.
+  playbook's Build to Fix rounds steps, with targeted checks only. The full suite stays with the
+  coordinator, once per batch.
 - The seven loop-family "Related" sections point to the map in `busy-office-mode`.
 
 ### Removed
