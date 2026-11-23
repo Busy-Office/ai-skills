@@ -268,7 +268,10 @@ export function barCheck(skill, md, collector = null, target = null) {
   if (spec.doNextMax) {
     const heading = spec.doNext ?? /do next|what the numbers say to do|to decide/;
     const doNext = (md.match(new RegExp(`^#+\\s*(?:${heading.source})[^\\n]*\\n([\\s\\S]*?)(?=\\n#{1,6}\\s|\\n---|(?![\\s\\S]))`, "im"))?.[1] ?? "");
-    const items = (doNext.match(/^\s*(\d+\.|[-*])\s+/gm) ?? []).length;
+    // Count the outermost list only: a question's options or an item's
+    // sub-bullets are indented under it and are not items of their own.
+    const indents = (doNext.match(/^[ \t]*(?=(\d+\.|[-*])\s+)/gm) ?? []).map((s) => s.length);
+    const items = indents.filter((n) => n === Math.min(...indents)).length;
     add("M6", `do-next ≤ ${spec.doNextMax} items`, items ? `${items} items` : "section not found", items > 0 && items <= spec.doNextMax);
   }
 
