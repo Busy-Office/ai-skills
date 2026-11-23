@@ -116,7 +116,12 @@ export const SPECS = {
     citedTables: [],
     locatedSection: /risks/,
     doNext: /before it lands/,
-    requireLine: [["M15", "the one fact is graded Ran or marked unproven", /^#+\s*the one fact[^\n]*\n[\s\S]{0,400}?\b(Ran|unproven)\b/im]],
+    // Ran is the grade word, case-sensitive ("where it ran" is not a grade), and a
+    // Ran fact carries its proof: a fenced block with a `$ command` and its output
+    requireLine: [["M15", "the one fact is unproven, or graded Ran with a proof block", (md) => {
+      const fact = section(md, /the one fact/i);
+      return /\bunproven\b/i.test(fact) || (/\bRan\b/.test(fact) && /```[^\n]*\n\$ \S[^\n]*\n(?!```)[^\n]*\S/.test(fact));
+    }]],
   },
   "correct": {
     proseMax: 300, leadMax: 50, doNextMax: 0,
@@ -183,6 +188,22 @@ function rowsUnder(md, headingRe) {
   return m ? dataRows(m[m.length - 1].split("\n").filter((l) => /^\s*\|/.test(l))) : [];
 }
 
+// The body under the first heading matching headingRe, up to the next heading
+// outside a fence (a `# comment` inside a proof block does not end it).
+function section(md, headingRe) {
+  const out = [];
+  let inFence = false, on = false;
+  for (const l of md.split("\n")) {
+    if (/^\s*```/.test(l)) inFence = !inFence;
+    else if (!inFence && /^#{1,6}\s/.test(l)) {
+      if (on) break;
+      if (headingRe.test(l.replace(/^#+\s*/, ""))) { on = true; continue; }
+    }
+    if (on) out.push(l);
+  }
+  return out.join("\n");
+}
+
 function dataRows(tableLines) {
   return tableLines.filter((l) => !/^\s*\|[\s:|-]+\|\s*$/.test(l) && (l.match(/\|/g) ?? []).length >= 2);
 }
@@ -220,7 +241,8 @@ export function barCheck(skill, md, collector = null, target = null) {
   const firstFence = afterTitle.search(/^\s*```/m);
   const firstTable = afterTitle.search(/^\s*\|/m);
   const firstBlock = [firstFence, firstTable].filter((n) => n >= 0).sort((a, b2) => a - b2)[0] ?? -1;
-  const lead = firstBlock < 0 ? words(b.prose) : words(afterTitle.slice(0, firstBlock).split("\n"));
+  // the lede is prose: a section heading above the first table is not part of it
+  const lead = firstBlock < 0 ? words(b.prose) : words(afterTitle.slice(0, firstBlock).split("\n").filter((l) => !/^\s*#{1,6}\s/.test(l)));
   add("M2", `lede ≤ ${spec.leadMax} words`, `${lead} words before the first ${spec.opensWith}`, lead <= spec.leadMax);
 
   const opener = spec.opensWith === "diagram"
@@ -268,7 +290,10 @@ export function barCheck(skill, md, collector = null, target = null) {
   }
 
   // M15+ — lines a skill's template makes mandatory (e.g. loop-doctor's runway)
-  for (const [id, label, re] of spec.requireLine ?? []) add(id, label, re.test(md) ? "found" : "absent", re.test(md));
+  for (const [id, label, re] of spec.requireLine ?? []) {
+    const ok = typeof re === "function" ? re(md) : re.test(md);
+    add(id, label, ok ? "found" : "absent", ok);
+  }
 
   // M6 — do-next length (a class whose reply has no next steps sets doNextMax 0)
   if (spec.doNextMax) {
