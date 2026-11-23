@@ -13,8 +13,8 @@ nothing is written yet.>
 
 | signal | source | verdict |
 |---|---|---|
-| <a preference> | `<memory>.md:<line>` in 2 projects | kept |
-| <a preference> | 2 sessions (`<id>`, `<id>`) | kept |
+| <a preference> | `<memory>.md:<line>` in <2 or more> projects | kept |
+| <a preference> | <2 or more> sessions (`<id>`, `<id>`) | kept |
 | <a preference> | 1 session (`<id>`) | dropped |
 | <a repository's command> | `<memory>.md:<line>` | repository |
 | <how far to trust a judge or a suite> | `<memory>.md:<line>` | calibration |

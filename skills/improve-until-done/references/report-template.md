@@ -14,15 +14,15 @@ order.>
 
 | batch | decision | first rule that holds | budget (used / cap) | evidence |
 |---|---|---|---|---|
-| A cache | stop: plateau | R1 fixed in round 2, back in round 3 | 3/3 rounds · 6/8 agents · 80/120 min | `cases.md:20` |
-| D retry | go again: fix R3 | none: R1 and R2 fixed last round | 2/3 · 3/6 · 40/90 | `cases.md:57` |
+| <batch> | stop: <the rule> | <the rule that holds, and the evidence for it> | <n>/<cap> rounds · <n>/<cap> agents · <n>/<cap> min | `<file>:<line>` |
+| <batch> | go again: <the finding it aims at> | none: <the progress that rules plateau out> | <n>/<cap> · <n>/<cap> · <n>/<cap> | `<file>:<line>` |
 
 ## Round records
 
 ```text
-Round A3 — tried: <the change, one line>
-Evidence: gate green (Ran: <command>), R1 back (Read: review note), <claim> Inferred
-Decision: stop: plateau — <what is stuck; the approaches spent>
+Round <batch><n> — tried: <the change, one line>
+Evidence: <each result with its grade: Ran: <command>, Read: <note>, or Inferred>
+Decision: <the decision> — <its report, per the list below>
 ```
 
 ---

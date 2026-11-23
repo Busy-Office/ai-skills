@@ -13,12 +13,11 @@ it pastes into the spawn as it is.
 
 | defect | where | rule it breaks | fix |
 |---|---|---|---|
-| 4 agents in flight | `PLAN.md:13` | limit: 3 agents at once | waves below |
-| money code on a cheap model | `PLAN.md:17` | job table: the strongest model, high effort | strongest model, high effort |
+| <what is wrong> | `<file>:<line>` | <the brief field, job-table row or limit> | <the fix> |
 
 ## Fixed briefs
 
-### J1 — <the plan's own job heading>
+### <job id> — <the plan's own job heading>
 
 ```text
 Model: <model and effort, from the job table>
@@ -30,9 +29,9 @@ Test: <targeted commands>; never the full suite — the coordinator runs it
 Report: what changed (files, commits), then each claim graded Ran, Read or Inferred
 ```
 
-### J5 — <job>
+### <job id> — <job>
 
-Unchanged: `PLAN.md:<lines>`.
+Unchanged: `<plan>:<lines>`.
 
 ## Launch
 
