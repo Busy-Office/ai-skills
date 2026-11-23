@@ -1,6 +1,6 @@
 ---
 name: deploy-agents
-description: "How to deploy subagents on a batch of work: which model and effort per job, the limits, the brief every agent gets, and an optional Workflow script for the build-to-final-check steps. Use before spawning a builder, reviewer, fixer or search agent, when writing an agent brief, or before citing an agent's report. Designing or reviewing the graph of a multi-agent run is graph-engineer."
+description: "How to deploy subagents on a batch of work: which model and effort per job, the limits, the brief every agent gets, and an optional Workflow script for the build-to-fix steps. Use before spawning a builder, reviewer, fixer or search agent, when writing an agent brief, or before citing an agent's report. Designing or reviewing the graph of a multi-agent run is graph-engineer."
 ---
 
 # Deploy agents
@@ -43,12 +43,12 @@ The steps from worktree to landing are the `feature` playbook in `busy-office-mo
 
 ## Workflow option (trial on one batch first; compare tokens with the manual way)
 
-[`references/batch.workflow.js`](references/batch.workflow.js) runs the `feature` playbook's steps
-3–7 as one Workflow script: builder, a cheap verifier on each edge, a fresh reviewer, a fresh fixer
-while should-fix findings stay open, and the final check only on done, under the
-`improve-until-done` stop rules. Its header lists every status it can return. Only the round records
-and the result come back to your context. The other steps stay with you, and you still re-run the
-final check before citing it.
+[`references/batch.workflow.js`](references/batch.workflow.js) runs the `feature` playbook's Build,
+Verify claims, Review and Fix rounds steps as one Workflow script: builder, a cheap verifier on each
+edge, a fresh reviewer, and a fresh fixer while should-fix findings stay open, under the
+`improve-until-done` stop rules. Agents in it run targeted checks only. Its header lists every
+status it can return. Only the round records and the result come back to your context. The other
+steps stay with you: on done, you run the Final check (the full suite, alone) after the workflow.
 
 The Workflow tool runs only when the user explicitly opts in. Fill `args` from the brief (the
 header comment lists the fields). Every agent in it is a fresh context; set `reviewModel` to another

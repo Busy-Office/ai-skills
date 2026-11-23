@@ -16,14 +16,14 @@ const SRC = readFileSync(join(HERE, "..", "references", "batch.workflow.js"), "u
   .replace("export const meta", "const meta");
 const AsyncFunction = (async () => {}).constructor;
 const body = new AsyncFunction("agent", "phase", "log", "args", "budget", SRC);
-const STATUSES = ["done", "plateau", "budget", "scope growth", "cannot verify", "unproven", "final red", "agent failed"];
+const STATUSES = ["done", "plateau", "budget", "scope growth", "cannot verify", "unproven", "agent failed"];
 
 const f = (id) => ({ id, severity: "should-fix", where: "a.js:1", problem: id });
 const held = (grade = "Ran") => ({ results: [{ claim: "tests pass", held: true, couldRun: true, grade, evidence: "…" }] });
 
 // reviews: findings per review round; verify(round): the verifier's answer; the rest as named
 export async function simulate({ reviews = [[]], verify = () => held(), grade = "Ran", noClaims = false, scope = [], reviewScope = [],
-  final = { passed: true, tail: "ok" }, args = {}, budget = { total: null, remaining: () => Infinity } } = {}) {
+  args = {}, budget = { total: null, remaining: () => Infinity } } = {}) {
   let review = 0;
   const calls = [], prompts = {}, logs = [];
   const agent = async (prompt, opts) => {
@@ -33,7 +33,6 @@ export async function simulate({ reviews = [[]], verify = () => held(), grade = 
     if (label === "build" || label.startsWith("fix")) return { summary: "did it", claims: noClaims ? [] : [{ claim: "tests pass", grade, check: "npm test" }], scopeGrowth: label === "build" ? scope : [] };
     if (label.startsWith("verify")) return verify(Number(label.slice(8)));
     if (label.startsWith("review")) return { findings: reviews[review++] ?? [], scopeGrowth: reviewScope };
-    if (label === "final check") return final;
     throw new Error(`unexpected agent ${label}`);
   };
   const out = await body(agent, () => {}, (m) => logs.push(m),
@@ -44,15 +43,14 @@ export async function simulate({ reviews = [[]], verify = () => held(), grade = 
 async function selfTest() {
   const s = simulate;
   const checks = [
-    ["clean first review → done, final check runs and passes", async () => { const r = await s(); return r.status === "done" && r.calls.includes("final check"); }],
+    ["clean first review → done, after build, verify and review only", async () => { const r = await s(); return r.status === "done" && r.calls.join() === "build,verify r1,review r1"; }],
+    ["no agent is asked to run the full suite", async () => { const r = await s({ reviews: [[f("x")], []] }); return Object.values(r.prompts).every((p) => /Never run the full suite \(npm test\); the coordinator runs it/.test(p)); }],
     ["fixed on round 2 → done", async () => (await s({ reviews: [[f("x")], []] })).status === "done"],
     ["a fixed finding returns → plateau", async () => (await s({ reviews: [[f("x")], [f("y")], [f("x")]] })).status === "plateau"],
     ["the reviewer sees fixed findings as objects, with their ids", async () => /"fixed":\[\{"id":"x"/.test((await s({ reviews: [[f("x")], [f("y")], [f("z")]] })).prompts["review r3"].replace(/\s/g, ""))],
     ["two rounds fixing nothing new → plateau", async () => (await s({ reviews: [[f("x")], [f("x"), f("y")], [f("x"), f("y")]] })).status === "plateau"],
-    ["progress every round → budget after 3 reviews, no final check", async () => { const r = await s({ reviews: [[f("a")], [f("b")], [f("c")], [f("d")]] }); return r.status === "budget" && r.calls.filter((c) => c.startsWith("review")).length === 3 && !r.calls.includes("final check"); }],
+    ["progress every round → budget after 3 reviews", async () => { const r = await s({ reviews: [[f("a")], [f("b")], [f("c")], [f("d")]] }); return r.status === "budget" && r.calls.filter((c) => c.startsWith("review")).length === 3; }],
     ["token budget below one round → budget before the next round", async () => { const r = await s({ budget: { total: 1000, remaining: () => 10 } }); return r.status === "budget" && !r.calls.some((c) => c.startsWith("verify")); }],
-    ["final check red → final red, not done", async () => (await s({ final: { passed: false, tail: "1 failed" } })).status === "final red"],
-    ["final check did not return → cannot verify", async () => (await s({ final: null })).status === "cannot verify"],
     ["verifier did not return → cannot verify", async () => (await s({ verify: () => null })).status === "cannot verify"],
     ["a check could not run → cannot verify", async () => (await s({ verify: () => ({ results: [{ claim: "tests pass", held: false, couldRun: false, grade: "Inferred", evidence: "no db" }] }) })).status === "cannot verify"],
     ["a claim that fails re-checking is a finding for the next round", async () => { const r = await s({ verify: (n) => (n === 1 ? { results: [{ claim: "tests pass", held: false, couldRun: true, grade: "Ran", evidence: "1 failed" }] } : held()) }); return r.status === "done" && /tests pass/.test(r.prompts["fix r1"]); }],
@@ -63,7 +61,7 @@ async function selfTest() {
     ["reviewer reports scope growth → scope growth", async () => (await s({ reviewScope: ["new permission"] })).status === "scope growth"],
     ["reviewer and verifier get the rules", async () => { const r = await s(); return ["review r1", "verify r1"].every((l) => /Never push/.test(r.prompts[l]) && /Never run the full suite/.test(r.prompts[l])); }],
     ["same model for builder and reviewer → logged", async () => (await s({ args: { buildModel: "m", reviewModel: "m" } })).logs.some((l) => /same model/.test(l))],
-    ["every status is one of the stop rules", async () => { const all = await Promise.all([s(), s({ final: null }), s({ scope: ["x"] }), s({ grade: "Inferred", verify: () => held("Inferred") })]); return all.every((r) => STATUSES.includes(r.status) && typeof r.why === "string"); }],
+    ["every status is one of the stop rules", async () => { const all = await Promise.all([s(), s({ verify: () => null }), s({ scope: ["x"] }), s({ grade: "Inferred", verify: () => held("Inferred") })]); return all.every((r) => STATUSES.includes(r.status) && typeof r.why === "string"); }],
   ];
   let failed = 0;
   for (const [name, run] of checks) {

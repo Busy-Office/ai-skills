@@ -1,13 +1,12 @@
 export const meta = {
   name: 'standard-batch',
-  description: 'Build one batch in an existing worktree, verify its claims, review it fresh, fix in bounded rounds, then run the final check alone',
-  whenToUse: 'Steps 3-7 of the busy-office-mode feature playbook for one batch, after the user opted in to a workflow. Trial on one batch first; compare tokens with the manual way.',
+  description: 'Build one batch in an existing worktree, verify its claims, review it fresh and fix in bounded rounds; the coordinator runs the full suite afterwards',
+  whenToUse: 'The Build, Verify claims, Review and Fix rounds steps of the busy-office-mode feature playbook for one batch, after the user opted in to a workflow. Trial on one batch first; compare tokens with the manual way.',
   phases: [
     { title: 'Build', detail: 'one builder in the worktree' },
     { title: 'Verify', detail: 'a cheap agent re-runs every claim' },
     { title: 'Review', detail: 'a fresh reviewer' },
     { title: 'Fix', detail: 'a fresh fixer per round' },
-    { title: 'Final', detail: 'the full check, alone' },
   ],
 }
 
@@ -17,24 +16,26 @@ export const meta = {
 //   dontTouch: [...],                // paths and actions out of bounds
 //   decisions: '...',                // the user's decisions, verbatim
 //   testCommands: [...],             // targeted checks the agents may run
-//   finalCheck: '...',               // the full suite: run once, alone, at the end
+//   finalCheck: '...',               // the full suite, named so no agent runs it; the coordinator
+//                                    // runs it once, alone, after the workflow
 //   buildModel, reviewModel,         // optional; every agent is a fresh context either way
 //   maxRounds: 3,                    // review rounds (improve-until-done budget), never above 3
 //   roundTokens: 100000,             // with a "+Nk" budget: stop when less than this remains
 // }
 // Sequential by design: one agent touches the worktree at a time, so no
-// isolation option and no two test suites at once.
+// isolation option. Agents run targeted checks only; no agent runs the full
+// suite (principle-guard-the-machine).
 //
-// Returns { status, why, rounds, final }. status, the improve-until-done stop
-// rules plus three of this script's own:
-//   done           clean review, every claim Ran or Read, final check green
+// Returns { status, why, rounds }. status, the improve-until-done stop
+// rules plus two of this script's own:
+//   done           clean review, every claim Ran or Read; the coordinator's
+//                  full suite comes next
 //   plateau        a fixed finding came back, or two rounds fixed nothing new
 //   budget         3 review rounds used, or the "+Nk" budget cannot pay a round
 //                  (agent count and minutes stay with the coordinator)
 //   scope growth   an agent named a new contract, package or permission
-//   cannot verify  a check, the verifier, the reviewer or the final check did not run
+//   cannot verify  a check, the verifier or the reviewer did not run
 //   unproven       clean review, but a claim is still Inferred or none was returned
-//   final red      the full suite failed after a clean review
 //   agent failed   the builder or a fixer did not return
 
 const SCOPE = { type: 'array', items: { type: 'string' }, description: 'a new contract, package or permission the work needs; empty if none' }
@@ -103,12 +104,6 @@ const REVIEW = {
   required: ['findings', 'scopeGrowth'],
 }
 
-const FINAL = {
-  type: 'object',
-  properties: { passed: { type: 'boolean' }, tail: { type: 'string', description: 'last lines of the output' } },
-  required: ['passed', 'tail'],
-}
-
 const a = args
 const maxRounds = Math.min(a.maxRounds ?? 3, 3)
 const roundTokens = a.roundTokens ?? 100000
@@ -116,11 +111,11 @@ const rules = [
   `Work only in ${a.worktree} on branch ${a.branch}. Never push, merge or land.`,
   `Do not touch: ${(a.dontTouch ?? []).join('; ') || 'nothing listed'}.`,
   `The user's decisions, verbatim:\n${a.decisions}`,
-  `Targeted checks you may run: ${(a.testCommands ?? []).join(' | ') || 'none listed'}. Never run the full suite (${a.finalCheck}); it runs once, alone, at the end.`,
+  `Targeted checks you may run: ${(a.testCommands ?? []).join(' | ') || 'none listed'}. Never run the full suite (${a.finalCheck}); the coordinator runs it after this workflow.`,
   'If the goal needs a new contract, package or permission, do not add it: name it in scopeGrowth.',
   'Grade every claim Ran (a tool printed it), Read (file:line) or Inferred.',
 ].join('\n')
-const stop = (status, why, rounds, final = null) => ({ status, why, rounds, final })
+const stop = (status, why, rounds) => ({ status, why, rounds })
 if (a.buildModel && a.buildModel === a.reviewModel) log('builder and reviewer run on the same model; the reviewer is still a fresh context')
 
 phase('Build')
@@ -187,13 +182,6 @@ for (let round = 1; round <= maxRounds && !result; round++) {
   if (!work) { result = ['agent failed', `the fixer did not return in round ${round}`]; break }
 }
 if (!result) result = ['budget', `${maxRounds} review rounds used`]
-if (result[0] !== 'done') return stop(result[0], result[1], rounds)
 
-phase('Final')
-const final = await agent(`In ${a.worktree}, run exactly this, alone, and nothing else: ${a.finalCheck}. Never push.`,
-  { label: 'final check', schema: FINAL, effort: 'low' })
-if (!final) return stop('cannot verify', 'the final check did not return — re-run it alone, then ask the user', rounds)
-if (!final.passed) return stop('final red', 'the full suite failed after a clean review', rounds, final)
-
-// The coordinator still re-runs the final check before citing it, writes the explain page and asks the user.
-return stop('done', result[1], rounds, final)
+// On done, the coordinator runs the full suite alone, then explains the batch and lands it.
+return stop(result[0], result[1], rounds)
