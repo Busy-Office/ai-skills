@@ -38,7 +38,7 @@ Three lines per round, kept with the work (the commit body, the batch notes, or 
 ```
 Round 2 — tried: <the change, one line>
 Evidence: gate green (Ran: <command>), 1 should-fix left (Read: review note), <claim> Inferred
-Decision: go again — fix <finding> | stop: done | stop: plateau | ask: scope growth (<what>)
+Decision: go again — fix <finding> | stop: done | stop: plateau | stop: budget | ask: scope growth (<what>) | cannot verify: <the re-run>
 ```
 
 The last record is the report: what was tried, what the evidence is and its grade, and why it
