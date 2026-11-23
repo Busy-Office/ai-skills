@@ -32,13 +32,18 @@ Five more skills get a gauntlet, and graph-engineer's fan-out rule counts what i
   once (only a singular `wave`, `chunk` or `batch` counts as 3), and a `parallel()` result keeps its
   input's width, so `verification.md`'s judge panel no longer fires. Only a fan-out in a callback
   nests: one awaited in another's list expression has finished before the outer starts. A singular
-  wave reads the size argument of the call its `for … of` iterates (`waves(xs, 5)` is 5). The
+  wave reads the size argument of the call its own `for … of` iterates (`waves(xs, 5)` is 5;
+  `chunk(xs, CAP)` reads `const CAP = 5`), so two loops that reuse `wave` each count their own. The
   rule's comment names its known limits (a fan-out inside a helper function, a push-filled array).
   The lint's GOOD example keeps 3 in flight.
 - graph-lint's `staticAgentEstimate` follows the same `.slice` and const widths; it is an upper
   bound (a filtered list counts at its input's width), and `estimateNote` says so.
 - bar-check's do-next count (M6) counts the outermost list only, so a question's options are not
   items: automate-me's two questions of three options are 2, not 8.
+- bar-check's lede (M2) counts prose only, not a section heading above the first table. Blast-radius
+  M15 passes a fact written **unproven**, or graded `Ran` (the grade word, case-sensitive) with a
+  proof block holding a `$ command` and its output; "where it ran" on an Inferred fact no longer
+  passes.
 - solo-flow's two-branch variant: landing on the shared `develop` needs the owner's yes to the tip
   shown, unless the repository's instructions authorise it.
 - `evals/consistency.mjs` takes skill, playbook and reference names from `git ls-files`, like the
