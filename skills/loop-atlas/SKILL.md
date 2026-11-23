@@ -142,7 +142,4 @@ everything; motion only says what happens in what order.
 
 ## Related
 
-`loop-doctor` judges whether the design is sound; `loop-economist` what
-the runs cost and whether the right agent did the work — this skill only
-shows what is there. The deck's vacancies and the flow's gaps are the
-natural input to both.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.

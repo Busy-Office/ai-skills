@@ -1,7 +1,7 @@
 export const meta = {
   name: 'standard-batch',
   description: 'Build one batch in an existing worktree, verify its claims, review it fresh, fix in bounded rounds, then run the final check alone',
-  whenToUse: 'One batch of the deploy-agents standard batch, after the user opted in to a workflow. Trial on one batch first; compare tokens with the manual way.',
+  whenToUse: 'Steps 3-7 of the busy-office-mode feature playbook for one batch, after the user opted in to a workflow. Trial on one batch first; compare tokens with the manual way.',
   phases: [
     { title: 'Build', detail: 'one builder in the worktree' },
     { title: 'Verify', detail: 'a cheap agent re-runs every claim' },

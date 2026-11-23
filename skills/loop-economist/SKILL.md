@@ -221,14 +221,4 @@ and prefer "in this window" to "always".
 
 ## Related
 
-`loop-doctor` reads the same loop's documents and judges the design;
-`loop-atlas` draws the flow and the crew as they are; `requeue` fixes the input
-when the items were never tasks; `sharpen-intent` fixes what the items are
-ranked against. Step 6 names which of them the findings actually belong to —
-that hand-off is part of the review, not an afterthought.
-
-When the binding constraint is *the actor* and the fix is the shape of the
-work inside a run — a fan-out that should be a pipeline, a verifier that
-needs its own node, a discovery loop that never converges — that is
-`graph-engineer`'s question: this skill measures the bill, that one redraws
-the graph.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.

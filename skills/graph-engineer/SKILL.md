@@ -231,12 +231,4 @@ that difficulty is the first finding.
 
 ## Related
 
-This skill is the shape of **one run's** work. The scheduled loop that
-wakes, runs, and re-arms is a different subject with four skills of its own:
-`loop-doctor` (is the tick's design sound), `loop-economist` (what the runs
-cost and whether the right agent did the work — when its finding is *the
-actor* and the fix is orchestration structure, it hands off here),
-`loop-atlas` (the flow and the crew, drawn), `wake-weight` (what a tick pays
-before it starts). `requeue` and `sharpen-intent` fix what the loop is fed
-and what it is for. None of them draws the graph inside a run; none of this
-skill judges the loop around it.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.

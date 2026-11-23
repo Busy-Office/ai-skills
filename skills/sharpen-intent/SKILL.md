@@ -156,7 +156,4 @@ one of them is right" is a complete and cheap answer.
 
 ## Related
 
-`requeue` ranks the queue against this document — re-run it after the
-intent changes. `loop-doctor` checks the loop is anchored to it.
-`loop-economist` arrives here when the work is cheap, converging, and
-pointed at nothing.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.

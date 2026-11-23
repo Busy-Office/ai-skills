@@ -271,18 +271,4 @@ files, say so once — that difficulty is itself a finding.
 
 ## Related
 
-It hands off rather than repeats: ambiguous queue items to `requeue`; a
-vague or missing intent to `sharpen-intent`; what the runs actually cost to
-`loop-economist` (which also runs the concept's weekly cost pass); the
-shape inside one tick to `graph-engineer`; every cheap judgement to `jev`.
-
-Four siblings share this loop's subject and answer different questions:
-`loop-economist` (what the runs actually cost and whether the right agent did
-the work), `loop-atlas` (what the whole thing looks like, and who is on the
-crew), `requeue` (what the loop should be fed next) and `sharpen-intent` (what
-the whole thing is for). This skill judges the **design**: whether the tick is
-sound, safe, and says one thing. When the files are fine but the runs are
-expensive, it is the economist's question, not this one. And the shape of
-the work *inside* one tick — how a job fans out across subagents, where the
-verifier sits, whether a barrier is earned — is `graph-engineer`'s subject:
-this skill reviews the loop around a run, that one the graph within it.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.

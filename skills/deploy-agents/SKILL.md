@@ -1,6 +1,6 @@
 ---
 name: deploy-agents
-description: "How to deploy subagents on a batch of work: which model and effort per job, at most 3 agents and one full test suite at a time, the brief every agent gets, and the standard batch from worktree to landing, with an optional Workflow script for it. Use before spawning a builder, reviewer, fixer or search agent, when writing an agent brief, or before citing an agent's report. Designing or reviewing the graph of a multi-agent run is graph-engineer."
+description: "How to deploy subagents on a batch of work: which model and effort per job, the limits, the brief every agent gets, and an optional Workflow script for the build-to-final-check steps. Use before spawning a builder, reviewer, fixer or search agent, when writing an agent brief, or before citing an agent's report. Designing or reviewing the graph of a multi-agent run is graph-engineer."
 ---
 
 # Deploy agents
@@ -37,30 +37,18 @@ Report: what changed (files, commits), then each claim graded Ran, Read or Infer
         (principle-prove-it-works), with the command or line that shows it
 ```
 
-## The standard batch
+## The batch
 
-1. **Worktree** — create one branch and worktree for the batch.
-2. **Build** — one builder, briefed as above.
-3. **Verify** — re-run the builder's Ran claims and open its Read citations yourself, or hand that
-   to a cheap agent. A claim that does not reproduce is a finding, not a fact.
-4. **Review** — a fresh reviewer (another model or a new context) reads the diff against the goal
-   and the decisions, and lists should-fix and nice-to-have findings.
-5. **Fix** — a fresh fixer per round, briefed with the open findings. Rounds and when to stop
-   follow `improve-until-done`: at most 3 review rounds, stop on done, plateau, budget, scope growth
-   or a check that cannot run. A claim that fails re-checking goes to the next fix round.
-6. **Final check** — the full suite, run alone, by you.
-7. **Explain** — one short page or message: what changed, why, the evidence with its grades, what
-   is still open.
-8. **User yes** — ask one yes/no question about that exact version.
-9. **Land** — through the repository's own flow, only after the yes.
+The steps from worktree to landing are the `feature` playbook in `busy-office-mode`.
 
 ## Workflow option (trial on one batch first; compare tokens with the manual way)
 
-[`references/batch.workflow.js`](references/batch.workflow.js) runs steps 2–6 as one Workflow
-script: builder, a cheap verifier on each edge, a fresh reviewer, a fresh fixer while should-fix
-findings stay open, and the final check only on done, under the `improve-until-done` stop rules. Its
-header lists every status it can return. Only the round records and the result come back to your
-context. Steps 1 and 7–9 stay with you, and you still re-run the final check before citing it.
+[`references/batch.workflow.js`](references/batch.workflow.js) runs the `feature` playbook's steps
+3–7 as one Workflow script: builder, a cheap verifier on each edge, a fresh reviewer, a fresh fixer
+while should-fix findings stay open, and the final check only on done, under the
+`improve-until-done` stop rules. Its header lists every status it can return. Only the round records
+and the result come back to your context. The other steps stay with you, and you still re-run the
+final check before citing it.
 
 The Workflow tool runs only when the user explicitly opts in. Fill `args` from the brief (the
 header comment lists the fields). Every agent in it is a fresh context; set `reviewModel` to another

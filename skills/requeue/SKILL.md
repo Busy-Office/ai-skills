@@ -134,5 +134,4 @@ items need sharpening" is a good outcome and a cheap one.
 
 ## Related
 
-`loop-economist` measures what the runs cost and hands off here when the
-binding constraint is the input. `loop-doctor` reviews the loop's design.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.

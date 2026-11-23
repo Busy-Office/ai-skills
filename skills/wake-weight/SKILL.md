@@ -128,6 +128,4 @@ thing that goes out of date. Last resort, with a regeneration trigger.
 
 ## Related
 
-`loop-economist` measures the whole bill and hands off here when the preamble
-is the leak; `loop-doctor` finds the duplicated rules that make part of this
-weight; `requeue` archives the queue this skill says is too heavy to read.
+Siblings and hand-offs: the loop-family map in `busy-office-mode`.
