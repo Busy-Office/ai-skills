@@ -93,4 +93,55 @@ for (const { rule, of: n, bad } of rows) {
   }
 }
 console.log(`\n${checked - failed}/${checked} shared rules consistent across ${collectors.length} collectors`);
-process.exit(failed ? 1 : 0);
+
+// Every skill a SKILL.md or a playbook names must exist. Skills now point at
+// each other (principles, the mode's playbooks, the loop-family map), so a
+// renamed or removed skill leaves dangling pointers; animated-svg was named
+// for months by a skill that nothing shipped. Three forms count as a
+// reference: `busy-office:<x>`, `principle-<x>`, and a backticked
+// hyphenated name. A one-word backticked name (`jev`) cannot be told apart
+// from a command, so only the first two forms catch a missing one-word skill.
+const EXTERNAL_SKILLS = new Set([
+  // a repository's own skills, named as "the repository's own step"
+  "explain-landing", "capability-contracts", "event-contracts", "migration-safety",
+  "safe-metadata-edits", "write-the-docs", "lint-rules", "diagrams", "loop",
+  // Claude Code's own
+  "artifact-design",
+]);
+// Backticked hyphenated words that are not skills at all.
+const NOT_SKILLS = new Set(["may-settle", "notion-fetch", "notion-update-page"]);
+
+const skillNames = new Set(readdirSync(SKILLS).filter((d) => existsSync(join(SKILLS, d, "SKILL.md"))));
+const PLAYBOOKS = join(SKILLS, "busy-office-mode", "playbooks");
+const playbookNames = new Set(existsSync(PLAYBOOKS) ? readdirSync(PLAYBOOKS).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)) : []);
+const docs = [
+  ...[...skillNames].map((s) => ({ skill: s, file: join(SKILLS, s, "SKILL.md") })),
+  ...[...playbookNames].map((p) => ({ skill: "busy-office-mode", file: join(PLAYBOOKS, `${p}.md`) })),
+];
+
+const dangling = [];
+let refs = 0;
+for (const { skill, file } of docs) {
+  const refDir = join(SKILLS, skill, "references");
+  const ownRefs = new Set(existsSync(refDir) ? readdirSync(refDir).map((f) => f.replace(/\.[^.]+$/, "")) : []);
+  readFileSync(file, "utf8").split("\n").forEach((line, i) => {
+    const named = [
+      ...[...line.matchAll(/busy-office:([a-z0-9-]+)/g)].map((m) => [m[1], true]),
+      ...[...line.matchAll(/\b(principle-[a-z0-9]+(?:-[a-z0-9]+)*)/g)].map((m) => [m[1], true]),
+      ...[...line.matchAll(/`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`/g)].map((m) => [m[1], false]),
+    ];
+    for (const [name, strict] of named) {
+      refs++;
+      if (skillNames.has(name) || EXTERNAL_SKILLS.has(name)) continue;
+      if (!strict && (playbookNames.has(name) || ownRefs.has(name) || NOT_SKILLS.has(name))) continue;
+      dangling.push(`${file.slice(SKILLS.length + 1)}:${i + 1} names \`${name}\``);
+    }
+  });
+}
+if (!dangling.length) {
+  console.log(`✓ every skill named exists — ${refs} references across ${docs.length} skill and playbook files`);
+} else {
+  console.log(`✗ ${dangling.length} named skills do not exist (add the skill, fix the name, or allow-list a real external one)`);
+  for (const d of dangling) console.log(`    · ${d}`);
+}
+process.exit(failed || dangling.length ? 1 : 0);

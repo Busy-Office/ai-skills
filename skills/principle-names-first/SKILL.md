@@ -10,7 +10,7 @@ reading from a phone between other things.
 
 **The rule.** Say what a thing is in plain words, then give its code.
 
-- First mention: the plain name, the code after it — "the nightly export (`exp-02`)", "the stop
+- First mention: the plain name, the code after it — "the nightly export (`export_nightly`)", "the stop
   rules (`improve-until-done`)", "the payments tests (`npm test -w payments`)".
 - Later mentions: the plain name alone, or the code alone in a table column whose heading names it.
 - A term the reader may not know gets a half-line gloss the first time.
