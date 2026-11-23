@@ -47,8 +47,7 @@ $ <the command that runs the real code>
 
 - **The one fact**: its level and grade on the first line under the heading; below level 4 it is
   written **unproven**. The proof block is what the command printed, not what it would print.
-- **Risks**: one row per confirmed risk with a real `file:line`. A test the change leaves green is a
-  risk row (blind to the change) unless it would fail on the risk.
+- **Risks**: one row per confirmed risk with a real `file:line`.
 - **Cleared**: what was checked and found fine, with the reason; a search that found nothing names
   the search.
 - **Before it lands**: ≤ 5 items.

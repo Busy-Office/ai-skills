@@ -48,6 +48,10 @@ level did not work before settling on a lower one.
 
 Fix the most frequent classes first, one commit each.
 
+**Test the existing check first.** When the repository already has a check for the class, run it
+at a commit where the mistake happened and paste its output. A rule is enforced only if that check
+fails there; one that passes is a repeat that nothing enforces.
+
 **Prove each check fails on a real past mistake.** Take a commit where the mistake happened (or
 re-apply it in a scratch worktree), run the new check there, and paste its failing output. A check
 that has never been seen to fail is a guess. Then run it on the fixed tree and paste it passing.

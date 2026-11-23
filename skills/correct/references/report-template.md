@@ -11,14 +11,14 @@ What correct says after changing the repository. Prose outside tables and code: 
 
 | class | times | evidence | level | why not higher |
 |---|---|---|---|---|
-| <what agents keep doing> | 2 | `<sha>`, `<sha>`, `memory/<feedback>.md:<line>` | architecture + check | <why the level above did not work> |
+| <what agents keep doing> | <2 or more> | `<sha>`, `<sha>`, `memory/<feedback>.md:<line>` | <level> | <why the level above did not work> |
 | <a mistake seen once> | 1 | `<sha>` | none | seen once: not a class |
 
 ## Proof
 
 ```
 $ git checkout -q <a commit where the mistake happened> && <the existing check>
-<its output>                                   # an existing check, run on the real mistake
+<its output>
 $ git cherry-pick -n <that commit> && <the gate's command>
 <the failing output, naming the fix>
 $ git reset -q --hard && <the gate's command>
@@ -40,7 +40,7 @@ $ git reset -q --hard && <the gate's command>
   architecture, types, check, test or prose; every level below architecture says why the higher
   ones did not work.
 - **Proof**: failing first, through the gate's own command, on a real past mistake; then passing on
-  the fixed tree. An existing check for the class is run on the past mistake first.
+  the fixed tree; an existing check's run on the past mistake comes first.
 - **Rule-table rows**: each rule with what enforces it, and whether the row was added, updated or
   dropped. Exceptions, when any, are listed here with their reason, expiry and approval.
 - **Receipt**: the branch, the gate, and what was not done (pushed, tagged).

@@ -51,7 +51,8 @@ the exact function you are worried about.
 4. **Be honest about each risk.** Give it a real chance of happening and a real cost if it does.
    Keep the risks you confirmed. List the ones you checked and cleared separately. Cite a real
    `file:line`; a search that finds nothing is still an answer, and say which search. Never make up
-   a caller or an API.
+   a caller or an API. A test the change leaves green is a risk of its own (blind to the change)
+   unless it would fail on the risk.
 5. **Prove the one fact.** Write a script or test that runs the real code, run it, and paste what it
    printed. Write it in the scratchpad unless the user wants it kept as a test.
 6. **For a big or wide change, get independent reads** per `principle-fresh-reviewer`, and merge
