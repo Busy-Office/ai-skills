@@ -103,6 +103,15 @@ export const SPECS = {
     doNext: /launch/,
     receipt: /\b(nothing|no agents?)\b[^\n]{0,30}\b(spawned|launched|started)\b|\bnot (spawned|launched)\b/i,
   },
+  "blast-radius": {
+    proseMax: 350, leadMax: 90, doNextMax: 5,
+    opensWith: "table",
+    sections: [/^#+\s*what it does/im, /^#+\s*the one fact/im, /^#+\s*risks/im, /^#+\s*cleared/im, /^#+\s*before it lands/im],
+    citedTables: [],
+    locatedSection: /risks/,
+    doNext: /before it lands/,
+    requireLine: [["M15", "the one fact is graded Ran or marked unproven", /^#+\s*the one fact[^\n]*\n[\s\S]{0,400}?\b(Ran|unproven)\b/im]],
+  },
 };
 
 // What counts as "located". A finding must be checkable by someone who has

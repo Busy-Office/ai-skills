@@ -1,0 +1,9 @@
+{
+  "name": "sample-shop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "dump": "node src/cli/dump-orders.js"
+  }
+}

@@ -1,0 +1,24 @@
+diff --git a/src/api/orders.js b/src/api/orders.js
+--- a/src/api/orders.js
++++ b/src/api/orders.js
+@@ -1,8 +1,9 @@
+ // The JSON the /orders endpoint returns, one object per order.
++// Amounts are integer cents, so nothing downstream rounds a float.
+ export function serializeOrder(order) {
+   return {
+     id: order.id,
+     customer: order.customerName,
+-    total: order.totalCents / 100,
++    totalCents: order.totalCents,
+   };
+ }
+diff --git a/src/web/orderView.js b/src/web/orderView.js
+--- a/src/web/orderView.js
++++ b/src/web/orderView.js
+@@ -3,5 +3,5 @@ import { serializeOrder } from "../api/orders.js";
+ // One line of the orders page.
+ export function orderLine(order) {
+   const o = serializeOrder(order);
+-  return `${o.id} ${o.customer} ${o.total.toFixed(2)}`;
++  return `${o.id} ${o.customer} ${(o.totalCents / 100).toFixed(2)}`;
+ }

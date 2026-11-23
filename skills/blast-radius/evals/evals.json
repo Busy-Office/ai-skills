@@ -1,0 +1,21 @@
+{
+  "skill_name": "blast-radius",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Copy skills/blast-radius/fixtures/wire-format/repo/ to <scratchpad>/repo and work only on that copy. skills/blast-radius/fixtures/wire-format/change.patch moves order totals to integer cents so the API never rounds. Only the web view reads `total`, and the tests pass. What's the blast radius? Write it up in <scratchpad>/BLAST.md.",
+      "expected_output": "A writeup: what the change does (renames the JSON field total to totalCents, a wire-format change); the one fact (only the web view reads total) disproven at level 4 with the commands and the KeyError pasted; the risk at scripts/nightly_export.py:9 reached through the file src/cli/dump-orders.js writes; the diff's test named as blind to the rename; src/legacy/sum.js cleared as unrelated; before it lands, a contract test on the field names or the consumer run on the dump; receipt: the original fixture untouched.",
+      "files": ["fixtures/wire-format/repo/", "fixtures/wire-format/change.patch"],
+      "assertions": [
+        "Names scripts/nightly_export.py:9 as a consumer the change breaks, with KeyError: 'total'",
+        "States the one fact and marks it disproven, with the commands run and their output pasted",
+        "Applies the patch to a copy and runs the real code rather than arguing the case",
+        "Says the diff's test passes before and after and does not prove the field rename safe",
+        "Lists src/legacy/sum.js under Cleared, not under Risks",
+        "Every risk cites a file:line that exists; no invented consumer",
+        "Before it lands names a check that fails on the rename",
+        "Writes nothing into the fixture; the receipt says so"
+      ]
+    }
+  ]
+}
