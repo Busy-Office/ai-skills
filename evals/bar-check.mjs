@@ -84,6 +84,15 @@ export const SPECS = {
     citedTables: [],
     locatedSection: /the flow/,
   },
+  "improve-until-done": {
+    proseMax: 300, leadMax: 40, doNextMax: 0,
+    opensWith: "table",
+    sections: [/^#+\s*decisions/im, /^#+\s*round records?/im],
+    citedTables: [],
+    locatedSection: /decisions/,
+    vocab: [/go again|stop: (done|plateau|budget)|ask: scope growth|cannot verify/i],
+    requireLine: [["M15", "a three-line round record", /tried:[^\n]*\nEvidence:[^\n]*\nDecision:/]],
+  },
 };
 
 // What counts as "located". A finding must be checkable by someone who has
@@ -92,6 +101,7 @@ export const SPECS = {
 const FILE_LINE = /[\w./-]+\.(md|mjs|js|ts|tsx|py|sh|ps1|ya?ml|json|toml|plist|html|css)(:\d+)?/i;
 // Ids are usually written as code, so allow the backticks/quotes around them.
 const SESSION = /\b(s-[0-9a-f]{3,}|sessions?\s+[`'"]?[\w-]{4,}|\d+\s+(sessions?|runs?|commits?|summons?))\b/i;
+const COMMIT = /\b[0-9a-f]{7,40}\b/;
 const ABSENCE = /\b(none|no evidence|vacant|not measured|absent|nowhere|never|no \w+ (step|ran|exists|found|in)|— *—)\b/i;
 const HEDGE = /\b(consider(ing)?|maybe|perhaps|might want|could be improved|as appropriate|where possible|etc\.)\b/i;
 
@@ -183,15 +193,17 @@ export function barCheck(skill, md, collector = null, target = null) {
   const finding = spec.citedTables.length
     ? dataRows(b.tableRows).filter((l) => /^\s*\|\s*(\*\*)?[A-Z]{1,2}\d{1,2}(\*\*)?\s*\|/.test(l))
     : rowsUnder(md, spec.locatedSection).slice(1);   // drop the header row
-  const locators = [FILE_LINE, ABSENCE, ...(spec.sessionsLocate ? [SESSION] : [])];
+  const locators = [FILE_LINE, ABSENCE, ...(spec.sessionsLocate ? [SESSION] : []), ...(spec.commitsLocate ? [COMMIT] : [])];
   const uncited = finding.filter((l) => !locators.some((re) => re.test(l)));
   add("M5", "every finding row carries a file:line, a session, or a located absence",
     finding.length ? `${finding.length} evidence rows, ${uncited.length} without a location` : "no evidence rows found — the table is missing",
     finding.length > 0 && uncited.length === 0);
 
-  // M5b — findings use the class vocabulary this skill defines
-  if (spec.citedTables.length) {
-    const unclassed = finding.filter((l) => !spec.citedTables.some((re) => re.test(l)));
+  // M5b — findings use the class vocabulary this skill defines (spec.vocab
+  // when the rows sit under locatedSection and carry no id)
+  const vocab = spec.vocab ?? spec.citedTables;
+  if (vocab.length) {
+    const unclassed = finding.filter((l) => !vocab.some((re) => re.test(l)));
     add("M5b", "every finding row names a class from the fixed set",
       `${finding.length - unclassed.length} of ${finding.length} classified`, unclassed.length === 0);
   }
@@ -212,14 +224,20 @@ export function barCheck(skill, md, collector = null, target = null) {
   // M15+ — lines a skill's template makes mandatory (e.g. loop-doctor's runway)
   for (const [id, label, re] of spec.requireLine ?? []) add(id, label, re.test(md) ? "found" : "absent", re.test(md));
 
-  // M6 — do-next length
-  const doNext = (md.match(/^#+\s*(do next|what the numbers say to do|to decide)[^\n]*\n([\s\S]*?)(?=\n#{1,6}\s|\n---|(?![\s\S]))/im)?.[2] ?? "");
-  const items = (doNext.match(/^\s*(\d+\.|[-*])\s+/gm) ?? []).length;
-  add("M6", `do-next ≤ ${spec.doNextMax} items`, items ? `${items} items` : "section not found", items > 0 && items <= spec.doNextMax);
+  // M6 — do-next length (a class whose reply has no next steps sets doNextMax 0)
+  if (spec.doNextMax) {
+    const heading = spec.doNext ?? /do next|what the numbers say to do|to decide/;
+    const doNext = (md.match(new RegExp(`^#+\\s*(?:${heading.source})[^\\n]*\\n([\\s\\S]*?)(?=\\n#{1,6}\\s|\\n---|(?![\\s\\S]))`, "im"))?.[1] ?? "");
+    const items = (doNext.match(/^\s*(\d+\.|[-*])\s+/gm) ?? []).length;
+    add("M6", `do-next ≤ ${spec.doNextMax} items`, items ? `${items} items` : "section not found", items > 0 && items <= spec.doNextMax);
+  }
 
-  // M7 — the receipt
-  const receipt = /(read|inspected)\s+\d+[^\n]*(untouched|read-only|not written)/i.test(md) || /target repo untouched/i.test(md);
-  add("M7", "footer receipt with a count and 'untouched'", receipt ? "found" : "absent", receipt);
+  // M7 — the receipt: what was read, and what was left alone (a class that
+  // changes a repo names what it did not do instead, in spec.receipt)
+  const receipt = spec.receipt
+    ? spec.receipt.test(md)
+    : /(read|inspected)\s+\d+[^\n]*(untouched|read-only|not written)/i.test(md) || /target repo untouched/i.test(md);
+  add("M7", spec.receipt ? "footer receipt names what was not done" : "footer receipt with a count and 'untouched'", receipt ? "found" : "absent", receipt);
 
   // M8 — the fixed verdict vocabulary, where the class has one
   if (spec.requireVerdict) {
