@@ -23,7 +23,7 @@ reason.
 | G13 | no-return | warn | no top-level `return` | the workflow's result is `undefined`; the caller reads the journal to find out what happened | `return { … }` the artefact the caller needs |
 | G14 | silent-cap | warn | `.slice(0, N)`, `.slice(-N)` or a top-N with no `log()` naming what was dropped | truncation reads as "covered everything" | `log(\`kept N of M\`)` at the cut |
 | G15 | blanket-model-override | info | `model:` set on every, or nearly every, `agent()` | that is moving the graph to a tier, not tiering it | override the bounded nodes only — `cost-model.md` |
-| G16 | unchunked-fan-out | warn | a `parallel()` / `pipeline()` that puts more than 3 agents in flight: over more than 3 items, over a list of unknown width, or nested in another fan-out's callback so the widths multiply past 3. A singular `wave` / `chunk` / `batch` counts as 3 (`chunks` is every wave at once); `.slice(i, i + N)` counts N | the script puts more than 3 agents in flight — over the default cap (`principle-guard-the-machine`) | waves of 3 — `topologies.md` |
+| G16 | unchunked-fan-out | warn | a `parallel()` / `pipeline()` that puts more than 3 agents in flight: over more than 3 items, over a list of unknown width, or nested in another fan-out's callback so the widths multiply past 3. A singular `wave` / `chunk` / `batch` counts the size argument of the call its `for … of` reads (`waves(xs, 5)` is 5), else 3 (`chunks` is every wave at once); `.slice(i, i + N)` counts N | the script puts more than 3 agents in flight — over the default cap (`principle-guard-the-machine`) | waves of 3 — `topologies.md` |
 
 Read the rows as evidence. A G6 on a barrier that the review can defend
 (a real cross-set dedupe the lint could not see because it lives in a
