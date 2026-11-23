@@ -17,9 +17,10 @@ what they find, and triage it.
    - Default: one, on another model than the builder; otherwise a fresh context.
    - Money, contracts, concurrency, security, or more than about 300 changed lines: two, on
      different models.
-   - Optional, when installed and allowed: a `jev` verdict on the same inputs (`jev rules-check` or
-     `jev judge completion` with the diff attached), and a Grok or other outside-model reviewer,
-     read-only, handed the same brief.
+   - Optional, when installed and allowed: a `jev` verdict (`jev rules-check` or
+     `jev judge completion`) with a summary of the diff and the files that matter attached, not the
+     whole diff: Jev keeps only the first 8,000 characters. And a Grok or other outside-model
+     reviewer, read-only, handed the same brief.
 3. **Brief each reviewer.** Read-only; targeted checks only, never the full suite
    (`principle-guard-the-machine`).
 
@@ -39,7 +40,7 @@ what they find, and triage it.
    | group | what goes there | then |
    |---|---|---|
    | **Act on** | a real defect, a broken decision, a failing check, confirmed (Ran or Read) | the next fix round; these are `improve-until-done`'s should-fix findings |
-   | **Consider** | plausible and worth a judgement, not proven | listed with the cost of acting |
+   | **Consider** | plausible and worth a judgement, not proven | listed with the cost of acting; an unconfirmed should-fix stays open here until you verify it into Act on or Dismissed, and never counts as done |
    | **Noted** | true but out of scope, or a follow-up | the queue, or a line in the reply |
    | **Dismissed** | wrong, already handled, or noise | one-line reason each |
 
