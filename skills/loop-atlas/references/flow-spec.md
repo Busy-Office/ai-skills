@@ -59,8 +59,7 @@ Self-contained inline SVG, animated with CSS — no library, nothing
 fetched:
 
 - Author the SVG semantically: `id="stage-verify"`, `class="edge"`,
-  `class="pulse"`. The ids are what make the page editable later, and
-  they are what the `animated-svg` handoff needs.
+  `class="pulse"`. The ids are what make the page editable later.
 - Draw-on edges: `stroke-dasharray` + `stroke-dashoffset` animated to 0.
 - The item pulse: a small circle on `<animateMotion>` along the edge
   path, or a CSS `offset-path` on the same `d`.
@@ -80,6 +79,3 @@ fetched:
   .stage { opacity: 1 !important; transform: none !important; }
 }
 ```
-
-For a video or GIF of the same flow, see `animated-handoff.md` — the
-semantic ids above are exactly what that pipeline expects.

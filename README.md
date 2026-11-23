@@ -51,9 +51,6 @@ Some skills go further, and say so before they do:
 - **`progress-dashboard`** runs your manifest's `refresh` command only after
   you agree to it. It can mirror its first screen to Notion, and when it
   creates that Notion page it writes the URL into `.claude/progress.json`.
-- **`app-icon-generator`** runs ImageMagick and `rsvg-convert` on your image,
-  writes the icon set to the folder you name, and tells you what to
-  `brew install` if they are missing.
 - **[`jev`](#jev)** sends what you allow to an outside service. It does
   nothing until you give it a key and allow a repo.
 - **[`automate-me`](#automate-me)** writes outside any repo: a "How I work"
@@ -636,12 +633,9 @@ The deck is ordered by observed summons, not by what the files list first.
 
 ### A video of it
 
-The page needs nothing installed. For a README hero or a talk, it offers a
-handoff to [`animated-svg`](https://github.com/omkamal/animated-diagrams-skill)
-(Apache-2.0 — semantic SVG + GSAP, rendered deterministically to MP4/GIF/
-interactive HTML), passing the atlas's own semantic SVG plus the beat list
-so the video and the page never drift. Offered in one line, never installed
-as a side effect.
+The page needs nothing installed. A still is the page's own SVG; a video or
+GIF is a recording of the page, never a second drawing, so the two never
+drift (the showcase GIF above is made that way by `scripts/showcase.py --gif`).
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: loop-atlas
-description: "Draws the whole engineering loop as one picture and introduces the crew that runs it as a deck of collectible-style agent cards. The flow view animates one item's journey through a single tick — trigger, wake, select, act, verify, gate, record, re-arm or stop — with the actor on every stage, the real file name under every claim, and missing stages drawn as labelled gaps. The card view gives every agent, subagent and skill a card: class, model, what it is good at, its abilities with their costs, reach/precision/cost/autonomy stats derived from its tool grant and its observed runs, when to summon it, its weakness, who it hands off to, and how often it was actually summoned — including cards for vacancies like a missing verifier. Published as a self-contained artifact; optionally rendered to MP4/GIF via the animated-svg skill. Use when someone wants to see, visualise, map, diagram or animate their loop, pipeline or agent workflow end to end, wants a picture of how the whole thing fits together, asks who or what does each step, wants an overview of their agents, subagents or skills, a roster, a portfolio, a cheat sheet or trading cards of their AI crew, or asks which agent they should use for a job."
+description: "Draws the whole engineering loop as one picture and introduces the crew that runs it as a deck of collectible-style agent cards. The flow view animates one item's journey through a single tick — trigger, wake, select, act, verify, gate, record, re-arm or stop — with the actor on every stage, the real file name under every claim, and missing stages drawn as labelled gaps. The card view gives every agent, subagent and skill a card: class, model, what it is good at, its abilities with their costs, reach/precision/cost/autonomy stats derived from its tool grant and its observed runs, when to summon it, its weakness, who it hands off to, and how often it was actually summoned — including cards for vacancies like a missing verifier. Published as a self-contained artifact. Use when someone wants to see, visualise, map, diagram or animate their loop, pipeline or agent workflow end to end, wants a picture of how the whole thing fits together, asks who or what does each step, wants an overview of their agents, subagents or skills, a roster, a portfolio, a cheat sheet or trading cards of their AI crew, or asks which agent they should use for a job."
 ---
 
 # Loop Atlas
@@ -19,7 +19,6 @@ flowchart LR
   B --> C["the gaps<br/>stages with no evidence"]
   C --> D["the deck<br/>one card per agent · vacancies too"]
   D --> E["artifact<br/>animated SVG + card grid"]
-  E -. only if asked .-> F["animated-svg<br/>MP4 · GIF"]
 ```
 
 ## The guard-rail
@@ -33,8 +32,7 @@ flowchart LR
 - **Write nothing into the target repo.** The page is an artifact; files
   go to the scratchpad unless a path is asked for.
 - **Never quote a transcript.** Counts and ids only.
-- **Install nothing.** The page animates itself; `animated-svg` is an
-  offer, never a side effect.
+- **Install nothing.** The page animates itself.
 - **Leave a receipt** in the footer.
 
 ## Workflow
@@ -95,13 +93,13 @@ something *visible* in the picture. Self-contained inline SVG animated
 with CSS, theme-aware, reduced-motion safe, replay by button and never on
 autoplay loop.
 
-### 5. Offer the render — only if they want a video
+### 5. A still or a video — only if they ask
 
-`references/animated-handoff.md`. The page is enough for understanding
-and sharing. For a README hero or a talk, offer the `animated-svg` skill
-in one line; if it is not installed, link it and stop. When it is, hand
-over the atlas's own semantic SVG plus the beat list, so the video and
-the page never drift.
+The page is enough for understanding and sharing. A still is the page's
+own SVG, exported. A video or GIF is a recording of the page, never a
+second drawing: two drawings of one loop drift, and a gap stays a
+labelled gap in every derivative. When the loop changes, re-run the atlas
+first.
 
 ## Judgement calls
 
@@ -139,7 +137,6 @@ everything; motion only says what happens in what order.
 - `references/card-spec.md` — the card grammar and how every field is
   derived.
 - `references/page-spec.md` — the published page, exactly.
-- `references/animated-handoff.md` — optional MP4/GIF via `animated-svg`.
 - `evals/` — the prompts, and `gauntlet/BAR.md`, the bar this skill's
   pages are graded against by a blind critic.
 
