@@ -16,3 +16,15 @@ stand in where a step needed them. `automate-me` writes a section of the user's 
 `~/.claude/CLAUDE.md` instead of a personal skill, and adds a local decision log with
 `scripts/decisions.mjs`. Busy Office's changes and additions are © 2026 Busy Office under the
 plugin's MIT licence.
+
+## The plugin's shape (0.17.0)
+
+`skills/busy-office-mode/` (a mode skill routing to playbooks kept as plain files), the
+`skills/principle-*/` skills ("Apply when…", the rule, why) and the `how` and `why` investigation
+skills follow the structure of pstack's `poteto-mode`, `principle-*`, `how` and `why` (© 2026 Lauren
+Tan, MIT, [LICENSES/pstack-MIT.txt](LICENSES/pstack-MIT.txt)), as seen in its Claude Code port
+[ahmedbenaw/pstack](https://github.com/ahmedbenaw/pstack). Several names come from pstack: the
+playbooks `feature`, `bug-fix`, `investigation`, `session-pickup` and `pause-safely`, and the
+principles `prove-it-works`, `encode-lessons-in-structure`, `subtract-before-you-add` and
+`guard-the-context-window`. The text, the steps and the other playbooks and principles were written
+for this plugin; `pause-safely` follows pstack's steps most closely.

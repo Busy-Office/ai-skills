@@ -1,9 +1,43 @@
 # busy-office ai-skills
 
 Reusable [Claude Code](https://claude.com/claude-code) skills from Busy Office.
-Each skill lives under `skills/<name>/` and is self-contained: a `SKILL.md`,
-the scripts it needs, reference docs, and fixtures that double as regression
-tests. MIT licensed.
+Each skill lives under `skills/<name>/`: a `SKILL.md`, the scripts it needs,
+reference docs, and fixtures that double as regression tests. MIT licensed.
+
+## How it fits together
+
+```
+a multi-step task
+  → busy-office-mode      picks one playbook and writes its steps as todos
+  → a playbook            feature · bug-fix · investigation · refactor · goal-run · loop-tick
+                          grill · landing · plugin-release · session-pickup · pause-safely · figure-it-out
+  → tool skills           how · why · review · deploy-agents · improve-until-done · correct
+                          blast-radius · jev · solo-flow · progress-dashboard · the loop family
+  → principles            principle-* — each shared rule, stated once
+```
+
+- **[busy-office-mode](skills/busy-office-mode/SKILL.md)** is the entry point.
+  Playbooks are plain files in
+  [`skills/busy-office-mode/playbooks/`](skills/busy-office-mode/playbooks/): a
+  stance line, numbered steps that name the skills they call, and a reply line.
+  They are project-neutral; where a repository has its own step (an
+  explain-landing page, a land script) the playbook says so. A repository
+  overrides a playbook with a same-named file in its own `.agents/playbooks/`.
+- **Principles** (`principle-prove-it-works`, `principle-fresh-reviewer`,
+  `principle-stop-on-a-rule`, `principle-guard-the-machine`,
+  `principle-decide-at-the-right-level`, `principle-names-first`,
+  `principle-subtract-before-you-add`, `principle-guard-the-context-window`,
+  `principle-encode-lessons-in-structure`, `principle-write-nothing-unasked`)
+  are short skills — "Apply when…", the rule, why, the sign you skipped it.
+  A skill that needs one names it instead of repeating it.
+- **[how](skills/how/SKILL.md)** explains how part of a codebase works from
+  parallel explorers; **[why](skills/why/SKILL.md)** finds why it is that way
+  from git, the decision log, ADRs, the notebook and the code graph, and lists
+  the sources that came up empty; **[review](skills/review/SKILL.md)** has fresh
+  reviewers on another model read a diff against the goal and the owner's
+  decisions, and sorts findings into Act on · Consider · Noted · Dismissed.
+
+Changes per version are in [CHANGELOG.md](CHANGELOG.md).
 
 ## Install
 
@@ -33,6 +67,9 @@ updating the plugin:
 git clone https://github.com/Busy-Office/ai-skills.git ~/Projects/ai-skills
 ln -s ~/Projects/ai-skills/skills/progress-dashboard ~/.claude/skills/progress-dashboard
 ```
+
+A skill names the principle skills it relies on (`principle-*`); symlink those
+too, or the pointers lead nowhere.
 
 ## Start here
 
@@ -138,7 +175,12 @@ Nothing degrades silently: each says which numbers it could not see.
 | [correct](#correct) | Turns a mistake agents keep repeating into a check that makes it impossible, proven on a real past mistake | "agents keep doing X", "stop this happening again", `/busy-office:correct` |
 | [blast-radius](#blast-radius) | What a change can break beyond its diff, with the one fact it is safe because of proven by running code | "blast radius of X", "what could this break", "X already handles Y, right?" |
 | [improve-until-done](#improve-until-done) | Rounds of try, verify, judge, with five stop rules and a record per round | "keep going until it passes", "one more round?", "fix until the review is clean" |
-| [deploy-agents](#deploy-agents) | Model per job, limits, the agent brief and the standard batch, with an optional Workflow script | "spawn a builder and a reviewer", "write the agent brief", "which model for this agent" |
+| [deploy-agents](#deploy-agents) | Model per job, limits, the agent brief, with an optional Workflow script for the feature playbook's build-to-final-check steps | "spawn a builder and a reviewer", "write the agent brief", "which model for this agent" |
+| [busy-office-mode](#how-it-fits-together) | Routes a multi-step task to one of twelve playbooks and opens its steps as todos | any task with more than one step; `/busy-office:busy-office-mode` |
+| [how](#how-it-fits-together) | How part of a codebase works: overview, key parts, flow, where things live, gotchas | "how does X work", "walk me through X before I change it" |
+| [why](#how-it-fits-together) | Why it is that way, cited, with the sources that came up empty | "why does X work this way", "why did we pick Y" |
+| [review](#how-it-fits-together) | Fresh reviewers on another model; findings Act on · Consider · Noted · Dismissed | "review this", "is this batch ready" |
+| `principle-*` (10) | One shared rule each, loaded when its "Apply when" fires | — |
 
 ### The loop family
 
@@ -158,7 +200,9 @@ when you want to be explicit:
 They hand off to each other rather than overlap: the economist names its binding
 constraint (the actor → fix it there; the input → `requeue`; the design →
 `loop-doctor`), `requeue` ranks against whatever `sharpen-intent` produced, and
-`loop-atlas` only draws — its vacancies and gaps are the other two's input.
+`loop-atlas` only draws — its vacancies and gaps are the other two's input. The
+full hand-off map, the one the skills themselves point to, is in
+[`busy-office-mode`](skills/busy-office-mode/SKILL.md).
 
 The two loops in the middle are the same loop seen from opposite sides: a loop
 can score well on its documents and still ship the same file four times.
@@ -1100,9 +1144,9 @@ back. A model per job (the strongest at high effort for money, posting,
 concurrency and other hard-rule code; a standard one for builds; the reviewer
 always another model or a fresh context; a cheaper one for page drafts; a
 cheap one for searches and re-runs), at most 3 agents and one full test suite
-at a time, a brief template, and the standard batch: worktree, build, re-run
-the claims, fresh review, fix, final check alone, explain, your yes, land. The
-coordinator cites only claims it checked.
+at a time, and a brief template. The coordinator cites only claims it checked.
+The batch itself — worktree, build, re-run the claims, fresh review, fix, final
+check alone, explain, your yes, land — is the `feature` playbook.
 
 An optional Workflow script runs build, verify, review and bounded fix rounds
 so only results return to the coordinator. It runs only when you opt in; try
@@ -1146,6 +1190,11 @@ is not in the code, and a call site is not in a review.
   implementation: `loop-doctor` discovers state files from what the governing
   docs name rather than keeping a list, which cannot drift and so is not
   checked against one.
+- Prose rules are the opposite: a rule two skills need lives once, in a
+  `principle-*` skill, and the others name it. The same consistency check
+  fails when a SKILL.md or playbook names a skill that does not exist
+  (`busy-office:<x>`, `principle-<x>`, or a backticked hyphenated name),
+  unless it is on its short allow-list of repository and Claude Code skills.
 - A skill that cannot reliably produce a correct artifact does not ship, even
   when its design is sound. `green-gate` was removed after five gauntlet rounds
   in which the design was never faulted and the report failed every time; its
@@ -1195,5 +1244,6 @@ is not in the code, and a call site is not in a review.
 ## License
 
 [MIT](LICENSE) © 2026 Busy Office. `automate-me`, `correct` and
-`blast-radius` are adapted from MIT-licensed pstack; their credits and
-upstream licence are in [NOTICE.md](NOTICE.md).
+`blast-radius` are adapted from MIT-licensed pstack, and the mode, playbook and
+principle structure follows it; the credits and upstream licence are in
+[NOTICE.md](NOTICE.md).

@@ -10,6 +10,19 @@ GitHub `Busy-Office/ai-skills`). A change here reaches every project that instal
 - Nothing a project's CI or landing gate depends on. Gates must run with no plugin installed.
 - Before adding a skill, check that no skill here already does the job.
 
+## How the skills fit
+
+- `busy-office-mode` routes a task to a playbook in `skills/busy-office-mode/playbooks/` (plain
+  files: a stance line, numbered steps naming skills, a **Reply:** line). Playbooks stay
+  project-neutral; a repository's own step is written "the repository's own step, if it has one
+  (e.g. …)".
+- A rule two skills need lives once, in a `principle-*` skill (about 25 lines: Apply when, the rule,
+  why, the sign you skipped it). Other skills name it in one line and keep only what is particular
+  to them.
+- The loop family's hand-offs live in one map, in `busy-office-mode`.
+- Frontmatter is `name` and `description` only (plus `disable-model-invocation` for a skill the user
+  runs by hand).
+
 ## Trying a change
 
 Load the working copy for one session; it replaces the installed plugin for that session only:
@@ -23,12 +36,17 @@ single-skill symlink in the README is for people who do not install the plugin.)
 ## Checks
 
     node --test skills/jev/test/     # the jev suite; needs no key or network
-    node evals/consistency.mjs       # the collectors still agree with each other
+    node evals/consistency.mjs       # the collectors agree; every skill named exists
+
+Run them one at a time (`principle-guard-the-machine`).
 
 ## Releasing
 
+The `plugin-release` playbook is the general shape; these are this repository's steps.
+
 1. Work on a branch. Bump `version` in `.claude-plugin/plugin.json` and in both places in
-   `.claude-plugin/marketplace.json`; the three must match.
+   `.claude-plugin/marketplace.json`; the three must match. Add the version's entry to
+   `CHANGELOG.md`.
 2. Run the checks above.
 3. Commit as `<version>: <what changed>`, fast-forward `main`, and tag `busy-office--v<version>`.
 4. Ask the owner before pushing: a push publishes to everyone who has the plugin. Then push `main`
