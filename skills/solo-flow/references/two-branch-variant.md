@@ -16,7 +16,7 @@ local work and the tagged, consumer-facing branch.
 | Branch | Where it lives | Purpose | Who merges |
 |---|---|---|---|
 | `main` | remote | the tagged, consumer-facing branch — only ever advances when a release is cut | the owner approves each release |
-| `develop` | remote, default branch | where the agent's merges land continuously; the thing that consumer actually reads ahead of a release | the agent, automatically, once checks pass |
+| `develop` | remote, default branch | where the agent's merges land continuously; the thing that consumer actually reads ahead of a release | the agent, after the owner's yes to the tip it showed and the checks passing on it — it is a shared branch; the repo's own instructions may authorise landing without the yes |
 | `feat/*`, `fix/*`, `chore/*` | local only | one unit of work | never pushed |
 | `release/x.y.z` | local, short-lived | holds the version bump and notes | merged into `main`, then back into `develop` |
 

@@ -14,7 +14,8 @@
 // loop-doctor was written to find in other people's projects.
 //
 // Second check: every skill the repo names exists. It reads the files
-// `git ls-files` lists (tracked only, symlinks skipped) and counts as a name:
+// `git ls-files` lists (tracked only, symlinks skipped), takes the skill,
+// playbook and reference names from that same list, and counts as a name:
 // `busy-office:<x>` and a backticked `principle-<x>` anywhere; a backticked
 // hyphenated name in a SKILL.md; any backticked lowercase name in the mode's
 // SKILL.md and playbooks; and, in README.md, AGENTS.md, CHANGELOG.md and
@@ -118,12 +119,15 @@ const EXTERNAL_SKILLS = new Set([
 const NOT_SKILLS = new Set(["may-settle", "notion-fetch", "notion-update-page"]);
 const BINARY = /\.(png|gif|jpe?g|webp|ico|pdf|woff2?)$/;
 
-const skillNames = new Set(readdirSync(SKILLS).filter((d) => existsSync(join(SKILLS, d, "SKILL.md"))));
-const MODE = join(SKILLS, "busy-office-mode");
-const playbookNames = new Set(existsSync(join(MODE, "playbooks")) ? readdirSync(join(MODE, "playbooks")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)) : []);
 const isFile = (f) => { try { return lstatSync(f).isFile(); } catch { return false; } };
-const files = execFileSync("git", ["ls-files", "-z"], { cwd: ROOT, encoding: "utf8" })
-  .split("\0").filter((f) => f && !BINARY.test(f)).map((f) => join(ROOT, f)).filter(isFile);
+const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: ROOT, encoding: "utf8" })
+  .split("\0").filter((f) => f && isFile(join(ROOT, f))).map((f) => f.split("/"));
+const files = tracked.map((p) => join(ROOT, ...p)).filter((f) => !BINARY.test(f));
+// Names come from the same index as the files: an untracked skill on disk does not exist for a user.
+const skillNames = new Set(tracked.filter((p) => p.length === 3 && p[0] === "skills" && p[2] === "SKILL.md").map((p) => p[1]));
+const MODE = join(SKILLS, "busy-office-mode");
+const playbookNames = new Set(tracked.filter((p) => p.length === 4 && p[1] === "busy-office-mode" && p[2] === "playbooks" && p[3].endsWith(".md")).map((p) => p[3].slice(0, -3)));
+const refNames = (skill) => new Set(tracked.filter((p) => p[0] === "skills" && p[1] === skill && p[2] === "references" && p.length === 4).map((p) => p[3].replace(/\.[^.]+$/, "")));
 const PROSE = new Set(["README.md", "AGENTS.md", "CHANGELOG.md"]);
 const distance = (a, b) => {
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
@@ -144,8 +148,7 @@ for (const file of files) {
   const isSkill = rel === join("skills", skill ?? "", "SKILL.md");
   const closed = file.startsWith(MODE + sep) && file.endsWith(".md");
   const prose = PROSE.has(rel) || (rel.split(sep)[2] === "references" && rel.endsWith(".md"));
-  const refDir = join(SKILLS, skill ?? "", "references");
-  const ownRefs = new Set(isSkill && existsSync(refDir) ? readdirSync(refDir).map((f) => f.replace(/\.[^.]+$/, "")) : []);
+  const ownRefs = isSkill ? refNames(skill) : new Set();
   readFileSync(file, "utf8").split("\n").forEach((line, i) => {
     const hyphenated = [...line.matchAll(/`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`/g)].map((m) => m[1]);
     const found = [
