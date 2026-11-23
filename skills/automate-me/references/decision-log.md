@@ -101,8 +101,16 @@ here.
 `node scripts/decisions.mjs [log] --reserve kindA,kindB` prints, per kind, a `status`. A kind is
 scored on its **predictions**, not its recommendations: the prediction is what a settled kind would
 act on. A decision is **scored** when it was asked (`mode: asked`), was answered, and its
-`prediction_id` names a prediction line that appears **earlier** in the log. A prediction written on
-the decision line, written after it, or missing (a backfilled decision) is not scored.
+`prediction_id` names a prediction line that appears **earlier** in the log, is of the **same kind**
+(case and spacing ignored), carries a `ts` **earlier** than the decision's, and no earlier decision
+used. Each prediction id scores one decision. A prediction written on the decision line, written
+after it, stamped later, reused, of another kind, or missing (a backfilled decision) is not scored. A
+decision with no `ts` falls back to line order and sorts last in the window; one whose `ts` cannot
+be read is not scored.
+
+**Known limit.** The log shows that a prediction was written before the decision line, not that it
+was written before the question reached the user. Only the session transcript proves that (the
+prediction append comes before the `AskUserQuestion` call); the script does not read transcripts.
 
 - **`may-settle`** — at least **20** scored predictions, at least **95 %** of them equal to the
   answer (compared without rounding), and **no reversal** among the kind's last **10** scored or

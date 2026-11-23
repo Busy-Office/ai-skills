@@ -32,11 +32,12 @@ not support.
 
 ### Decisions
 
-- Predict first. Before you form a recommendation for a decision you will put to me, spawn a fresh,
-  cheap agent and give it only: the kind, the question, the options, this section, and my past
-  answers for that kind (`grep -E '"kind": ?"<kind>"' ~/.claude/decision-log.jsonl | tail -20`).
-  Append its answer as a prediction line (`type: prediction`, id, kind, question, prediction,
-  prediction confidence, ts). Then form your recommendation and ask.
+- Predict first, except for an Always-ask kind. Before you form a recommendation for a decision you
+  will put to me, spawn a fresh, cheap agent and give it only: the kind, the question, the options,
+  this section, and my past answers for that kind (`grep -iE '"kind": ?"<kind>"'
+  ~/.claude/decision-log.jsonl | grep -E '"type": ?"decision"' | tail -20`). Append its answer as a
+  prediction line (`type: prediction`, a new id, kind, question, prediction, prediction confidence,
+  ts). Then form your recommendation and ask.
 - After I answer, append the decision line (kind, question, options, `prediction_id`,
   recommendation, confidence, evidence grades, answer, accepted or changed); it carries no
   prediction of its own. If I later overturn a settled decision, append a settled line with

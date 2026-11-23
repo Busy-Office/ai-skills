@@ -36,6 +36,7 @@ export const DEFAULT_RESERVE = ["land-shared-branch", "money-rule", "contract-wo
 const norm = (k) => String(k).trim().toLowerCase().replace(/\s+/g, " ");
 const label = (a) => norm(String(a).replace(/\(recommended\)\s*$/i, ""));
 const same = (a, b) => label(a) === label(b);
+const time = (ts) => { const t = Date.parse(ts ?? ""); return Number.isNaN(t) ? null : t; };
 const isObject = (r) => r !== null && typeof r === "object" && !Array.isArray(r);
 
 export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
@@ -51,6 +52,18 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
     if (c.note) row.notes.push(`${ts ?? "?"}: ${c.note}`);
     corrections.set(c.kind, row);
   };
+  // A prediction scores a decision only if its line came earlier in the file, it is of the same
+  // kind, it is stamped before the decision (a decision ts that cannot be read scores nothing), and no other decision
+  // used it first. Each id is spent on first use.
+  const claim = (r, kind) => {
+    const pred = r.prediction_id != null ? predictions.get(r.prediction_id) : null;
+    if (!pred) return null;
+    predictions.delete(r.prediction_id);
+    const at = time(pred.ts), decided = time(r.ts);
+    if (norm(pred.kind ?? "") !== kind || at === null) return null;
+    if (r.ts != null && (decided === null || at >= decided)) return null;   // a decision with no ts falls back to line order
+    return pred.prediction ?? null;
+  };
   text.split("\n").forEach((line, i) => {
     if (!line.trim()) return;
     let r;
@@ -61,8 +74,7 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
     if (r.type !== "decision" || !r.kind) { malformed++; return; }
     const kind = norm(r.kind);
     if (!decisions.has(kind)) decisions.set(kind, []);
-    // only a prediction line that appeared earlier in the file counts
-    decisions.get(kind).push({ r, i, p: r.prediction_id != null ? predictions.get(r.prediction_id)?.prediction ?? null : null });
+    decisions.get(kind).push({ r, i, at: time(r.ts), p: claim(r, kind) });
     for (const c of Array.isArray(r.corrections) ? r.corrections : []) addCorrection(c, r.ts);
   });
   const kinds = [...decisions].map(([kind, rows]) => {
@@ -73,7 +85,7 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
     const correct = scored.filter(hit).length;
     const n = scored.length + overturned.length;   // an overturned settlement is a miss
     const window = [...scored, ...settled]
-      .sort((a, b) => String(a.r.ts ?? "").localeCompare(String(b.r.ts ?? "")) || a.i - b.i)
+      .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || a.i - b.i)   // no ts sorts last
       .slice(-WINDOW);
     const reversal = [...window].reverse().find((x) => (x.r.mode === "settled" ? x.r.outcome === "changed" : !hit(x)));
     const status = reserved.has(kind) ? "reserved"
@@ -106,15 +118,21 @@ export function analyse(text, { reserve = DEFAULT_RESERVE } = {}) {
   return { kinds, corrections: rules, malformed, unknownCorrections };
 }
 
-// A synthetic log for the edge cases: one prediction line before each decision.
+// A synthetic log for the edge cases: one prediction line, a second earlier,
+// before each decision. `ts: null` drops the decision's ts; `pts` overrides the
+// prediction's (null drops it); `pid` and `pkind` override the link and the kind.
+const iso = (ms) => new Date(ms).toISOString();
 function synth(rows) {
   return rows.map((o, i) => {
-    const { pts, ...r } = o;
-    const id = `s${i}`;
-    const p = { type: "prediction", id, kind: r.kind ?? "k", question: "q", prediction: r.prediction ?? "yes", prediction_confidence: 0.9, ts: pts ?? r.ts ?? "t" };
-    const d = { ts: "t", type: "decision", kind: "k", mode: "asked", recommendation: "yes", answer: "yes", outcome: "accepted", ...r, prediction_id: id };
+    const { pts, pid, pkind, ...r } = o;
+    const ts = "ts" in r ? r.ts : iso(Date.UTC(2026, 0, 1) + (i + 1) * 60000);
+    const id = pid ?? `s${i}`;
+    const at = pts !== undefined ? pts : ts == null ? iso(Date.UTC(2026, 0, 1)) : iso(Date.parse(ts) - 1000);
+    const p = { type: "prediction", id, kind: pkind ?? r.kind ?? "k", question: "q", prediction: r.prediction ?? "yes", prediction_confidence: 0.9, ...(at == null ? {} : { ts: at }) };
+    const d = { type: "decision", kind: "k", mode: "asked", recommendation: "yes", answer: "yes", outcome: "accepted", ...r, prediction_id: id };
+    if (ts == null) delete d.ts; else d.ts = ts;
     delete d.prediction;
-    return (d.mode === "asked" ? JSON.stringify(p) + "\n" : "") + JSON.stringify(d);
+    return (d.mode === "asked" && !pid ? JSON.stringify(p) + "\n" : "") + JSON.stringify(d);
   }).join("\n");
 }
 const rep = (k, f) => Array.from({ length: k }, (_, i) => f(i));
@@ -145,6 +163,12 @@ function selfTest() {
     ["settled reversal outside the window still counts in the denominator", (() => { const k = status([...rep(20, () => ({})), { mode: "settled", outcome: "changed", answer: "no" }, ...rep(10, () => ({}))]); return k.predictions === 31 && k.correct === 30 && k.status === "may-settle"; })()],
     ["unscored rows do not push a miss out of the window", (() => { const t = synth([...rep(29, () => ({})), { answer: "no" }]) + "\n" + rep(10, () => JSON.stringify({ ts: "t", type: "decision", kind: "k", mode: "asked", recommendation: "yes", answer: "yes", outcome: "accepted" })).join("\n"); return kind("k", analyse(t)).status === "ask"; })()],
     ["window ordered by ts, not by line", status([...rep(29, (i) => ({ ts: `2026-11-${String(i + 1).padStart(2, "0")}` })), { answer: "no", ts: "2026-11-30" }, ...rep(10, () => ({ ts: "2026-01-01" }))]).status === "ask"],
+    ["one prediction line scores one decision only", (() => { const t = JSON.stringify({ type: "prediction", id: "ONE", kind: "k", question: "q", prediction: "yes", ts: "2025-12-31T00:00:00Z" }) + "\n" + synth(rep(20, () => ({ pid: "ONE" }))); return kind("k", analyse(t)).predictions === 1; })()],
+    ["a prediction of another kind → unscored", status(rep(20, () => ({ pkind: "other" }))).predictions === 0],
+    ["a decision with no ts sorts last, so its miss stays in the window", status([...rep(29, () => ({})), { answer: "no", ts: null }]).status === "ask"],
+    ["a prediction stamped after its decision → unscored", status(rep(20, (i) => ({ pts: "2099-01-01T00:00:00Z" }))).predictions === 0],
+    ["a decision ts that cannot be read → unscored", status(rep(20, () => ({ ts: "2026-11-01T00:00:0461", pts: "2099-01-01T00:00:00Z" }))).predictions === 0],
+    ["a prediction with no ts → unscored", status(rep(20, () => ({ pts: null }))).predictions === 0],
     ["a (Recommended) suffix on the answer still matches", status(rep(20, () => ({ answer: "Yes (Recommended)" }))).correct === 20],
     // the tripwire
     ["tripwire: share equal to the recommendation, accuracy where they differ", kind("dependency-bump").same_as_recommendation === 0.9 && kind("dependency-bump").differ === 2 && kind("dependency-bump").correct_where_different === 2],
@@ -161,6 +185,7 @@ function selfTest() {
     // the command line
     ["--reserve=x form accepted", JSON.parse(cli(fixture, "--reserve=dependency-bump").stdout).kinds.find((x) => x.kind === "dependency-bump").status === "reserved"],
     ["unknown flag → exit 2", cli(fixture, "--unreserve", "money-rule").status === 2],
+    ["--reserve with no value → exit 2", cli(fixture, "--reserve").status === 2 && cli(fixture, "--reserve=").status === 2],
   ];
   for (const [name, ok] of checks) console.log(`${ok ? "✓" : "✗"} ${name}`);
   const failed = checks.filter(([, ok]) => !ok).length;
@@ -178,15 +203,19 @@ const isMain = process.argv[1] && (() => {
 })();
 if (isMain) {
   const args = process.argv.slice(2);
+  const usage = (why) => { console.error(`${why}\nusage: node decisions.mjs [log] [--reserve kindA,kindB]`); process.exit(2); };
   if (args.includes("--self-test")) selfTest();
   else {
     const add = [];
     let log = null;
     for (let i = 0; i < args.length; i++) {
       const a = args[i];
-      if (a === "--reserve") add.push(...(args[++i] ?? "").split(",").filter(Boolean));
-      else if (a.startsWith("--reserve=")) add.push(...a.slice(10).split(",").filter(Boolean));
-      else if (a.startsWith("-")) { console.error(`unknown flag ${a}\nusage: node decisions.mjs [log] [--reserve kindA,kindB]`); process.exit(2); }
+      const value = a === "--reserve" ? args[++i] : a.startsWith("--reserve=") ? a.slice(10) : null;
+      if (value !== null) {
+        const kinds = (value ?? "").split(",").filter(Boolean);
+        if (!kinds.length || value.startsWith("-")) usage(`--reserve needs a comma-separated list of kinds`);
+        add.push(...kinds);
+      } else if (a.startsWith("-")) usage(`unknown flag ${a}`);
       else log = a;
     }
     const reserve = reserveList(add);
