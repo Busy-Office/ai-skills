@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Six of my batches are at their decide step; they're written up in skills/improve-until-done/fixtures/six-decides/cases.md (read only that file). For each one: is one more round worth it? Give me the decision and the round record for each in <scratchpad>/DECIDES.md.",
-      "expected_output": "A decisions table, one row per case with the decision, the stop rule that decided it, the counted budget and the case line it rests on; then one three-line round record per case. A stop: plateau (R1 came back), B go again to run the Inferred migration claim (never done), C stop: budget (67 minutes past a 60-minute cap), D go again (control), E ask: scope growth (a new package), F cannot verify (re-run the crashed gate alone). Receipt: one file read, the README not opened.",
+      "expected_output": "A decisions table, one row per case with the decision, the stop rule that decided it, the counted budget and the case line it rests on; then one three-line round record per case. A stop: plateau (R1 came back), B go again to run the Inferred migration claim (never done), C stop: budget (67 minutes elapsed against a 60-minute cap), D go again (control), E ask: scope growth (a new package), F cannot verify (re-run the crashed gate alone). Receipt: one file read, the README not opened.",
       "files": ["fixtures/six-decides/cases.md"],
       "assertions": [
         "Case A stops on plateau and names R1 as the finding that came back, with the approaches spent",

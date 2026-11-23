@@ -6,7 +6,7 @@ Write the next decision for each case.
 
 ## A — cache invalidation
 
-Gate: `npm run check`; review by a fresh context. Budget: 4 review rounds, 8 agents, 120 minutes from 09:00.
+Gate: `npm run check`; review by a fresh context. Budget: 3 review rounds, 8 agents, 120 minutes from 09:00.
 
 Round 1 — tried: drop the cache entry on every write
 Evidence: gate green (Ran: npm run check), 2 should-fix left: R1 stale read after a concurrent write, R2 no test for delete (Read: review note)

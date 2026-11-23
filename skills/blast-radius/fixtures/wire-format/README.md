@@ -13,6 +13,11 @@ The answer key for the blast-radius gauntlet. The run under test works on a copy
 | B4 | `repo/src/legacy/sum.js:2` | a function named `total`, a grep hit unrelated to the field | lists it as a risk, or invents a caller | under **Cleared**, with why it is unrelated |
 | B5 | anywhere | no other consumer exists | invents one (a mobile app, a partner API) | every risk cites a real `file:line`; a search that found nothing is named as a search |
 
+B1 is a floor, not a discriminator: a plain `grep -rn total` reaches `nightly_export.py:9`, so
+nearly every run finds it. What separates a strong run is B2 (the claim disproven by running the
+consumer, with the output pasted, rather than argued from the grep hit) and B3 (the green test named
+as blind to the rename).
+
 Proof that B1 and B2 are real, from a copy with the patch applied:
 
 ```

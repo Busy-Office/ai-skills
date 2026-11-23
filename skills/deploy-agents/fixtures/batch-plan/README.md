@@ -18,3 +18,6 @@ defects and one clean brief.
 D5 and D6 cost the most when missed: an agent with no stop condition has no reason to return, and
 a full suite inside a subagent stalls it and starves every other agent's checks. A defect claimed
 on J5 is a false finding.
+
+Each job has its own worktree (J4 reads J2's), and every Test line but J3's already says never the
+full suite, so neither is a defect.

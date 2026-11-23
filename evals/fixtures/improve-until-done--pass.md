@@ -6,7 +6,7 @@ Two cases go again; A, C, E and F stop or ask, each on the first stop rule that 
 
 | case | decision | first rule that holds | budget (used / cap) | evidence |
 |---|---|---|---|---|
-| A cache | stop: plateau | R1 fixed in round 2, back in round 3 | 3/4 rounds · 6/8 agents · 80/120 min | `cases.md:20` |
+| A cache | stop: plateau | R1 fixed in round 2, back in round 3 | 3/3 rounds · 6/8 agents · 80/120 min | `cases.md:20` |
 | B migration | go again: run the down step on a copy | done fails: reversibility is Inferred | 1/3 · 3/6 · 35/90 | `cases.md:29` |
 | C filters | stop: budget | 14:00 → 15:07 is 67 min, cap 60 | 2/3 · 4/6 · 67/60 | `cases.md:44` |
 | D retry | go again: fix R3 | none: R1, R2 fixed last round | 2/3 · 3/6 · 40/90 | `cases.md:57` |
