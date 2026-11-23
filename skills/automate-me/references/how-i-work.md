@@ -32,12 +32,16 @@ not support.
 
 ### Decisions
 
-- After I answer a decision, append one line to `~/.claude/decision-log.jsonl` (kind, question,
-  options, recommendation, confidence, evidence grades, answer, accepted or changed). When I
+- Predict first: before you form a recommendation for a decision you will put to me, write down
+  the answer you predict I will give, and your confidence, from this section and my past answers
+  for that kind in `~/.claude/decision-log.jsonl`. Then form the recommendation.
+- After I answer, append one line to that log (kind, question, options, prediction, prediction
+  confidence, recommendation, confidence, evidence grades, answer, accepted or changed). When I
   correct you, add the correction with its kind: noise, unproven, obsolete, false-alarm,
   incomplete, inaction. The log stays on this machine: never commit, publish or send it.
 - Settle and report afterwards: <kinds, or "none yet">
-- Always ask: <kinds the user reserves>
+- Always ask: land-shared-branch, money-rule, contract-wording, protected-file, irreversible,
+  <other kinds the user reserves>
 ```
 
 ## Writing it
