@@ -1,14 +1,15 @@
 ---
 name: principle-write-nothing-unasked
-description: "Apply when a skill reviews, measures, draws or reports on someone's project: write nothing into the target repo and run nothing of the project's unless asked, read bounded, and leave a receipt."
+description: "Apply when a loop-family skill reviews or audits someone's project or loop: write nothing into the target repo and run nothing of the project's unless asked, read bounded, and leave a receipt."
 ---
 
 # Write nothing unasked
 
-**Apply when** you review, audit, measure, draw or report on a project: any job that answers a
-question rather than making a change.
+**Apply when** you review or audit someone's project or loop with a loop-family skill:
+`loop-doctor`, `loop-economist`, `loop-atlas`, `wake-weight`, `requeue`, `sharpen-intent`, or
+`graph-engineer` in review mode. `how`, `why`, `review` and `blast-radius` follow their own rules.
 
-**The rule.** The person asking a question is not adopting a tool, so the answer costs their
+**The rule.** The person asking for the review is not adopting a tool, so the answer costs their
 project nothing.
 
 - **Write nothing into the target repo.** The report goes to the scratchpad or a private page. If
