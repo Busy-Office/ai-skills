@@ -14,7 +14,7 @@
 // loop-doctor was written to find in other people's projects.
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { join, dirname, basename } from "node:path";
+import { join, dirname, basename, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -94,52 +94,59 @@ for (const { rule, of: n, bad } of rows) {
 }
 console.log(`\n${checked - failed}/${checked} shared rules consistent across ${collectors.length} collectors`);
 
-// Every skill a SKILL.md or a playbook names must exist. Skills now point at
-// each other (principles, the mode's playbooks, the loop-family map), so a
-// renamed or removed skill leaves dangling pointers; animated-svg was named
-// for months by a skill that nothing shipped. Three forms count as a
-// reference: `busy-office:<x>`, `principle-<x>`, and a backticked
-// hyphenated name. A one-word backticked name (`jev`) cannot be told apart
-// from a command, so only the first two forms catch a missing one-word skill.
+// Every skill the repo names must exist. Skills point at each other
+// (principles, the mode's playbooks, the loop-family map), so a renamed or
+// removed skill leaves dangling pointers; animated-svg was named for months by
+// a skill that nothing shipped. What counts as a reference:
+//   - `busy-office:<x>` and `principle-<x>`, in every file of the repo;
+//   - in a SKILL.md, a backticked hyphenated name (a one-word one cannot be
+//     told apart from a command);
+//   - in the mode's SKILL.md and its playbooks, a closed vocabulary, every
+//     backticked lowercase name, one word or hyphenated.
+const ROOT = join(HERE, "..");
 const EXTERNAL_SKILLS = new Set([
-  // a repository's own skills, named as "the repository's own step"
-  "explain-landing", "capability-contracts", "event-contracts", "migration-safety",
-  "safe-metadata-edits", "write-the-docs", "lint-rules", "diagrams", "loop",
-  // Claude Code's own
-  "artifact-design",
+  "explain-landing", "loop", // a repository's own skills, named as "the repository's own step"
+  "artifact-design",         // Claude Code's own
 ]);
 // Backticked hyphenated words that are not skills at all.
 const NOT_SKILLS = new Set(["may-settle", "notion-fetch", "notion-update-page"]);
+const BINARY = /\.(png|gif|jpe?g|webp|ico|pdf|woff2?)$/;
 
 const skillNames = new Set(readdirSync(SKILLS).filter((d) => existsSync(join(SKILLS, d, "SKILL.md"))));
-const PLAYBOOKS = join(SKILLS, "busy-office-mode", "playbooks");
-const playbookNames = new Set(existsSync(PLAYBOOKS) ? readdirSync(PLAYBOOKS).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)) : []);
-const docs = [
-  ...[...skillNames].map((s) => ({ skill: s, file: join(SKILLS, s, "SKILL.md") })),
-  ...[...playbookNames].map((p) => ({ skill: "busy-office-mode", file: join(PLAYBOOKS, `${p}.md`) })),
-];
+const MODE = join(SKILLS, "busy-office-mode");
+const playbookNames = new Set(existsSync(join(MODE, "playbooks")) ? readdirSync(join(MODE, "playbooks")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)) : []);
+const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+  e.name === ".git" || e.name === "node_modules" ? []
+  : e.isDirectory() ? walk(join(dir, e.name))
+  : BINARY.test(e.name) ? [] : [join(dir, e.name)]);
+const files = walk(ROOT);
 
 const dangling = [];
 let refs = 0;
-for (const { skill, file } of docs) {
-  const refDir = join(SKILLS, skill, "references");
-  const ownRefs = new Set(existsSync(refDir) ? readdirSync(refDir).map((f) => f.replace(/\.[^.]+$/, "")) : []);
+for (const file of files) {
+  const rel = relative(ROOT, file);
+  const skill = rel.split(sep)[1];
+  const isSkill = rel === join("skills", skill ?? "", "SKILL.md");
+  const closed = file.startsWith(MODE + sep) && file.endsWith(".md");
+  const refDir = join(SKILLS, skill ?? "", "references");
+  const ownRefs = new Set(isSkill && existsSync(refDir) ? readdirSync(refDir).map((f) => f.replace(/\.[^.]+$/, "")) : []);
   readFileSync(file, "utf8").split("\n").forEach((line, i) => {
     const named = [
       ...[...line.matchAll(/busy-office:([a-z0-9-]+)/g)].map((m) => [m[1], true]),
       ...[...line.matchAll(/\b(principle-[a-z0-9]+(?:-[a-z0-9]+)*)/g)].map((m) => [m[1], true]),
-      ...[...line.matchAll(/`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`/g)].map((m) => [m[1], false]),
+      ...(isSkill || closed ? [...line.matchAll(/`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`/g)].map((m) => [m[1], false]) : []),
+      ...(closed ? [...line.matchAll(/`([a-z][a-z0-9]*)`/g)].map((m) => [m[1], false]) : []),
     ];
     for (const [name, strict] of named) {
       refs++;
       if (skillNames.has(name) || EXTERNAL_SKILLS.has(name)) continue;
       if (!strict && (playbookNames.has(name) || ownRefs.has(name) || NOT_SKILLS.has(name))) continue;
-      dangling.push(`${file.slice(SKILLS.length + 1)}:${i + 1} names \`${name}\``);
+      dangling.push(`${rel}:${i + 1} names \`${name}\``);
     }
   });
 }
 if (!dangling.length) {
-  console.log(`✓ every skill named exists — ${refs} references across ${docs.length} skill and playbook files`);
+  console.log(`✓ every skill named exists — ${refs} references across ${files.length} files`);
 } else {
   console.log(`✗ ${dangling.length} named skills do not exist (add the skill, fix the name, or allow-list a real external one)`);
   for (const d of dangling) console.log(`    · ${d}`);

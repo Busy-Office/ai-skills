@@ -36,7 +36,7 @@ single-skill symlink in the README is for people who do not install the plugin.)
 ## Checks
 
     node --test skills/jev/test/     # the jev suite; needs no key or network
-    node evals/consistency.mjs       # the collectors agree; every skill named exists
+    node evals/consistency.mjs       # the collectors agree; every named skill exists (its header says where it looks)
 
 Run them one at a time (`principle-guard-the-machine`).
 

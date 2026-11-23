@@ -19,7 +19,9 @@ tool skills cite principles.
 - **`how`** (parallel explorers, one synthesis), **`why`** (git, decision log, ADRs, notebook, code
   graph; empty sources recorded) and **`review`** (fresh reviewers on another model; findings
   grouped Act on, Consider, Noted, Dismissed).
-- `evals/consistency.mjs` checks that every skill a SKILL.md or playbook names exists.
+- `evals/consistency.mjs` checks that every skill named exists: `busy-office:<x>` and
+  `principle-<x>` in every file, a backticked hyphenated name in a SKILL.md, and every backticked
+  name in `busy-office-mode` and its playbooks.
 
 ### Changed
 
