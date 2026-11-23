@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.18.0 — 2026-11-23
+
+Five more skills get a gauntlet, and graph-engineer's fan-out rule counts what is really in flight.
+
+### Added
+
+- **Gauntlets for `correct`, `blast-radius`, `improve-until-done`, `deploy-agents` and
+  `automate-me`**: a bar (`evals/gauntlet/BAR.md`), an empty rounds table, `evals/evals.json`, a
+  `bar-check.mjs` spec with pass and fail fixtures, and a small synthetic fixture whose README is the
+  answer key. Each fixture plants cases a weak run gets wrong: an import check that passes on both
+  real past mistakes (`correct`, built by `fixtures/repeat-offender/build.mjs`); a Python consumer
+  outside the diff that a field rename breaks (`blast-radius`); a plateau, an Inferred claim, a
+  minutes cap, a new package and a crashed gate beside a go-again control (`improve-until-done`);
+  four agents at once, money on a cheap model, a brief with no stop and a subagent told to run the
+  full suite beside a clean brief (`deploy-agents`); a one-session signal, a contradicted one, a
+  reserved kind with a perfect record and a tripwire kind (`automate-me`). No round has been run.
+- `evals/consistency.mjs` fails a gauntlet that is not wired: every `evals/gauntlet/` needs
+  `BAR.md`, `ROUNDS.md`, `evals/evals.json` and a bar-check spec or its own `CRITIC.md`.
+- `bar-check.mjs` specs can name their do-next heading, their receipt, a row vocabulary for rows
+  without ids, and accept a commit sha as a location; a spec with `doNextMax: 0` has no do-next.
+
+### Changed
+
+- graph-engineer lint **G16** counts agents in flight: a fan-out nested in another's callback
+  multiplies by the enclosing widths (a wave of 3 × 3 refuters is 9), `.slice(0, N)` and
+  `.slice(i, i + N)` count N instead of exempting any `.slice(`, `chunks.map(…)` is every wave at
+  once (only a singular `wave`, `chunk` or `batch` counts as 3), and a `parallel()` result keeps its
+  input's width, so `verification.md`'s judge panel no longer fires. The lint's GOOD example keeps
+  3 in flight.
+- solo-flow's two-branch variant: landing on the shared `develop` needs the owner's yes to the tip
+  shown, unless the repository's instructions authorise it.
+- `evals/consistency.mjs` takes skill, playbook and reference names from `git ls-files`, like the
+  files it reads, so an untracked skill directory no longer satisfies a reference.
+- The shared critic's skill field names no list of skills, and it gains an answer-key field.
+
 ## 0.17.0 — 2026-11-23
 
 The plugin gets one shape: a mode routes each task to a playbook, playbooks call tool skills, and

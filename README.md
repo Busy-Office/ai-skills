@@ -1088,6 +1088,10 @@ node skills/automate-me/scripts/backfill.mjs --self-test
 node skills/automate-me/scripts/decisions.mjs --self-test
 ```
 
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/automate-me/evals/gauntlet/BAR.md)) and a
+> fixture with planted cases ([`home`](skills/automate-me/fixtures/home/README.md)) are written and
+> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+
 ---
 
 ## correct
@@ -1104,6 +1108,10 @@ opinion.
 > agents keep importing the internal client — make it stop
 > `/busy-office:correct`
 
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/correct/evals/gauntlet/BAR.md)) and a
+> fixture with planted cases ([`repeat-offender`](skills/correct/fixtures/repeat-offender/README.md)) are written and
+> the pre-check is self-tested, but **no gauntlet round has been run yet**.
+
 ---
 
 ## blast-radius
@@ -1117,6 +1125,10 @@ design too, when a brief asserts something about existing code.
 
 > what's the blast radius of making this endpoint public?
 > this diff is small but I don't trust it
+
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/blast-radius/evals/gauntlet/BAR.md)) and a
+> fixture with planted cases ([`wire-format`](skills/blast-radius/fixtures/wire-format/README.md)) are written and
+> the pre-check is self-tested, but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1135,6 +1147,10 @@ evidence, the decision.
 
 > keep fixing until the review is clean
 > is one more round worth it?
+
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/improve-until-done/evals/gauntlet/BAR.md)) and a
+> fixture with planted cases ([`six-decides`](skills/improve-until-done/fixtures/six-decides/README.md)) are written and
+> the pre-check is self-tested, but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1156,6 +1172,10 @@ it on one batch first and compare tokens with the manual way.
 ```bash
 node skills/deploy-agents/scripts/dry-run.mjs --self-test   # the script's stop rules, no tokens
 ```
+
+> **Measured:** the gauntlet's bar ([`BAR.md`](skills/deploy-agents/evals/gauntlet/BAR.md)) and a
+> fixture with planted cases ([`batch-plan`](skills/deploy-agents/fixtures/batch-plan/README.md)) are written and
+> the pre-check is self-tested, but **no gauntlet round has been run yet**.
 
 ---
 
@@ -1195,7 +1215,8 @@ is not in the code, and a call site is not in a review.
   `principle-*` skill, and the others name it. The same consistency check
   fails when a SKILL.md or playbook names a skill that does not exist
   (`busy-office:<x>`, `principle-<x>`, or a backticked hyphenated name),
-  unless it is on its short allow-list of repository and Claude Code skills.
+  unless it is on its short allow-list of repository and Claude Code skills,
+  and when a gauntlet lacks its bar, rounds table, evals or instrument.
 - A skill that cannot reliably produce a correct artifact does not ship, even
   when its design is sound. `green-gate` was removed after five gauntlet rounds
   in which the design was never faulted and the report failed every time; its
@@ -1205,7 +1226,8 @@ is not in the code, and a call site is not in a review.
 - Every skill that writes a report is graded by a **gauntlet**: a bar of
   measurable criteria (`skills/<skill>/evals/gauntlet/BAR.md`), a mechanical
   pre-check (`node evals/bar-check.mjs <skill> <artifact.md>`, self-tested
-  against pass/fail fixtures), and one shared blind critic
+  against pass/fail fixtures), an answer key of planted cases where the skill
+  runs on a fixture (`skills/<skill>/fixtures/<case>/README.md`), and one shared blind critic
   ([`evals/CRITIC.md`](evals/CRITIC.md)) run in a fresh context that has not
   seen how the artifact was made. `--collector <run.json>` diffs the artifact's
   headline figures against a fresh collection and `--target <repo>` opens every

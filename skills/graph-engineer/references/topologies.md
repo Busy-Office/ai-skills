@@ -26,7 +26,10 @@ reads itself.
 A script keeps at most 3 agents in flight (`principle-guard-the-machine`)
 unless the user opted into more. Any fan-out wider than 3 runs in **waves**:
 chunk the items, then one `parallel()` or `pipeline()` per chunk. The lint
-flags a wider fan-out with no visible chunking (**G16**).
+flags a wider fan-out with no visible chunking (**G16**). Nested fan-outs
+multiply: a wave of 3 findings, each refuted by 3 lenses at once, is 9 in
+flight. Run the inner fan-out one item at a time, or dedupe first and
+run one flat set of waves.
 
 ```js
 const waves = (xs, n = 3) => Array.from({ length: Math.ceil(xs.length / n) }, (_, k) => xs.slice(k * n, k * n + n))
