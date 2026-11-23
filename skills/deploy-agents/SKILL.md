@@ -1,6 +1,6 @@
 ---
 name: deploy-agents
-description: "How to deploy subagents on a batch of work: which model and effort per job, at most 3 agents and one full test suite at a time, the brief every agent gets, and the standard batch (worktree → build → re-run claims → fresh review → fix → final check → explain → user yes → land), with an optional Workflow script for it. Use before spawning a builder, reviewer, fixer or search agent, when writing an agent brief, or when an agent's report is about to be cited."
+description: "How to deploy subagents on a batch of work: which model and effort per job, at most 3 agents and one full test suite at a time, the brief every agent gets, and the standard batch from worktree to landing, with an optional Workflow script for it. Use before spawning a builder, reviewer, fixer or search agent, when writing an agent brief, or before citing an agent's report. Designing or reviewing the graph of a multi-agent run is graph-engineer."
 ---
 
 # Deploy agents
@@ -49,7 +49,7 @@ Report: what changed (files, commits), then each claim graded Ran (a tool printe
    and the decisions, and lists should-fix and nice-to-have findings.
 5. **Fix** — a fresh fixer per round, briefed with the open findings. Rounds and when to stop
    follow `improve-until-done`: at most 3 review rounds, stop on done, plateau, budget, scope growth
-   or a claim that cannot be verified.
+   or a check that cannot run. A claim that fails re-checking goes to the next fix round.
 6. **Final check** — the full suite, run alone, by you.
 7. **Explain** — one short page or message: what changed, why, the evidence with its grades, what
    is still open.
@@ -59,12 +59,18 @@ Report: what changed (files, commits), then each claim graded Ran (a tool printe
 ## Workflow option (trial on one batch first; compare tokens with the manual way)
 
 [`references/batch.workflow.js`](references/batch.workflow.js) runs steps 2–6 as one Workflow
-script: builder, a cheap verifier on each edge, a fresh reviewer, a fixer while should-fix findings
-stay open, the stop rules of `improve-until-done`, and the final check only on done. Only the round
-records and the final result come back to your context. Steps 1 and 7–9 stay with you, and you
-still re-run the final check before citing it.
+script: builder, a cheap verifier on each edge (it upgrades an Inferred claim it can check), a fresh
+reviewer, a fresh fixer while should-fix findings stay open, the final check only on done. It
+implements every `improve-until-done` stop rule: done, plateau (a fixed finding that returns keeps
+its id), budget (3 rounds, and a token guard when the user set a `+Nk` budget; agent count and
+minutes stay with you), scope growth (any agent can name a new contract, package or permission),
+cannot verify (a check, the verifier, the reviewer or the final check that does not run), plus
+`unproven` (a clean review with Inferred claims left) and `final red`. Only the round records and
+the result come back to your context. Steps 1 and 7–9 stay with you, and you still re-run the final
+check before citing it.
 
 The Workflow tool runs only when the user explicitly opts in. Fill `args` from the brief (the
-header comment lists the fields; `reviewModel` must differ from `buildModel`). Check its stop rules
-without spending tokens: `node scripts/dry-run.mjs --self-test`. To change the graph's shape (fan
-out, add verifiers, tier models), use `graph-engineer`.
+header comment lists the fields). Every agent in it is a fresh context; set `reviewModel` to another
+model than `buildModel` when one is available, and the script logs it when they match. Check its
+stop rules without spending tokens: `node scripts/dry-run.mjs --self-test`. To change the graph's
+shape (fan out, add verifiers, tier models), use `graph-engineer`.

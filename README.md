@@ -1087,10 +1087,12 @@ design too, when a brief asserts something about existing code.
 judge, then again or stop, and stops at the first of: **done** (the gate is
 green, the reviewer has no should-fix findings, every claim graded Ran or
 Read), **plateau** (two rounds with no new fix, or a fix that comes back),
-**budget** (3 review rounds per batch, and a token or time cap stated up
-front), **scope growth** (a new contract, package or permission: ask) and
-**cannot verify** (re-run the check alone, then ask). Each round ends with a
-three-line record: what was tried, the graded evidence, the decision.
+**budget** (3 review rounds per batch, and a cap stated up front as agents
+spawned and minutes from `date`), **scope growth** (a new contract, package
+or permission: ask) and **cannot verify** (a check that cannot run: re-run it
+alone, then ask). A claim that fails when re-run is a finding for the next
+round. Each round ends with a three-line record: what was tried, the graded
+evidence, the decision.
 
 > keep fixing until the review is clean
 > is one more round worth it?
