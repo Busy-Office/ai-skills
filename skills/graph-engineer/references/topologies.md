@@ -21,6 +21,23 @@ Shapes compose. A diamond whose merge routes into one of two pipelines is
 three shapes and one graph. Draw it, name each barrier, and the composition
 reads itself.
 
+## Waves of 3
+
+A script keeps at most 3 agents in flight (`principle-guard-the-machine`)
+unless the user opted into more. Any fan-out wider than 3 runs in **waves**:
+chunk the items, then one `parallel()` or `pipeline()` per chunk. The lint
+flags a wider fan-out with no visible chunking (**G16**).
+
+```js
+const waves = (xs, n = 3) => Array.from({ length: Math.ceil(xs.length / n) }, (_, k) => xs.slice(k * n, k * n + n))
+const out = []
+for (const wave of waves(items))
+  out.push(...(await pipeline(wave, stageA, stageB)).filter(Boolean))
+```
+
+A fan-out of W costs `ceil(W / 3)` waves of the slowest agent each — the
+number the cost block multiplies (`cost-model.md`).
+
 ---
 
 ## The barrier test
@@ -56,13 +73,16 @@ const c = await parallel(b.map((x) => () => agent(...)))
 the middle line did not need the barrier. Rewrite:
 
 ```js
-const c = await pipeline(items,
-  (i) => agent(findPrompt(i), { phase: 'Find', schema: FOUND }),
-  (r) => (r ? transform(r) : null),
-  (t) => (t ? agent(nextPrompt(t), { phase: 'Next', schema: NEXT }) : null))
+const c = []
+for (const wave of waves(items))          // waves of 3 — see above
+  c.push(...(await pipeline(wave,
+    (i) => agent(findPrompt(i), { phase: 'Find', schema: FOUND }),
+    (r) => (r ? transform(r) : null),
+    (t) => (t ? agent(nextPrompt(t), { phase: 'Next', schema: NEXT }) : null))).filter(Boolean))
 ```
 
-Item three can be in the last stage while item one is still in the first.
+Inside a wave, item three can be in the last stage while item one is still
+in the first.
 
 ---
 

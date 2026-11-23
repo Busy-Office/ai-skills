@@ -21,19 +21,23 @@ const confirmed = []
 let dry = 0
 
 while (dry < 2) {                                      // K = 2 empty rounds → stop
-  const found = (await parallel(FINDERS.map((f) => () =>
-    agent(f.prompt, { phase: 'Find', label: `find:${f.key}`, schema: BUGS }))))
-    .filter(Boolean).flatMap((r) => r.bugs)
+  const found = []                                     // waves of 3 — topologies.md
+  for (const wave of waves(FINDERS))
+    found.push(...(await parallel(wave.map((f) => () =>
+      agent(f.prompt, { phase: 'Find', label: `find:${f.key}`, schema: BUGS }))))
+      .filter(Boolean).flatMap((r) => r.bugs))
 
   const fresh = found.filter((b) => !seen.has(key(b)))  // dedupe against SEEN
   if (!fresh.length) { dry++; log(`round dry (${dry}/2)`); continue }
   dry = 0
   fresh.forEach((b) => seen.add(key(b)))               // add before verifying
 
-  const judged = await parallel(fresh.map((b) => () =>  // verify only what is fresh
-    parallel(['correctness', 'security', 'repro'].map((lens) => () =>
+  const judged = []                                    // verify only what is fresh,
+  for (const b of fresh) {                             // one finding's 3 lenses at a time
+    const vs = await parallel(['correctness', 'security', 'repro'].map((lens) => () =>
       agent(`Judge "${b.desc}" via the ${lens} lens. Real?`, { phase: 'Verify', schema: VERDICT })))
-      .then((vs) => ({ b, real: vs.filter(Boolean).filter((v) => !v.refuted).length >= 2 }))))
+    judged.push({ b, real: vs.filter(Boolean).filter((v) => !v.refuted).length >= 2 })
+  }
 
   confirmed.push(...judged.filter((j) => j.real).map((j) => j.b))
   log(`round: ${fresh.length} fresh, ${confirmed.length} confirmed so far`)

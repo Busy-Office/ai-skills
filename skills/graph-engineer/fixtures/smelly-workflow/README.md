@@ -17,14 +17,16 @@ removed.
 | G7  | 44   | `agent("Combine these results …")` — plumbing done by an agent |
 | G8  | 47   | `while (true)` with no dry counter, budget guard, round cap or `break` |
 | G9  | 52   | fresh filtered with `!confirmed.some(...)` — dedupe against confirmed, no `seen` Set; rejected findings return every round |
+| G16 | 34, 40, 48, 53 | `parallel(items.map…)`, `parallel(labelled.map…)`, `parallel(items.map…)`, `pipeline(fresh…)` — fan-outs of unknown width with no waves of 3 |
 | G11 | 56   | `phase('Verify')` called inside a pipeline stage callback — races; should be `opts.phase` |
 
 Not planted, and must not fire: G1 (meta is a literal and first), G2 (no
 TypeScript), G4 (no Node API), G12 (schemas are sound), G13 (the script
-returns). Nine rows in total; the lint reports G5 twice.
+returns). Thirteen rows in total; the lint reports G5 twice and G16 four
+times.
 
 A correct rewrite: `items` → `pipeline(scan, verify)` with `opts.phase`,
 `filter(Boolean)` on every barrier output, the merge as `flatMap` + a `Map`
 keyed by `file:line`, the cycle bounded by `dry < 2` and
 `budget.remaining()`, deduped against a `seen` Set, the cap either removed
-or logged with the count dropped, and `started` passed in through `args`.
+or logged with the count dropped, and `started` passed in through `args`, every fan-out run in waves of 3.

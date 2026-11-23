@@ -23,6 +23,7 @@ reason.
 | G13 | no-return | warn | no top-level `return` | the workflow's result is `undefined`; the caller reads the journal to find out what happened | `return { … }` the artefact the caller needs |
 | G14 | silent-cap | warn | `.slice(0, N)`, `.slice(-N)` or a top-N with no `log()` naming what was dropped | truncation reads as "covered everything" | `log(\`kept N of M\`)` at the cut |
 | G15 | blanket-model-override | info | `model:` set on every, or nearly every, `agent()` | that is moving the graph to a tier, not tiering it | override the bounded nodes only — `cost-model.md` |
+| G16 | unchunked-fan-out | warn | a `parallel()` / `pipeline()` over more than 3 items, or over a list of unknown width, with no chunk/wave/batch name or `.slice()` in its first argument | the script puts more than 3 agents in flight — over the default cap (`principle-guard-the-machine`) | waves of 3 — `topologies.md` |
 
 Read the rows as evidence. A G6 on a barrier that the review can defend
 (a real cross-set dedupe the lint could not see because it lives in a

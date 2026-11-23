@@ -370,6 +370,15 @@ export function lint(src, file = "<stdin>") {
     }
     return null;
   };
+  // G16 unchunked fan-out: more than 3 agents in flight with no visible waves.
+  // Waves read as a chunk/wave/batch name or a .slice() in the first argument.
+  for (const c of fan) {
+    const w = widthOf(c);
+    if (typeof w === "number" && w <= 3) continue;
+    const head = src.slice(c.argStart, c.end).split(/,|=>/)[0];
+    if (/chunk|wave|batch/i.test(head) || /\.slice\s*\(/.test(head)) continue;
+    row("G16", "warn", c.idx, `${c.kind}() over ${typeof w === "number" ? `${w} items` : "a list of unknown width"} with no visible chunking`, "run it in waves of 3 (`principle-guard-the-machine`): chunk the items, then `for (const wave of waves) out.push(...(await parallel(wave.map(...))))`");
+  }
   function countElements(lit) {
     let depth = 0, n = 0, any = false, trailing = false;
     for (let i = 1; i < lit.length - 1; i++) {
@@ -438,9 +447,16 @@ const DIMENSIONS = [{ key: 'bugs', prompt: 'find bugs' }, { key: 'perf', prompt:
 const results = await pipeline(
   DIMENSIONS,
   (d) => agent(d.prompt, { label: 'review:' + d.key, phase: 'Review', schema: FINDINGS }),
-  (review) => parallel(review.findings.map((f) => () =>
-    agent('Try to refute: ' + f.title + '. Default to refuted if uncertain.', { phase: 'Verify', schema: VERDICT, effort: 'high' })
-      .then((v) => ({ ...f, verdict: v })))),
+  async (review) => {
+    const out = []
+    for (let i = 0; i < review.findings.length; i += 3) {
+      const wave = review.findings.slice(i, i + 3)
+      out.push(...(await parallel(wave.map((f) => () =>
+        agent('Try to refute: ' + f.title + '. Default to refuted if uncertain.', { phase: 'Verify', schema: VERDICT, effort: 'high' })
+          .then((v) => ({ ...f, verdict: v })))).filter(Boolean)))
+    }
+    return out
+  },
 )
 const seen = new Set(); const confirmed = []; let dry = 0
 while (dry < 2) {
@@ -480,8 +496,8 @@ function selfTest() {
   const ids = (r) => [...new Set(r.rows.map((x) => x.id))].sort();
   const fails = [];
   if (good.rows.length) fails.push(`GOOD produced rows: ${JSON.stringify(good.rows)}`);
-  if (good.shape.agents !== 3 || good.shape.pipeline !== 1 || good.shape.parallel !== 2 || good.shape.loops !== 1) fails.push(`GOOD shape off: ${JSON.stringify(good.shape)}`);
-  const want = ["G3", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15"];
+  if (good.shape.agents !== 3 || good.shape.pipeline !== 1 || good.shape.parallel !== 2 || good.shape.loops !== 2) fails.push(`GOOD shape off: ${JSON.stringify(good.shape)}`);
+  const want = ["G3", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15", "G16"];
   const got = ids(bad);
   for (const w of want) if (!got.includes(w)) fails.push(`BAD missing ${w}`);
   for (const g of got) if (!want.includes(g)) fails.push(`BAD unexpected ${g}: ${JSON.stringify(bad.rows.filter((r) => r.id === g))}`);
@@ -489,6 +505,8 @@ function selfTest() {
   if (l("G3") !== 6) fails.push(`G3 line ${l("G3")} ≠ 6`);
   if (l("G7") !== 10) fails.push(`G7 line ${l("G7")} ≠ 10`);
   if (l("G8") !== 12) fails.push(`G8 line ${l("G8")} ≠ 12`);
+  const g16 = bad.rows.filter((r) => r.id === "G16").map((r) => r.line).join(",");
+  if (g16 !== "9,17") fails.push(`G16 lines ${g16} ≠ 9,17 (flat.map unchunked, pipeline over 4 ITEMS; the 2-wide slice and 1-wide literal pass)`);
   if (bad.shape.staticAgentEstimate < 8) fails.push(`BAD estimate ${bad.shape.staticAgentEstimate} < 8`);
   const lit = lint("export const meta = { name: 'l', description: 'd' }\nconst r = (await parallel([() => agent('a'), () => agent('b'), () => agent('c')])).filter(Boolean)\nreturn r\n", "lit.js");
   if (lit.shape.staticAgentEstimate !== 3) fails.push(`array-literal parallel of 3 agents estimated ${lit.shape.staticAgentEstimate}, want 3`);

@@ -793,7 +793,7 @@ node skills/graph-engineer/scripts/graph-lint.mjs --self-test
 
 The lint returns the script's shape (agent, `parallel()`, `pipeline()`, loop
 and phase counts, static fan-out widths, an agent estimate) and one row per
-mechanical smell — `G1`–`G15` in
+mechanical smell — `G1`–`G16` in
 [`references/anti-patterns.md`](skills/graph-engineer/references/anti-patterns.md):
 forbidden calls that break resume, results consumed without `filter(Boolean)`,
 `parallel → transform → parallel` where a pipeline would do, an agent whose

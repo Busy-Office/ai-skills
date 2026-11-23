@@ -160,7 +160,10 @@ export const meta = { name: 'release-digest', description: 'Digest three sources
 const ITEMS = { type: 'object', additionalProperties: false, properties: { items: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { title: { type: 'string' }, url: { type: 'string' }, impact: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['title', 'url', 'impact'] } } }, required: ['items'] }
 const SOURCES = [{ key: 'releases', url: args.releases }, { key: 'blog', url: args.blog }, { key: 'forum', url: args.forum }]
 phase('Read')
-const collected = (await parallel(SOURCES.map((s) => () => agent(`List items since ${args.since} from ${s.url}.`, { label: `read:${s.key}`, phase: 'Read', schema: ITEMS })))).filter(Boolean)
+const waves = (xs, n = 3) => Array.from({ length: Math.ceil(xs.length / n) }, (_, k) => xs.slice(k * n, k * n + n))
+const collected = []
+for (const wave of waves(SOURCES))
+  collected.push(...(await parallel(wave.map((s) => () => agent(`List items since ${args.since} from ${s.url}.`, { label: `read:${s.key}`, phase: 'Read', schema: ITEMS })))).filter(Boolean))
 const flat = collected.flatMap((c) => c.items)
 const unique = [...new Map(flat.map((i) => [i.url, i])).values()]
 log(`read ${flat.length} items from ${collected.length} of ${SOURCES.length} sources; ${unique.length} unique by url`)

@@ -144,8 +144,9 @@ Then the three numbers, with their formulas: **agents** (static count ×
 fan-out widths, plus the cycle's expected rounds), **critical path**
 (pipeline: the slowest single-item chain; barrier: the slowest node of every
 stage, summed), and the **caps** the run will meet — concurrency is 3 by
-default (`principle-guard-the-machine`): the script keeps at most 3 agents in
-flight, so a wider fan-out runs in waves of 3. The platform's
+default (`principle-guard-the-machine`): the script you write keeps at most 3 agents
+in flight by chunking any wider fan-out into waves of 3 (the pattern is in
+`topologies.md`; the lint flags a fan-out without it, G16). The platform's
 `min(16, CPUs − 2)` per workflow is the ceiling, used only when the user
 opted into that scale. ≤ 4096 items per `parallel()`/`pipeline()` call;
 ≤ 1000 agents per run.
