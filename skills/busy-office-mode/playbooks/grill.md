@@ -9,7 +9,8 @@
 3. Ask a round of at most five questions, each with options and your recommendation, plain words
    first (`principle-names-first`).
 4. Record each answer, numbered (Q1, Q2, …), in the owner's words, with what it settles. If the user
-   keeps a decision log (`automate-me` describes it), log each question the way its rules say.
+   keeps a decision log (`~/.claude/decision-log.jsonl`), log each question the way their "How I
+   work" rules say. `busy-office:automate-me` is run by the user, not by you.
 5. Plan the next round from what the answers opened. Stop when every branch is settled or parked
    with a reason.
 

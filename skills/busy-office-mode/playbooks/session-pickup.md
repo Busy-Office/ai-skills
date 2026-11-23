@@ -8,7 +8,7 @@
    owner.
 3. Re-check what the note claims is done before building on it: a handoff's claim is Inferred until
    re-run (`principle-prove-it-works`).
-4. A decision whose reasons the note does not give → `why`.
+4. A decision whose reasons the note does not give → `busy-office:why`.
 5. Pick the next step and its playbook.
 
 **Reply:** where things stand in five lines or fewer, what you re-checked and its grade, and the

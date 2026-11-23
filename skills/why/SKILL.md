@@ -27,7 +27,7 @@ Find the forces that shaped X, with evidence. Keep what the record says apart fr
    | source | where |
    |---|---|
    | commit history | the messages and diffs from step 2 |
-   | decision log | the project's decision notes; the user's local decision log, if they keep one (`automate-me` describes it) |
+   | decision log | the project's decision notes; the user's local decision log (`~/.claude/decision-log.jsonl`), if they keep one: read it directly (`grep` by topic), since `busy-office:automate-me` is run by the user, not by you |
    | ADRs | wherever the repository keeps them (`docs/adr/`, `docs/decisions/`, …) |
    | project notebook | the project's notebook or second brain, if one is set up ([guideline](../../docs/second-brain.md)) |
    | code graph | a code graph of the repository, if one exists, for who depends on X |
