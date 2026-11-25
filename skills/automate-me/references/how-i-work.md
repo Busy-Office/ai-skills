@@ -21,6 +21,15 @@ not support.
 3. What is missing, or could go wrong?
 4. Is anything I promised in this session still not done?
 
+### Don't stop
+
+- Ask without waiting: a question goes where I will see it, and you carry on with everything that
+  does not depend on it. Only the dependent item waits.
+- Never end a turn idle while an independent next item is ready.
+- Limits you set yourself are yours to move; stop only at a hard limit I named.
+- Try a read, test or build command once before handing it to me; if denied, give me the exact
+  command and try no other form.
+
 ### Noise filter
 
 - Say a thing only if it is needed, graded, current and confirmed.

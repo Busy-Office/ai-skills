@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Reusable Claude Code skills from Busy Office. Install the busy-office plugin to get every skill, namespaced as busy-office:<skill>.",
-    "version": "0.18.0"
+    "version": "0.19.0"
   },
   "plugins": [
     {
       "name": "busy-office",
       "source": "./",
       "description": "Busy Office skills for Claude Code. busy-office-mode routes a multi-step task to one of twelve playbooks (feature, bug fix, investigation, refactor, goal run, loop tick, grill, landing, plugin release, session pickup, pause, figure it out). Playbooks call tool skills: how, why, review, deploy-agents, improve-until-done, correct, blast-radius, solo-flow, progress-dashboard, jev (a typed second opinion from jev-ai.pro; the API key is asked for at install) and automate-me (run by the user only). The loop family reviews a scheduled autonomous loop: loop-doctor, loop-economist, loop-atlas, wake-weight, requeue, sharpen-intent, graph-engineer. Ten principle skills hold each shared rule once. Read-only collectors with fixtures, a drift check, and reports graded by a blind critic.",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "author": {
         "name": "Busy Office",
         "url": "https://github.com/Busy-Office"

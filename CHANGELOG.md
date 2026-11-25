@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.19.0 — 2026-11-25
+
+`automate-me` drafts a "Don't stop" part in every "How I work" section.
+
+### Changed
+
+- **`automate-me` how-i-work template**: a fixed "Don't stop" subsection: ask without waiting,
+  never end a turn idle while independent work is ready, self-set limits are the agent's to move,
+  and try a read, test or build command once before handing it to the user.
+
 ## 0.18.0 — 2026-11-23
 
 Five more skills get a gauntlet, and graph-engineer's fan-out rule counts what is really in flight.
